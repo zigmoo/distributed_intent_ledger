@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DIL Frontmatter",
+  "type": "object",
+  "required": [
+    "title", "date", "machine", "assistant", "category", "memoryType", "priority",
+    "tags", "updated", "source", "domain", "project", "status", "owner", "due"
+  ],
+  "properties": {
+    "title": { "type": "string" },
+    "date": { "type": "string" },
+    "machine": { "type": "string" },
+    "assistant": { "type": "string" },
+    "category": { "type": "string" },
+    "memoryType": { "type": "string" },
+    "priority": { "type": "string" },
+    "tags": { "type": ["array", "string"] },
+    "updated": { "type": "string" },
+    "source": { "type": "string" },
+    "domain": { "type": "string" },
+    "project": { "type": "string" },
+    "status": { "type": "string" },
+    "owner": { "type": "string" },
+    "due": { "type": ["string", "null"] }
+  },
+  "additionalProperties": true
+}
