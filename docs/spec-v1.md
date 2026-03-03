@@ -69,3 +69,12 @@ Each agent record MUST declare fallback support explicitly:
 - `model_config.fallback_strategy`
 
 Agents/runtimes that do not support fallback (for example current `zeroclaw` behavior) MUST declare fallback disabled and an empty fallback list.
+
+## 11. Operational Tracking and Execution Defaults
+
+Implementations SHOULD apply these defaults for operational reliability:
+- tracked shell commands include a task marker (for example `# DIL-1101: short note`)
+- implementation work starts only after canonical task/doc node exists
+- future to-do requests are converted into canonical shared tasks
+- agents execute runnable steps directly instead of bouncing to the user
+- safe in-scope non-destructive steps are treated as implicitly approved
