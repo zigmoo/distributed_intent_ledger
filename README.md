@@ -53,7 +53,7 @@ DIL defines:
 
 ## How to Use DIL
 
-### Scenario 1: Single Machine with Shared Memory Among All Agents
+### Scenario 1: Shared Memory Across All Agents on One Machine
 
 1. Choose a local vault path on that machine.
 2. Clone this repository into the vault:
@@ -64,7 +64,7 @@ DIL defines:
    - `machine`: `hostname -s | tr '[:upper:]' '[:lower:]'`
    - `assistant`: env/process-derived slug (no guessing from folder names)
 
-### Scenario 2: Shared Memory Across Multiple Computers
+### Scenario 2: Shared Memory Across All Agents on Multiple Machines
 
 1. Create an Obsidian vault and configure remote syncing.
 2. Set up Tailscale on each machine and join them to your tailnet.
