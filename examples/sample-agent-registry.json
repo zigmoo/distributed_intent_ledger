@@ -1,0 +1,181 @@
+{
+  "registry_version": "v1",
+  "updated_at": "2026-03-03T00:00:00Z",
+  "agents": [
+    {
+      "agent_id": "codex",
+      "display_name": "Codex",
+      "status": "active",
+      "owner": "shared",
+      "maintainers": [
+        "moo"
+      ],
+      "machine_binding": {
+        "machine": "framemoowork",
+        "allowed_machines": [
+          "framemoowork",
+          "pi500"
+        ]
+      },
+      "runtime_host": {
+        "hostname": "framemoowork",
+        "ssh_target": "moo@framemoowork",
+        "magic_dns_name": "framemoowork.tailnet-example.ts.net",
+        "workspace_path": "/home/moo/.openclaw/workspace_01"
+      },
+      "model_config": {
+        "provider": "openai",
+        "primary_model": "gpt-5-codex",
+        "supports_fallback_llms": true,
+        "fallback_models": [
+          "gpt-5-mini"
+        ],
+        "fallback_strategy": "manual",
+        "routing_policy": "task-sensitive"
+      },
+      "runtime_profiles": [
+        {
+          "runtime_id": "openai-primary",
+          "runtime_type": "openai-compatible",
+          "connection_mode": "remote",
+          "status": "active",
+          "endpoint": "https://api.openai.com/v1",
+          "updated_at": "2026-03-03T00:00:00Z"
+        },
+        {
+          "runtime_id": "local-ollama",
+          "runtime_type": "ollama",
+          "connection_mode": "local",
+          "status": "active",
+          "endpoint": "http://127.0.0.1:11434",
+          "model_inventory": [
+            {
+              "runtime": "ollama",
+              "name": "qwen2.5-coder:14b",
+              "quantization": "q4_k_m",
+              "context_window": 32768,
+              "supports_tools": true,
+              "supports_vision": false,
+              "supports_audio": false,
+              "input_modalities": [
+                "text"
+              ],
+              "output_modalities": [
+                "text",
+                "json"
+              ],
+              "discovered_at": "2026-03-03T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "supports_fallback_llms": true,
+      "capabilities": {
+        "can_read_memory": true,
+        "can_write_memory": true,
+        "can_manage_tasks": true,
+        "can_use_tools": true,
+        "can_call_web": true,
+        "can_process_images": true,
+        "can_process_audio": false,
+        "can_process_video": false
+      },
+      "supported_formats": [
+        {
+          "mime": "text/markdown",
+          "modes": [
+            "read",
+            "write",
+            "summarize",
+            "index"
+          ]
+        },
+        {
+          "mime": "application/json",
+          "modes": [
+            "read",
+            "write",
+            "transform"
+          ]
+        },
+        {
+          "mime": "image/*",
+          "modes": [
+            "read",
+            "summarize"
+          ]
+        }
+      ],
+      "discovered_at": "2026-03-03T00:00:00Z",
+      "discovered_by": "codex",
+      "sources": [
+        "hostname",
+        "runtime introspection",
+        "model provider config"
+      ]
+    },
+    {
+      "agent_id": "zeroclaw",
+      "display_name": "ZeroClaw",
+      "status": "active",
+      "owner": "shared",
+      "maintainers": [
+        "moo"
+      ],
+      "machine_binding": {
+        "machine": "pi500"
+      },
+      "runtime_host": {
+        "hostname": "pi500",
+        "ssh_target": "moo@pi500",
+        "magic_dns_name": "pi500.jay-frog.ts.net",
+        "workspace_path": "/home/moo/.openclaw/workspace_01"
+      },
+      "model_config": {
+        "provider": "custom-gateway",
+        "primary_model": "zeroclaw-default",
+        "supports_fallback_llms": false,
+        "fallback_models": [],
+        "fallback_strategy": "none",
+        "routing_policy": "single-model"
+      },
+      "runtime_profiles": [
+        {
+          "runtime_id": "zeroclaw-gateway",
+          "runtime_type": "custom-gateway",
+          "connection_mode": "remote",
+          "status": "active",
+          "agent_runtime_host_ref": "pi500"
+        }
+      ],
+      "supports_fallback_llms": false,
+      "capabilities": {
+        "can_read_memory": true,
+        "can_write_memory": true,
+        "can_manage_tasks": true
+      },
+      "supported_formats": [
+        {
+          "mime": "text/markdown",
+          "modes": [
+            "read",
+            "write"
+          ]
+        },
+        {
+          "mime": "application/json",
+          "modes": [
+            "read",
+            "write",
+            "transform"
+          ]
+        }
+      ],
+      "discovered_at": "2026-03-03T00:00:00Z",
+      "discovered_by": "codex",
+      "sources": [
+        "runtime policy declaration"
+      ]
+    }
+  ]
+}
