@@ -398,7 +398,15 @@ These rules define task tracking for all assistants across all machines.
 - Use wiki-links for related entities/tasks (example: `[[DMDI-11330]]`, `[[DIL-1101]]`).
 - Keep task notes concise and link to detailed local execution notes.
 
-10. Validation gate (required before task-system replies that mutate tasks)
+10. User-facing operational reply rule (required)
+- For operational replies tied to work (status updates, execution reports, progress, blockers, completion notes), include the canonical `task_id` in the reply text.
+- If no canonical task exists yet, create/allocate one first, then continue.
+- Casual/non-operational chat does not require task-id tagging.
+- When execution notes are shown to the user, dual-write the same content to the canonical task file using tee-style tooling:
+  - `scripts/tee_task_execution_note.sh <task_id> "<note>"`
+  - Fallback append-only helper: `scripts/append_task_execution_note.sh <task_id> "<note>"`
+
+11. Validation gate (required before task-system replies that mutate tasks)
 - Run:
   - `dil_agentic_memory_0001/_shared/tasks/_meta/scripts/validate_tasks.sh`
 - If validation fails, report errors and do not claim completion.
