@@ -106,9 +106,10 @@ This project is licensed under the Apache License 2.0. See `LICENSE` and `NOTICE
 - `docs/spec-v1.md`: normative protocol contract (MUST/SHOULD/MAY)
 - `docs/machine-registry-contract.md`: machine inventory and runtime host contract
 - `docs/agent-registry-contract.md`: agent capabilities, formats, models, and fallback contract
-
-## On Another Note
-- I've been working to store collective memory for a long time tnow... https://threeriversduckclub.com/node/2384/edit
 - `schema/`: JSON schemas for notes and tasks
 - `examples/`: sample vault structure and records
 - `scripts/`: reference helpers and validators
+
+## On Another Note
+
+- I've been working to store collective memory for a long time now... https://threeriversduckclub.com/node/2384/edit
