@@ -1,10 +1,14 @@
 # Distributed Intent Ledger (DIL)
 
+Have you ever wished your agents and assistants could share memories ... across one laptop to your servers and dev machines ... from Codex to Claude to OpenCode to OpenClaw?
+
+Here's the plan for doing all those things and keeping memories and priorities straight.
+
 Distributed Intent Ledger (DIL) is a local-first, filesystem-native protocol for persistent multi-agent and multi-environment memory coordination.
 
 ## What Sets DIL Apart
 
-What sets DIL apart from other approaches is that its unifies memories and tasks across disparate environments for any assortment of AI Agents and AI Assistants by defining memory as a governed protocol, not just a storage format.
+What sets DIL apart from other approaches is that it unifies memories and tasks across disparate environments for any assortment of AI Agents and AI Assistants by defining memory as a governed protocol, not just a storage format.
 
 - Deterministic identity and scope boundaries:
   - Runtime-derived `machine` and `assistant` identities.
