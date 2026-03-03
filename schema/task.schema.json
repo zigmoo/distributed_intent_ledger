@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DIL Task",
+  "type": "object",
+  "required": ["task_id", "domain", "project", "status", "priority", "owner", "created_by", "created_at", "model"],
+  "properties": {
+    "task_id": { "type": "string" },
+    "domain": { "type": "string", "enum": ["work", "personal"] },
+    "project": { "type": "string" },
+    "status": { "type": "string", "enum": ["todo", "assigned", "in_progress", "blocked", "done", "cancelled"] },
+    "priority": { "type": "string", "enum": ["low", "normal", "high", "critical"] },
+    "owner": { "type": "string" },
+    "created_by": { "type": "string" },
+    "created_at": { "type": "string" },
+    "model": { "type": "string" }
+  },
+  "additionalProperties": true
+}
