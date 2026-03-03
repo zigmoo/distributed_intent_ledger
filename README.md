@@ -45,6 +45,32 @@ DIL defines:
 - index and change-log maintenance requirements
 - validation gates for task mutations
 
+## How to Use DIL
+
+1. Pick a vault root and keep this structure:
+   - `<vault>/_shared/...`
+   - `<vault>/<machine>/<assistant>/...`
+2. Set up an Obsidian vault and configure it for remote syncing.
+3. Set up Tailscale and add your machines using security-safe access controls; enable MagicDNS if you want machine DNS to be footloose and fancy-free.
+4. Resolve runtime identity before read/write:
+   - `machine`: `hostname -s | tr '[:upper:]' '[:lower:]'`
+   - `assistant`: env/process-derived slug (no guessing from folder names)
+5. Create memory notes via script (preferred):
+   - `scripts/create_memory.sh --type observations --title "..." --base <vault>`
+6. Create canonical tasks via script:
+   - Personal: `scripts/create_task.sh --domain personal --title "..." --project "..." --base <vault>`
+   - Work: `scripts/create_task.sh --domain work --task-id DMDI-12345 --title "..." --project "..." --base <vault>`
+7. Enforce retrieval order when answering:
+   - local assistant scope -> machine scope -> shared policies -> shared global
+8. Validate tasks before claiming completion:
+   - `scripts/validate_tasks.sh <vault>`
+9. Return proof after writes (anti-parrot rule):
+   - changed file paths
+   - placement proof (`find`/tree output)
+   - short excerpts from changed files
+
+Minimum operating rule: write to `<machine>/<assistant>` first, promote to `_shared` only for cross-machine/cross-assistant facts.
+
 ## License
 
 This project is licensed under the Apache License 2.0. See `LICENSE` and `NOTICE`.
