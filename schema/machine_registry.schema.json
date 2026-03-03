@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/dil/schema/machine_registry.schema.json",
+  "title": "DIL Machine Registry",
+  "type": "object",
+  "required": [
+    "registry_version",
+    "updated_at",
+    "machines"
+  ],
+  "properties": {
+    "registry_version": {
+      "type": "string",
+      "const": "v1"
+    },
+    "updated_at": {
+      "type": "string",
+      "description": "UTC timestamp in RFC3339 format"
+    },
+    "machines": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/machine"
+      }
+    }
+  },
+  "$defs": {
+    "machine": {
+      "type": "object",
+      "required": [
+        "machine",
+        "status",
+        "agent_runtime_host",
+        "discovered_at",
+        "discovered_by",
+        "attributes"
+      ],
+      "properties": {
+        "machine": {
+          "type": "string",
+          "description": "Normalized host slug, usually hostname -s lowercased"
+        },
+        "label": {
+          "type": "string",
+          "description": "Optional short human label (e.g., P50, FMW)"
+        },
+        "dil_node_id": {
+          "type": "string",
+          "description": "Optional node id for DIL coordination"
+        },
+        "machine_id": {
+          "type": "string",
+          "description": "Optional stable hardware/machine identifier"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "offline",
+            "maintenance",
+            "unknown"
+          ]
+        },
+        "agent_runtime_host": {
+          "type": "object",
+          "required": [
+            "hostname",
+            "ssh_target"
+          ],
+          "properties": {
+            "hostname": {
+              "type": "string",
+              "description": "Preferred DNS host for agent runtime operations"
+            },
+            "ssh_target": {
+              "type": "string",
+              "description": "SSH destination string (host or user@host)"
+            },
+            "magic_dns_name": {
+              "type": "string",
+              "description": "Optional Tailscale MagicDNS name"
+            },
+            "tailscale_ip": {
+              "type": "string",
+              "description": "Optional primary Tailscale IPv4"
+            },
+            "port": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535,
+              "default": 22
+            }
+          },
+          "additionalProperties": true
+        },
+        "discovered_at": {
+          "type": "string",
+          "description": "UTC timestamp for initial/last discovery"
+        },
+        "discovered_by": {
+          "type": "string",
+          "description": "Assistant/runtime id that added or updated this machine"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Evidence sources used during discovery"
+        },
+        "attributes": {
+          "type": "object",
+          "required": [
+            "os",
+            "arch",
+            "user_home",
+            "discovered_from"
+          ],
+          "properties": {
+            "os": {
+              "type": "string"
+            },
+            "arch": {
+              "type": "string"
+            },
+            "user_home": {
+              "type": "string"
+            },
+            "tailscale_ips": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "primary_interface": {
+              "type": "string"
+            },
+            "discovered_from": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Signals used (hostname, ip, tailscale status, etc.)"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

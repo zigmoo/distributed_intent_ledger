@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "DIL Task",
   "type": "object",
-  "required": ["task_id", "domain", "project", "status", "priority", "owner", "created_by", "created_at", "model"],
+  "required": ["task_id", "domain", "project", "status", "priority", "owner", "created_by", "created_at", "model", "parent_task_id"],
   "properties": {
     "task_id": { "type": "string" },
     "domain": { "type": "string", "enum": ["work", "personal"] },
@@ -12,7 +12,11 @@
     "owner": { "type": "string" },
     "created_by": { "type": "string" },
     "created_at": { "type": "string" },
-    "model": { "type": "string" }
+    "model": { "type": "string" },
+    "parent_task_id": {
+      "type": ["string", "null"],
+      "description": "Optional parent task id; empty string or null means no parent"
+    }
   },
   "additionalProperties": true
 }
