@@ -1,0 +1,428 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/dil/schema/agent_registry.schema.json",
+  "title": "DIL Agent Registry",
+  "type": "object",
+  "required": [
+    "registry_version",
+    "updated_at",
+    "agents"
+  ],
+  "properties": {
+    "registry_version": {
+      "type": "string",
+      "const": "v1"
+    },
+    "updated_at": {
+      "type": "string",
+      "description": "UTC timestamp in RFC3339 format"
+    },
+    "agents": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/agent"
+      }
+    }
+  },
+  "$defs": {
+    "agent": {
+      "type": "object",
+      "required": [
+        "agent_id",
+        "display_name",
+        "status",
+        "owner",
+        "machine_binding",
+        "runtime_host",
+        "model_config",
+        "runtime_profiles",
+        "supports_fallback_llms",
+        "capabilities",
+        "supported_formats",
+        "discovered_at",
+        "discovered_by"
+      ],
+      "properties": {
+        "agent_id": {
+          "type": "string",
+          "description": "Stable agent identifier (slug)"
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "paused",
+            "offline",
+            "retired",
+            "unknown"
+          ]
+        },
+        "owner": {
+          "type": "string",
+          "description": "Primary accountable owner/assignee"
+        },
+        "maintainers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "machine_binding": {
+          "type": "object",
+          "required": [
+            "machine"
+          ],
+          "properties": {
+            "machine": {
+              "type": "string",
+              "description": "Primary bound machine slug"
+            },
+            "allowed_machines": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": true
+        },
+        "runtime_host": {
+          "type": "object",
+          "required": [
+            "hostname",
+            "ssh_target"
+          ],
+          "properties": {
+            "hostname": {
+              "type": "string"
+            },
+            "ssh_target": {
+              "type": "string"
+            },
+            "magic_dns_name": {
+              "type": "string"
+            },
+            "tailscale_ip": {
+              "type": "string"
+            },
+            "workspace_path": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": true
+        },
+        "model_config": {
+          "type": "object",
+          "required": [
+            "provider",
+            "primary_model",
+            "supports_fallback_llms",
+            "fallback_models",
+            "fallback_strategy"
+          ],
+          "properties": {
+            "provider": {
+              "type": "string",
+              "description": "Primary provider/runtime (openai, anthropic, ollama, etc.)"
+            },
+            "primary_model": {
+              "type": "string"
+            },
+            "supports_fallback_llms": {
+              "type": "boolean"
+            },
+            "fallback_models": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "fallback_strategy": {
+              "type": "string",
+              "enum": [
+                "none",
+                "manual",
+                "automatic"
+              ]
+            },
+            "routing_policy": {
+              "type": "string"
+            },
+            "local_model_inventory": {
+              "type": "array",
+              "description": "Discoverable local models (e.g., Ollama) with metadata",
+              "items": {
+                "$ref": "#/$defs/local_model"
+              }
+            }
+          },
+          "additionalProperties": true
+        },
+        "runtime_profiles": {
+          "type": "array",
+          "description": "Runtime endpoints usable by this agent (local/cloud/hybrid)",
+          "items": {
+            "$ref": "#/$defs/runtime_profile"
+          }
+        },
+        "supports_fallback_llms": {
+          "type": "boolean",
+          "description": "Top-level normalized fallback capability flag"
+        },
+        "capabilities": {
+          "type": "object",
+          "required": [
+            "can_read_memory",
+            "can_write_memory",
+            "can_manage_tasks"
+          ],
+          "properties": {
+            "can_read_memory": {
+              "type": "boolean"
+            },
+            "can_write_memory": {
+              "type": "boolean"
+            },
+            "can_manage_tasks": {
+              "type": "boolean"
+            },
+            "can_use_tools": {
+              "type": "boolean"
+            },
+            "can_call_web": {
+              "type": "boolean"
+            },
+            "can_process_images": {
+              "type": "boolean"
+            },
+            "can_process_audio": {
+              "type": "boolean"
+            },
+            "can_process_video": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": true
+        },
+        "supported_formats": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/format_support"
+          },
+          "description": "Structured format support declarations for read/write/transform behavior"
+        },
+        "discovered_at": {
+          "type": "string"
+        },
+        "discovered_by": {
+          "type": "string"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "supports_fallback_llms": {
+                "const": false
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "model_config": {
+                "properties": {
+                  "fallback_models": {
+                    "maxItems": 0
+                  },
+                  "fallback_strategy": {
+                    "const": "none"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "additionalProperties": true
+    },
+    "runtime_profile": {
+      "type": "object",
+      "required": [
+        "runtime_id",
+        "runtime_type",
+        "connection_mode",
+        "status"
+      ],
+      "properties": {
+        "runtime_id": {
+          "type": "string"
+        },
+        "runtime_type": {
+          "type": "string",
+          "enum": [
+            "ollama",
+            "openai-compatible",
+            "anthropic",
+            "custom-gateway",
+            "other"
+          ]
+        },
+        "connection_mode": {
+          "type": "string",
+          "enum": [
+            "local",
+            "remote",
+            "hybrid"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "degraded",
+            "offline",
+            "unknown"
+          ]
+        },
+        "endpoint": {
+          "type": "string"
+        },
+        "agent_runtime_host_ref": {
+          "type": "string",
+          "description": "Optional cross-reference to machine_registry agent_runtime_host identity"
+        },
+        "model_inventory": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/local_model"
+          }
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "format_support": {
+      "type": "object",
+      "required": [
+        "mime",
+        "modes"
+      ],
+      "properties": {
+        "mime": {
+          "type": "string",
+          "description": "MIME type or wildcard (e.g., image/*)"
+        },
+        "modes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "read",
+              "write",
+              "transform",
+              "index",
+              "summarize"
+            ]
+          }
+        },
+        "max_size_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "local_model": {
+      "type": "object",
+      "required": [
+        "runtime",
+        "name"
+      ],
+      "properties": {
+        "runtime": {
+          "type": "string",
+          "description": "e.g., ollama, vllm, lmstudio"
+        },
+        "name": {
+          "type": "string"
+        },
+        "provider_model_id": {
+          "type": "string"
+        },
+        "size_bytes": {
+          "type": "integer"
+        },
+        "quantization": {
+          "type": "string"
+        },
+        "context_window": {
+          "type": "integer"
+        },
+        "supports_tools": {
+          "type": "boolean"
+        },
+        "supports_vision": {
+          "type": "boolean"
+        },
+        "supports_audio": {
+          "type": "boolean"
+        },
+        "input_modalities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "text",
+              "image",
+              "audio",
+              "video",
+              "multimodal"
+            ]
+          }
+        },
+        "output_modalities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "text",
+              "image",
+              "audio",
+              "video",
+              "json",
+              "embeddings"
+            ]
+          }
+        },
+        "discovered_at": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

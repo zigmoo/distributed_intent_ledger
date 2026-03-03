@@ -44,3 +44,28 @@ Task mutations MUST be logged in `_shared/tasks/_meta/change_log.md`.
 ## 7. Validation Gate
 
 Before claiming task mutations complete, implementations MUST run task validation and report pass/fail output.
+
+## 8. Machine and Agent Registries
+
+Implementations MUST maintain shared runtime inventories under `_shared/_meta`:
+- `machine_registry.json` (machines and `agent_runtime_host` routing data)
+- `agent_registry.json` (agents, capabilities, model/runtime profiles)
+
+If the current machine or agent is missing during bootstrap, implementations MUST add a record with discoverable attributes and return proof of the write.
+
+## 9. Format and Runtime Capability Declaration
+
+Each agent record MUST declare:
+- supported input/output formats (MIME or wildcard categories)
+- runtime profiles (local/cloud/hybrid) with optional model inventories
+
+This requirement ensures DIL can route work safely across mixed environments (for example local Ollama inventories plus cloud models).
+
+## 10. Fallback LLM Policy Declaration
+
+Each agent record MUST declare fallback support explicitly:
+- `supports_fallback_llms`
+- `model_config.fallback_models`
+- `model_config.fallback_strategy`
+
+Agents/runtimes that do not support fallback (for example current `zeroclaw` behavior) MUST declare fallback disabled and an empty fallback list.

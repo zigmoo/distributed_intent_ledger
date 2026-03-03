@@ -47,6 +47,7 @@ DIL defines:
 - scoped write boundaries and promotion rules
 - retrieval order across local/machine/shared scopes
 - frontmatter and task metadata contracts
+- machine and agent registries for routing/capability discovery
 - index and change-log maintenance requirements
 - validation gates for task mutations
 
@@ -73,6 +74,10 @@ DIL defines:
    - changed file paths
    - placement proof (`find`/tree output)
    - short excerpts from changed files
+10. Maintain shared runtime inventories:
+   - `_shared/_meta/machine_registry.json`
+   - `_shared/_meta/agent_registry.json`
+   - ensure each agent declares supported formats, runtime profiles, and fallback-LLM behavior
 
 Minimum operating rule: write to `<machine>/<assistant>` first, promote to `_shared` only for cross-machine/cross-assistant facts.
 
@@ -83,6 +88,8 @@ This project is licensed under the Apache License 2.0. See `LICENSE` and `NOTICE
 ## Repository Layout
 
 - `docs/spec-v1.md`: normative protocol contract (MUST/SHOULD/MAY)
+- `docs/machine-registry-contract.md`: machine inventory and runtime host contract
+- `docs/agent-registry-contract.md`: agent capabilities, formats, models, and fallback contract
 - `schema/`: JSON schemas for notes and tasks
 - `examples/`: sample vault structure and records
 - `scripts/`: reference helpers and validators
