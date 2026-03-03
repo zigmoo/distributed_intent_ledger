@@ -5,6 +5,7 @@ Have you ever wished your agents and assistants could share memories ... across 
 Here's the plan for doing all those things and keeping memories and priorities straight.
 
 Distributed Intent Ledger (DIL) is a local-first, filesystem-native protocol for persistent multi-agent and multi-environment memory coordination.
+In current deployments, Tailscale is used as the private network fabric for secure cross-machine agent communication and coordination.
 
 ## What Sets DIL Apart
 
