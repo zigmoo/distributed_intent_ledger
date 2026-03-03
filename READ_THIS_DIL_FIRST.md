@@ -31,6 +31,9 @@ This directory implements the **Distributed Intent Ledger (DIL)**, a local-first
 
 While inspired by the original **ClawVault** design, DIL has evolved into an advanced decentralized coordination protocol.
 
+Project repository:
+- https://github.com/zigmoo/distributed_intent_ledger
+
 ## Goal
 
 Provide durable, inspectable memory for agents/assistants across disparate machines and agents while keeping storage as plain Markdown files.
