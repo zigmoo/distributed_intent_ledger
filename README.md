@@ -53,28 +53,30 @@ DIL defines:
 
 ## How to Use DIL
 
-1. Pick a vault root and keep this structure:
-   - `<vault>/_shared/...`
-   - `<vault>/<machine>/<assistant>/...`
-2. Set up an Obsidian vault and configure it for remote syncing.
-3. Set up Tailscale and add your machines using security-safe access controls; enable MagicDNS if you want machine DNS to be footloose and fancy-free.
-4. Resolve runtime identity before read/write:
+1. Create an Obsidian vault and configure it for remote syncing across all machines.
+2. Set up Tailscale on each machine and join them to your tailnet (use MagicDNS if you want easier host naming).
+3. Clone this repository into that synced vault:
+   - `git clone https://github.com/zigmoo/distributed_intent_ledger.git`
+4. In each agent/assistant session, start with:
+   - `Read ~/READ_THIS_DIL_FIRST.md now and acknowledge.`
+   - Then follow that file exactly for identity resolution, scope-safe writes, retrieval order, and proof-of-write.
+5. Resolve runtime identity before read/write:
    - `machine`: `hostname -s | tr '[:upper:]' '[:lower:]'`
    - `assistant`: env/process-derived slug (no guessing from folder names)
-5. Create memory notes via script (preferred):
+6. Create memory notes via script (preferred):
    - `scripts/create_memory.sh --type observations --title "..." --base <vault>`
-6. Create canonical tasks via script:
+7. Create canonical tasks via script:
    - Personal: `scripts/create_task.sh --domain personal --title "..." --project "..." --base <vault>`
    - Work: `scripts/create_task.sh --domain work --task-id DMDI-12345 --title "..." --project "..." --base <vault>`
-7. Enforce retrieval order when answering:
+8. Enforce retrieval order when answering:
    - local assistant scope -> machine scope -> shared policies -> shared global
-8. Validate tasks before claiming completion:
+9. Validate tasks before claiming completion:
    - `scripts/validate_tasks.sh <vault>`
-9. Return proof after writes (anti-parrot rule):
+10. Return proof after writes (anti-parrot rule):
    - changed file paths
    - placement proof (`find`/tree output)
    - short excerpts from changed files
-10. Maintain shared runtime inventories:
+11. Maintain shared runtime inventories:
    - `_shared/_meta/machine_registry.json`
    - `_shared/_meta/agent_registry.json`
    - ensure each agent declares supported formats, runtime profiles, and fallback-LLM behavior
