@@ -37,6 +37,7 @@ What sets DIL apart from other approaches is that it unifies memories and tasks 
 - Filesystem-native and human-auditable:
   - Plain files, frontmatter, and indexes (Obsidian-friendly).
   - No opaque memory database lock-in.
+  - Start with plain Markdown for maximum transparency; switch to SQLite anytime for runtime/cache needs.
   - Humans can inspect, repair, and diff records directly.
 - Protocolized read/write behavior:
   - Required frontmatter schema.
