@@ -64,7 +64,7 @@ This choice of license provides:
 The DIL architecture solves "context amnesia" by treating the filesystem—not the transient context window—as the source of truth. It is "Git for Agentic Intent."
 
 1.  **Deterministic Identity & Scoping**: By forcing agents to derive `machine` and `assistant` IDs from the runtime environment (hostname, process tree) rather than hallucinating them, we prevent "split-brain" identities. Strict hierarchy (`_shared` vs `machine` vs `assistant`) prevents write collisions.
-2.  **Human-Centric Interoperability**: Choosing Markdown + Frontmatter over opaque vector stores makes memory **inspectable** and **editable** via Obsidian. If an agent hallucinates, the user can fix it with a text editor.
+2.  **Human-Centric Interoperability**: Choosing Markdown + Frontmatter over opaque vector stores makes memory **inspectable** and **editable** via Obsidian. If an agent hallucinates, the user can fix it with a text editor. Start with plain Markdown for transparency; adopt SQLite anytime for runtime/cache acceleration.
 3.  **The "Anti-Parrot" Protocol**: The requirement for verifiable proof (returning file paths and excerpts) prevents the common failure mode where an agent *claims* to have saved something without actually writing to disk.
 4.  **Canonical Task Backbone**: The `DIL-xxxx` task system decouples the *intent* (the task) from the *actor* (the specific agent/machine), enabling seamless handoffs across the distributed mesh without context loss.
 5.  **Resilient Decentralization (No SPOF)**: DIL explicitly rejects centralized API gates in favor of robust local-first logic (CSMA/CD locking and first-available ID detection), ensuring the system remains functional even in "DIL" (Disconnected, Intermittent, Limited) network scenarios.
@@ -738,6 +738,7 @@ Elucubrate uses a capability-gated feature set: views/routes that depend on opti
   - TypeScript adoption target is future-facing but not yet required for current runtime
 - SQLite (current/near-future role):
   - Used as a runtime/cache layer for performance and operational views
+  - Users can switch to SQLite anytime, but Markdown/file-vault contracts are the default starting point for transparent operations
   - Source-of-truth remains file/vault contracts unless explicitly re-architected
 - Nerd Fonts + icon system:
   - Navigation icon rendering supports glyph names/codepoints and SVG assets
