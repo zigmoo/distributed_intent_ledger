@@ -53,7 +53,7 @@ DIL defines:
 
 ## How to Use DIL
 
-### Scenario 1: Shared Memory for Multiple Agents on One Computer
+### Scenario 1: Single Machine with Shared Memory Among All Agents
 
 1. Choose a local vault path on that machine.
 2. Clone this repository into the vault:
