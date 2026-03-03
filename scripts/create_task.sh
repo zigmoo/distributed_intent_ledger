@@ -7,6 +7,7 @@ TASK_ID=""
 TITLE=""
 PROJECT=""
 SUBCATEGORY=""
+PARENT_TASK_ID=""
 PRIORITY="normal"
 STATUS="todo"
 WORK_TYPE=""
@@ -36,6 +37,7 @@ Work-only required:
 
 Options:
   --subcategory TEXT
+  --parent-task-id TEXT   Optional parent task id (DIL-1234 or DMDI-12345)
   --priority low|normal|high|critical
   --status todo|assigned|in_progress|blocked|done|cancelled
   --work-type feature|bug|chore|research|infrastructure
@@ -96,6 +98,7 @@ while [[ $# -gt 0 ]]; do
     --title) TITLE="${2:-}"; shift 2 ;;
     --project) PROJECT="${2:-}"; shift 2 ;;
     --subcategory) SUBCATEGORY="${2:-}"; shift 2 ;;
+    --parent-task-id) PARENT_TASK_ID="${2:-}"; shift 2 ;;
     --priority) PRIORITY="${2:-}"; shift 2 ;;
     --status) STATUS="${2:-}"; shift 2 ;;
     --work-type) WORK_TYPE="${2:-}"; shift 2 ;;
@@ -115,6 +118,7 @@ done
 DOMAIN="$(printf '%s' "$DOMAIN" | trim)"
 TITLE="$(printf '%s' "$TITLE" | trim)"
 PROJECT="$(printf '%s' "$PROJECT" | trim)"
+PARENT_TASK_ID="$(printf '%s' "$PARENT_TASK_ID" | trim)"
 
 if [[ -z "$DOMAIN" || -z "$TITLE" || -z "$PROJECT" ]]; then
   echo "Missing required args" >&2
@@ -134,6 +138,11 @@ fi
 
 if ! valid_priority "$PRIORITY"; then
   echo "Invalid --priority: $PRIORITY" >&2
+  exit 1
+fi
+
+if [[ -n "$PARENT_TASK_ID" ]] && [[ ! "$PARENT_TASK_ID" =~ ^(DIL-[0-9]+|[A-Z]+-[0-9]+)$ ]]; then
+  echo "Invalid --parent-task-id format: $PARENT_TASK_ID" >&2
   exit 1
 fi
 
@@ -222,6 +231,17 @@ else
   TASK_PATH="$PERSONAL_DIR/$TASK_ID.md"
 fi
 
+if [[ -n "$PARENT_TASK_ID" ]]; then
+  if [[ "$PARENT_TASK_ID" == "$TASK_ID" ]]; then
+    echo "--parent-task-id cannot equal task_id ($TASK_ID)" >&2
+    exit 1
+  fi
+  if [[ ! -f "$WORK_DIR/$PARENT_TASK_ID.md" && ! -f "$PERSONAL_DIR/$PARENT_TASK_ID.md" ]]; then
+    echo "--parent-task-id not found in canonical tasks: $PARENT_TASK_ID" >&2
+    exit 1
+  fi
+fi
+
 if [[ -e "$TASK_PATH" ]]; then
   echo "Task file already exists: $TASK_PATH" >&2
   exit 1
@@ -259,7 +279,7 @@ created_by: $(q "$ACTOR")
 model: $(q "$MODEL")
 created_at: $TS_UTC
 task_schema: v1
-parent_task_id: ""
+parent_task_id: "$(q "$PARENT_TASK_ID")"
 agents:
   - id: "$(q "$OWNER")"
     role: accountable
