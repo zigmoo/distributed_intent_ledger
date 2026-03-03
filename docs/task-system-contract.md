@@ -18,3 +18,9 @@
   - `scripts/tee_task_execution_note.sh <task_id> "<note>"`
 - Fallback append helper:
   - `scripts/append_task_execution_note.sh <task_id> "<note>"`
+
+## Operational Tracking Defaults
+
+- Tracked shell commands SHOULD include a task marker:
+  - `# DIL-<task_id>: <short-description>`
+- Future to-do requests SHOULD be converted into canonical shared tasks before execution begins.

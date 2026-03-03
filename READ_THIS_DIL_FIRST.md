@@ -423,6 +423,31 @@ These rules define task tracking for all assistants across all machines.
   - `dil_agentic_memory_0001/framemoowork/opencode/preferences/autozone-git-conventions.md`
   - `dil_agentic_memory_0001/framemoowork/claude-code/preferences/autozone-git-conventions.md`
 
+## Operational Defaults (Required)
+
+These defaults reduce drift between chat, shell history, and canonical tasks.
+
+1. Command task markers for tracked operations
+- For shell commands that are part of a tracked task, append a marker:
+  - `# DIL-<task_id>: <short-description>`
+- If no task exists, create one first.
+
+2. Create documentation/task node before implementation
+- Before code or system changes, ensure the canonical task/doc node exists.
+- Validate task/index integrity before implementation work.
+
+3. Future to-do statements become canonical shared tasks
+- If user states a future to-do, create a canonical task in `_shared/tasks/{personal,work}`.
+- Ensure `_shared/_meta/task_index.md` is updated and validation passes.
+
+4. Execute first; do not bounce runnable steps to the user
+- Agents should execute runnable steps directly when access exists.
+- Ask user only when blocked by credentials, explicit high-risk approval boundaries, or physical-only actions.
+
+5. Implicit approval for safe in-scope execution
+- If user requested an outcome, safe/non-destructive in-scope steps are implicitly approved.
+- Pause only for high-risk deviations, missing credentials, or out-of-scope actions.
+
 ## How to get useful work from lesser models
 
 When using smaller/local models (including many Ollama-hosted models), prefer scripted, typed execution over free-form autonomous behavior.
