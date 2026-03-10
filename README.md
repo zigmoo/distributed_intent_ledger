@@ -132,4 +132,9 @@ This project is licensed under the Apache License 2.0. See `LICENSE` and `NOTICE
 - `docs/agent-registry-contract.md`: agent capabilities, formats, models, and fallback contract
 - `schema/`: JSON schemas for notes and tasks
 - `examples/`: sample vault structure, records, and starter agent config templates
+  - `examples/sample-agent-registry.json`: multi-agent runtime/capability coverage
+  - `examples/sample-machine-registry.json`: multi-machine lifecycle coverage
+  - `examples/sample-task.md`: expanded canonical task example with acceptance criteria
+  - `examples/sample-memory-note.md`: decision-style memory note example
+  - `examples/sample-change-log.md`: multi-entry mutation/change-log example
 - `scripts/`: reference helpers and validators

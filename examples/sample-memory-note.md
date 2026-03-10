@@ -1,21 +1,36 @@
 ---
-title: "Sample Memory Note"
-date: 2026-03-02
-machine: sample-machine
-assistant: sample-assistant
-category: observations
+title: "Runtime Registry Sanitization Rules for Public Example Content"
+date: 2026-03-04
+machine: framemoowork
+assistant: codex
+category: decisions
 memoryType: note
-priority: normal
-tags: [sample, dil]
-updated: 2026-03-02
+priority: notable
+tags: [examples, docs, sanitization, governance]
+updated: 2026-03-04
 source: internal
 domain: operations
 project: dil
 status: active
-owner: sample-assistant
+owner: codex
 due:
 ---
 
-# Sample Memory Note
+# Runtime Registry Sanitization Rules for Public Example Content
 
-This is a sample DIL note.
+## Context
+Public sample files must demonstrate realistic structure without leaking environment-specific details.
+
+## Decision
+When building GitHub-facing examples:
+- Keep machine shortnames for readability (`framemoowork`, `pi500`, `omarchy-zbook`).
+- Replace custom/private network domains with neutral placeholders (for example `tailnet.example`).
+- Avoid raw IPv4/IPv6 literals in examples.
+
+## Rationale
+- Preserves educational quality while reducing accidental environment disclosure.
+- Makes examples portable for teams adopting DIL in different infrastructures.
+
+## Follow-up
+- Expand examples to include active/paused/offline style coverage.
+- Keep schema-valid examples for both agent and machine registries.

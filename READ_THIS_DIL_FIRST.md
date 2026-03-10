@@ -391,14 +391,16 @@ These rules define task tracking for all assistants across all machines.
 - Task log entries must include both `actor` and `model` for attribution.
 
 8. Status lifecycle and assignment
-- Allowed statuses: `todo`, `assigned`, `in_progress`, `blocked`, `done`, `cancelled`.
+- Allowed statuses: `todo`, `assigned`, `in_progress`, `blocked`, `done`, `cancelled`, `retired`.
 - Allowed transitions:
   - `todo` -> `assigned|in_progress|blocked|cancelled`
   - `assigned` -> `in_progress|blocked|done|cancelled`
   - `in_progress` -> `blocked|done|assigned|cancelled`
   - `blocked` -> `in_progress|assigned|cancelled`
-  - `done` -> (terminal, no transitions)
-  - `cancelled` -> (terminal, no transitions)
+  - `done` -> (terminal, no transitions except `retired`)
+  - `cancelled` -> (terminal, no transitions except `retired`)
+  - `retired` -> `todo|in_progress` (reactivation path)
+- Any status may transition to `retired`. Use `retired` for tasks that are no longer relevant but should remain in the ledger for historical reference. Unlike `done` (completed successfully) or `cancelled` (abandoned), `retired` indicates the task was superseded, became irrelevant, or is being preserved for audit purposes only.
 - For current operating mode, assign canonical tasks to `owner: charlie` unless explicitly directed otherwise.
 - Status transitions must be logged in `dil_agentic_memory_0001/_shared/tasks/_meta/change_log.md` using `field_changes` format: `status: <old>-><new>`.
 

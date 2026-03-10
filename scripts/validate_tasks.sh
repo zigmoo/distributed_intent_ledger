@@ -156,6 +156,14 @@ for f in "${task_files[@]}"; do
     "$PERSONAL_DIR"/*) domain_expected="personal" ;;
   esac
 
+  # Check for valid frontmatter boundaries before parsing
+  fm_dashes="$(grep -nc '^---$' "$f" || true)"
+  fm_first="$(head -1 "$f")"
+  if [[ "$fm_dashes" -lt 2 ]] || [[ "$fm_first" != "---" ]]; then
+    err "$f has malformed or missing frontmatter (no valid --- boundaries); skipping file"
+    continue
+  fi
+
   for k in "${required_keys[@]}"; do
     if ! has_key "$f" "$k"; then
       err "$f missing required key: $k"
