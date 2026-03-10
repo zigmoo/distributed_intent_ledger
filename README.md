@@ -11,6 +11,18 @@ In current deployments, Tailscale is used as the private network fabric for secu
 
 Make good use of `READ_THIS_DIL_FIRST.md`: require every AI Agent and AI Assistant to read it at the beginning of every session.
 This bootstrap step is critical for consistent behavior, correct memory scoping, and reliable cross-agent/cross-machine coordination.
+`READ_ME_FIRST.md` should be maintained as a compatibility alias for bootstrap flows that look for that filename first.
+
+Bootstrap directive to propagate into agent/session startup config:
+
+```md
+<!-- DIL_BOOTSTRAP_START -->
+## DIL Session Bootstrap (required)
+For opencode sessions, before any other work, read:
+`~/READ_THIS_DIL_FIRST.md`
+Then follow that file as highest-priority local guidance for this workspace.
+<!-- DIL_BOOTSTRAP_END -->
+```
 
 ## What Sets DIL Apart
 
@@ -95,6 +107,15 @@ DIL defines:
 
 Minimum operating rule: write to `<machine>/<assistant>` first, promote to `_shared` only for cross-machine/cross-assistant facts.
 
+## Optional Starter Artifacts
+
+The generic repo can also carry reusable policy and project-template artifacts that deployments may copy into their live vaults:
+
+- `docs/recommended-agent-workflow-discipline.md`
+  - optional shared policy guidance for planning, verification, self-correction, and security hygiene
+- `examples/project-claude-md.md`
+  - starter project-level agent guidance file that can be adapted into `CLAUDE.md`
+
 ## License
 
 This project is licensed under the Apache License 2.0. See `LICENSE` and `NOTICE`.
@@ -102,8 +123,9 @@ This project is licensed under the Apache License 2.0. See `LICENSE` and `NOTICE
 ## Repository Layout
 
 - `docs/spec-v1.md`: normative protocol contract (MUST/SHOULD/MAY)
+- `docs/recommended-agent-workflow-discipline.md`: optional shared workflow-discipline policy
 - `docs/machine-registry-contract.md`: machine inventory and runtime host contract
 - `docs/agent-registry-contract.md`: agent capabilities, formats, models, and fallback contract
 - `schema/`: JSON schemas for notes and tasks
-- `examples/`: sample vault structure and records
+- `examples/`: sample vault structure, records, and starter agent config templates
 - `scripts/`: reference helpers and validators

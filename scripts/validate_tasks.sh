@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PY_VALIDATOR="$SCRIPT_DIR/validate_tasks.py"
+
+if command -v python3 >/dev/null 2>&1 && [[ -f "$PY_VALIDATOR" ]]; then
+  exec python3 "$PY_VALIDATOR" "$@"
+fi
+
 BASE="${1:-/home/moo/Documents/dil_agentic_memory_0001}"
 WORK_DIR="$BASE/_shared/tasks/work"
 PERSONAL_DIR="$BASE/_shared/tasks/personal"
