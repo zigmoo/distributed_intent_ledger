@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from pathlib import Path
@@ -88,11 +89,15 @@ def valid_transition(old: str, new: str) -> bool:
     return new in allowed.get(old, set())
 
 
-def parse_frontmatter(text: str) -> tuple[dict[str, str], list[dict[str, str]]]:
+def parse_frontmatter(text: str) -> tuple[dict[str, str], list[dict[str, str]], bool]:
+    """Returns (data, agents, valid_frontmatter).
+
+    If the file has no valid frontmatter boundaries, returns ({}, [], False).
+    """
     lines = text.splitlines()
     dash_lines = [idx for idx, line in enumerate(lines) if line == "---"]
     if len(dash_lines) < 2 or dash_lines[0] != 0:
-        return {}, []
+        return {}, [], False
 
     fm_lines = lines[dash_lines[0] + 1 : dash_lines[1]]
     data: dict[str, str] = {}
@@ -128,7 +133,7 @@ def parse_frontmatter(text: str) -> tuple[dict[str, str], list[dict[str, str]]]:
             in_agents = True
             current_agent = None
 
-    return data, agents
+    return data, agents, True
 
 
 def parse_index(index_path: Path) -> tuple[dict[str, str], dict[str, int]]:
@@ -192,8 +197,11 @@ def parse_change_log(change_log_path: Path) -> tuple[bool, dict[str, str]]:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate canonical DIL task files and indexes.")
     parser.add_argument("base", nargs="?", default="/home/moo/Documents/dil_agentic_memory_0001")
+    parser.add_argument("--json", action="store_true", dest="json_output",
+                        help="Output results as a JSON object")
     args = parser.parse_args()
 
+    json_mode = args.json_output
     base = Path(args.base)
     work_dir = base / "_shared" / "tasks" / "work"
     personal_dir = base / "_shared" / "tasks" / "personal"
@@ -201,13 +209,14 @@ def main() -> int:
     counter_file = base / "_shared" / "_meta" / "task_id_counter.md"
     change_log = base / "_shared" / "tasks" / "_meta" / "change_log.md"
 
-    errors = 0
+    error_list: list[str] = []
     warnings = 0
+    skipped_files: list[str] = []
 
     def err(message: str) -> None:
-        nonlocal errors
-        print(f"ERROR: {message}")
-        errors += 1
+        error_list.append(message)
+        if not json_mode:
+            print(f"ERROR: {message}")
 
     task_files = sorted(work_dir.glob("*.md")) + sorted(personal_dir.glob("*.md"))
     if not task_files:
@@ -221,7 +230,12 @@ def main() -> int:
 
     for task_file in task_files:
         domain_expected = "work" if task_file.parent == work_dir else "personal"
-        data, agents = parse_frontmatter(task_file.read_text(encoding="utf-8"))
+        data, agents, fm_valid = parse_frontmatter(task_file.read_text(encoding="utf-8"))
+
+        if not fm_valid:
+            err(f"{task_file} has malformed or missing frontmatter (no valid --- boundaries); skipping file")
+            skipped_files.append(str(task_file))
+            continue
 
         for key in REQUIRED_KEYS:
             if key not in data:
@@ -362,6 +376,21 @@ def main() -> int:
     for task_id, status in log_last_status.items():
         if task_id in declared_status and declared_status[task_id] != status:
             err(f"Status mismatch for {task_id}: file={declared_status[task_id]} log_last={status}")
+
+    errors = len(error_list)
+
+    if json_mode:
+        result = {
+            "ok": errors == 0,
+            "tasks": len(task_files),
+            "errors": errors,
+            "warnings": warnings,
+            "skipped_files": skipped_files,
+            "error_messages": error_list,
+        }
+        json.dump(result, sys.stdout, indent=2)
+        print()
+        return 0 if errors == 0 else 1
 
     if errors > 0:
         print(f"Validation failed: {errors} error(s), {warnings} warning(s)")

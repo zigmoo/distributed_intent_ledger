@@ -1,0 +1,88 @@
+{
+  "registry_version": "v1",
+  "updated_at": "2026-03-04T00:00:00Z",
+  "machines": [
+    {
+      "machine": "framemoowork",
+      "label": "Main Workstation",
+      "status": "active",
+      "agent_runtime_host": {
+        "hostname": "framemoowork",
+        "ssh_target": "moo@framemoowork",
+        "magic_dns_name": "framemoowork.tailnet.example",
+        "port": 22
+      },
+      "discovered_at": "2026-03-04T00:00:00Z",
+      "discovered_by": "codex",
+      "sources": [
+        "hostname",
+        "ssh-config",
+        "runtime health check"
+      ],
+      "attributes": {
+        "os": "linux",
+        "arch": "x86_64",
+        "user_home": "/home/moo",
+        "discovered_from": [
+          "hostname",
+          "os-release",
+          "ssh-target"
+        ]
+      }
+    },
+    {
+      "machine": "pi500",
+      "label": "Gateway Node",
+      "status": "active",
+      "agent_runtime_host": {
+        "hostname": "pi500",
+        "ssh_target": "moo@pi500",
+        "magic_dns_name": "pi500.tailnet.example",
+        "port": 22
+      },
+      "discovered_at": "2026-03-04T00:00:00Z",
+      "discovered_by": "codex",
+      "sources": [
+        "hostname",
+        "service discovery",
+        "agent inventory"
+      ],
+      "attributes": {
+        "os": "linux",
+        "arch": "aarch64",
+        "user_home": "/home/moo",
+        "discovered_from": [
+          "hostname",
+          "runtime inventory",
+          "ssh-target"
+        ]
+      }
+    },
+    {
+      "machine": "omarchy-zbook",
+      "label": "Portable Build Host",
+      "status": "maintenance",
+      "agent_runtime_host": {
+        "hostname": "omarchy-zbook",
+        "ssh_target": "moo@omarchy-zbook",
+        "magic_dns_name": "omarchy-zbook.tailnet.example",
+        "port": 22
+      },
+      "discovered_at": "2026-03-04T00:00:00Z",
+      "discovered_by": "codex",
+      "sources": [
+        "hostname",
+        "scheduled inventory sweep"
+      ],
+      "attributes": {
+        "os": "linux",
+        "arch": "x86_64",
+        "user_home": "/home/moo",
+        "discovered_from": [
+          "hostname",
+          "inventory snapshot"
+        ]
+      }
+    }
+  ]
+}
