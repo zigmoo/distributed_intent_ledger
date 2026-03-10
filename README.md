@@ -7,6 +7,8 @@ Here's the plan for doing all those things and keeping memories and priorities s
 Distributed Intent Ledger (DIL) is a local-first, filesystem-native protocol for persistent multi-agent and multi-environment memory coordination.
 In current deployments, Tailscale is used as the private network fabric for secure cross-machine agent communication and coordination.
 
+For a compact human-readable summary of the whole system, start with [`docs/dil-overview.md`](./docs/dil-overview.md).
+
 ## Start Every Session Correctly
 
 Make good use of `READ_THIS_DIL_FIRST.md`: require every AI Agent and AI Assistant to read it at the beginning of every session.
@@ -123,6 +125,7 @@ This project is licensed under the Apache License 2.0. See `LICENSE` and `NOTICE
 ## Repository Layout
 
 - `docs/spec-v1.md`: normative protocol contract (MUST/SHOULD/MAY)
+- `docs/dil-overview.md`: concise human-readable overview of the full DIL system
 - `docs/recommended-agent-workflow-discipline.md`: optional shared workflow-discipline policy
 - `docs/machine-registry-contract.md`: machine inventory and runtime host contract
 - `docs/agent-registry-contract.md`: agent capabilities, formats, models, and fallback contract
