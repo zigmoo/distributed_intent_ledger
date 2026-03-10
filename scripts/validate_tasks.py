@@ -208,15 +208,35 @@ def main() -> int:
     index_file = base / "_shared" / "_meta" / "task_index.md"
     counter_file = base / "_shared" / "_meta" / "task_id_counter.md"
     change_log = base / "_shared" / "tasks" / "_meta" / "change_log.md"
+    project_registry = base / "_shared" / "_meta" / "project_registry.md"
 
     error_list: list[str] = []
-    warnings = 0
+    warning_list: list[str] = []
     skipped_files: list[str] = []
 
     def err(message: str) -> None:
         error_list.append(message)
         if not json_mode:
             print(f"ERROR: {message}")
+
+    def warn(message: str) -> None:
+        warning_list.append(message)
+        if not json_mode:
+            print(f"WARNING: {message}")
+
+    # Load project registry
+    registered_projects: set[str] = set()
+    if project_registry.exists():
+        for line in project_registry.read_text(encoding="utf-8").splitlines():
+            if not line.startswith("|"):
+                continue
+            if re.match(r"^\|\s*(slug|---)", line):
+                continue
+            parts = [p.strip() for p in line.split("|")[1:-1]]
+            if parts:
+                registered_projects.add(parts[0])
+    else:
+        warn(f"Project registry not found: {project_registry}")
 
     task_files = sorted(work_dir.glob("*.md")) + sorted(personal_dir.glob("*.md"))
     if not task_files:
@@ -284,6 +304,9 @@ def main() -> int:
             err(f"{task_file} has invalid effort_type '{effort_type}'")
         if schema != "v1":
             err(f"{task_file} task_schema must be v1, got '{schema}'")
+
+        if registered_projects and project and project not in registered_projects:
+            warn(f"{task_file} project '{project}' not in project registry")
 
         if task_id in seen_task_ids:
             err(f"Duplicate task_id '{task_id}' in {task_file} and {seen_task_ids[task_id]}")
@@ -378,6 +401,7 @@ def main() -> int:
             err(f"Status mismatch for {task_id}: file={declared_status[task_id]} log_last={status}")
 
     errors = len(error_list)
+    warnings = len(warning_list)
 
     if json_mode:
         result = {
@@ -387,6 +411,7 @@ def main() -> int:
             "warnings": warnings,
             "skipped_files": skipped_files,
             "error_messages": error_list,
+            "warning_messages": warning_list,
         }
         json.dump(result, sys.stdout, indent=2)
         print()
