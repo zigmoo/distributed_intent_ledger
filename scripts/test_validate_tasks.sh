@@ -751,6 +751,51 @@ write_changelog_row "DIL-9001" "status: todo->in_progress"
 expect_fail_with "Status mismatch detected" "Status mismatch for DIL-9001"
 log ""
 
+# --- Test 13b: Project registry warnings ---
+log "${C_CYAN}[13b] Project registry validation${C_RESET}"
+if command -v python3 >/dev/null 2>&1 && [[ -f "$PY_VALIDATOR" ]]; then
+  # Build a vault with a project registry and a task using an unregistered project
+  make_test_vault
+  write_task "DIL-9001" personal todo high chore kanban medium
+  write_index_header
+  write_index_row DIL-9001 personal todo high moo
+  write_counter 9002
+  write_changelog_header
+
+  # Create a registry that only has "registered-proj"
+  cat > "$TEST_BASE/_shared/_meta/project_registry.md" << 'REG'
+---
+title: "Test Registry"
+---
+
+# Test Registry
+
+| slug | name | domain | status | parent | owner | description | notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| registered-proj | Registered | personal | active | | moo | A registered project | |
+REG
+
+  # Task uses project "test" which is NOT in the registry — should produce a warning
+  json_out="$(python3 "$PY_VALIDATOR" --json "$TEST_BASE" 2>&1)"
+  if echo "$json_out" | python3 -c "import sys,json; d=json.load(sys.stdin); sys.exit(0 if d['warnings']>0 and any('not in project registry' in w for w in d['warning_messages']) else 1)" 2>/dev/null; then
+    pass "Unregistered project produces warning"
+  else
+    fail "Should warn on unregistered project"
+    echo "$json_out" >&2
+  fi
+
+  # Verify it still passes (warnings don't cause failure)
+  if echo "$json_out" | python3 -c "import sys,json; d=json.load(sys.stdin); sys.exit(0 if d['ok'] else 1)" 2>/dev/null; then
+    pass "Unregistered project is warning, not error (still passes)"
+  else
+    fail "Project warnings should not cause validation failure"
+    echo "$json_out" >&2
+  fi
+else
+  skip "python3 not available — cannot test project registry"
+fi
+log ""
+
 # --- Test 14: JSON output mode ---
 log "${C_CYAN}[14] JSON output mode${C_RESET}"
 if command -v python3 >/dev/null 2>&1 && [[ -f "$PY_VALIDATOR" ]]; then
