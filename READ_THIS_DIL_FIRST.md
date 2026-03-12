@@ -64,7 +64,7 @@ This choice of license provides:
 The DIL architecture solves "context amnesia" by treating the filesystem—not the transient context window—as the source of truth. It is "Git for Agentic Intent."
 
 1.  **Deterministic Identity & Scoping**: By forcing agents to derive `machine` and `assistant` IDs from the runtime environment (hostname, process tree) rather than hallucinating them, we prevent "split-brain" identities. Strict hierarchy (`_shared` vs `machine` vs `assistant`) prevents write collisions.
-2.  **Human-Centric Interoperability**: Choosing Markdown + Frontmatter over opaque vector stores makes memory **inspectable** and **editable** via Obsidian. If an agent hallucinates, the user can fix it with a text editor. Start with plain Markdown for transparency; adopt SQLite anytime for runtime/cache acceleration.
+2.  **Human-Centric Interoperability**: Choosing Markdown + Frontmatter over opaque vector stores makes memory **inspectable** and **editable** via Obsidian. If an agent hallucinates, the user can fix it with a text editor.
 3.  **The "Anti-Parrot" Protocol**: The requirement for verifiable proof (returning file paths and excerpts) prevents the common failure mode where an agent *claims* to have saved something without actually writing to disk.
 4.  **Canonical Task Backbone**: The `DIL-xxxx` task system decouples the *intent* (the task) from the *actor* (the specific agent/machine), enabling seamless handoffs across the distributed mesh without context loss.
 5.  **Resilient Decentralization (No SPOF)**: DIL explicitly rejects centralized API gates in favor of robust local-first logic (CSMA/CD locking and first-available ID detection), ensuring the system remains functional even in "DIL" (Disconnected, Intermittent, Limited) network scenarios.
@@ -203,9 +203,22 @@ Agents must use the provided automation scripts for creating content to ensure t
    - **Do not manually create memory files** unless the script is unavailable or failing.
 
 2. **Creating Tasks**: `_shared/scripts/create_task.sh`
-   - Usage: `create_task.sh --domain personal --title "<title>" ...`
-   - Handles: ID allocation (atomic), task file creation from template, shared index updates, change logging.
+   - CLI usage: `create_task.sh --domain personal --title "<title>" --project "<project>" [options]`
+   - JSON sidecar: `create_task.sh json <manifest.json>` — reads fields from JSON, archives manifest after execution.
+   - Handles: domain resolution via registry, ID allocation (multi-prefix counter), task file creation in `active/`, shared index updates, change logging, structured logging, Elucubrate cache refresh.
+   - Output: pipe-delimited (`OK | task_id | domain | status | path` or `ERR | code | msg`).
+   - Exit codes: 0=success, 2=input validation, 3=duplicate, 4=missing prereq, 5=post-creation validation failure.
+   - Environment-aware: detects `ACTOR`/`MODEL` from env vars (`ACTOR`, `ASSISTANT_ID`, `AGENT_NAME`, `AGENT_MODEL`) or process tree.
    - **Do not manually allocate task IDs** to avoid collisions.
+
+3. **Archiving Tasks**: `_shared/scripts/archive_tasks.sh`
+   - Usage: `archive_tasks.sh [--dry-run]`
+   - Moves terminal tasks past their domain's `archive_after_days` from `active/` to `archived/{year}/`.
+   - Regenerates archive index files. Idempotent, safe for cron.
+
+4. **Listing Archived Tasks**: `_shared/scripts/list_archived.sh`
+   - Usage: `list_archived.sh [--domain DOMAIN] [--year YEAR] [--grep PATTERN] [--status STATUS] [--json]`
+   - Searches and filters archived tasks across all domains.
 
 ## Index Policy
 
@@ -341,32 +354,83 @@ These rules prevent accidental overwrite/corruption across assistants while keep
   - violated rule number
   - minimal remediation steps
 
+## Domain Registry
+
+Domains are operational boundaries with distinct task directories, log paths, data paths, ID prefixes, and archival policies. The canonical registry is machine-readable JSON consumed by all DIL scripts.
+
+1. Registry location
+- `dil_agentic_memory_0001/_shared/_meta/domain_registry.json`
+- Bash shim: `dil_agentic_memory_0001/_shared/scripts/lib/domains.sh` — source this and call `resolve_domain <name>`.
+
+2. Registered domains
+- `personal` — user-owned personal tasks, `DIL-` prefix, auto-allocated IDs.
+- `work` — employer-owned work tasks, `DMDI-` prefix, externally-assigned IDs (Jira). Logs/data at `/az/talend/` (employer-owned, external to DIL).
+- `triv` — Three Rivers Duck Club infrastructure, `TRIV-` prefix, auto-allocated IDs.
+- Additional domains can be added by inserting an entry in `domain_registry.json`.
+
+3. Directory structure
+- Tasks live under `_shared/domains/{domain}/tasks/active/` (non-terminal) and `_shared/domains/{domain}/tasks/archived/{year}/` (terminal).
+- Logs: `_shared/domains/{domain}/logs/{script_name}/` (or absolute path for external domains).
+- Data/manifests: `_shared/domains/{domain}/data/{script_name}/`.
+- Domain metadata: `_shared/domains/{domain}/_meta/`.
+
+4. Path resolution
+- Relative paths in the registry resolve against `$BASE_DIL`.
+- Absolute paths (e.g., `/az/talend/logs`) are used as-is.
+- The `path_type` field (`relative`, `absolute`, `mixed`) signals to scripts how to resolve.
+
+5. Adding a new domain
+- Add an entry to `domain_registry.json` with all required fields.
+- Create the directory tree: `_shared/domains/{name}/tasks/active/`, `tasks/archived/`, `logs/`, `data/`, `_meta/`.
+- If `id_mode: auto`, add a counter section in `_shared/_meta/task_id_counter.md`.
+
+## Operational Logging
+
+1. Log path
+- Operational logs are domain-resolved: `$LOG_DIR/{script_name}/{script_name}.{action}.{YYYYMMDD_HHMMSS}.log`
+- `$LOG_DIR` comes from `resolve_domain` in `domains.sh`.
+- For external domains (e.g., work), logs go to the domain's absolute `log_dir` (e.g., `/az/talend/logs`).
+
+2. Log file naming convention
+- `{script_name}.{action}.{YYYYMMDD_HHMMSS}.log` — example: `create_task.create.20260312_143000.log`
+
+3. JSON sidecar manifest archival
+- Scripts with JSON sidecar mode archive consumed manifests to `$DATA_DIR/{script_name}/{script_name}.{action}.{YYYYMMDD_HHMMSS}.json`.
+
+4. Log pruning: trailing_window strategy
+- Pruning anchors on the **newest** log file in the domain's log tree, not on `now()`.
+- Files older than `window_days` before that newest file are pruned.
+- This prevents total history wipe in infrequently-activated domains.
+- `window_days` is configured per domain in `domain_registry.json`.
+
 ## Global Task System (Canonical Source of Truth)
 
 These rules define task tracking for all assistants across all machines.
 
 1. Canonical location
-- All canonical tasks live under:
-  - `dil_agentic_memory_0001/_shared/tasks/work/`
-  - `dil_agentic_memory_0001/_shared/tasks/personal/`
+- All canonical tasks live under domain-specific directories:
+  - `dil_agentic_memory_0001/_shared/domains/{domain}/tasks/active/` (non-terminal tasks)
+  - `dil_agentic_memory_0001/_shared/domains/{domain}/tasks/archived/{year}/` (terminal tasks past archive window)
+- Registered domains and their paths are defined in `_shared/_meta/domain_registry.json`.
 - Machine/assistant task notes are execution logs only and must reference canonical `task_id`.
 
 2. Domain naming
-- Use `domain: work` for AutoZone/company tasks.
-- Use `domain: personal` for non-work tasks.
+- Domains are registered in `domain_registry.json`. Current domains: `personal`, `work`, `triv`.
 - Do not use `off-hours` as a domain label.
 
 3. Task ID policy
-- Work tasks must use Jira-style IDs as `task_id` (example: `DMDI-11330`).
-- Personal tasks must use `DIL-<number>` IDs, starting from `DIL-1100`.
-- ID uniqueness is global across `_shared/tasks`.
+- Each domain has an `id_prefix` and `id_mode` defined in the registry.
+- `external` mode (e.g., work/DMDI): IDs are assigned externally (Jira) and passed via `--task-id`.
+- `auto` mode (e.g., personal/DIL, triv/TRIV): IDs are auto-allocated from the multi-prefix counter.
+- ID uniqueness is global across all domains.
 
-4. Personal ID allocator (required)
+4. Task ID allocator (required for auto-mode domains)
 - Use `dil_agentic_memory_0001/_shared/_meta/task_id_counter.md` as the allocator source.
+- Counter file uses multi-prefix format with per-prefix sections (DIL, TRIV, etc.).
 - Allocation sequence:
-  - read current `next_id`
-  - reserve `MOO-<next_id>`
-  - create canonical task note
+  - read current `next_id` for the domain's `id_prefix`
+  - reserve `{PREFIX}-{next_id}`
+  - create canonical task note in `active/`
   - increment and persist `next_id`
   - append allocation/write entry to `dil_agentic_memory_0001/_shared/tasks/_meta/change_log.md`
 - If conflict appears, re-read counter, then retry.
@@ -384,7 +448,7 @@ These rules define task tracking for all assistants across all machines.
   - `category`
 
 7. Multi-agent write behavior for canonical tasks
-- Any assistant may create canonical tasks in `_shared/tasks/*`.
+- Any assistant may create canonical tasks using `create_task.sh` (CLI or JSON sidecar mode).
 - Status transitions allowed for assignee or explicitly reassigned actor.
 - Non-assignees may append execution notes but must not silently re-own tasks.
 - Every canonical task mutation must be logged in `dil_agentic_memory_0001/_shared/tasks/_meta/change_log.md`.
@@ -392,17 +456,27 @@ These rules define task tracking for all assistants across all machines.
 
 8. Status lifecycle and assignment
 - Allowed statuses: `todo`, `assigned`, `in_progress`, `blocked`, `done`, `cancelled`, `retired`.
+- Allowed priorities: `low`, `normal`, `medium`, `high`, `critical`.
 - Allowed transitions:
-  - `todo` -> `assigned|in_progress|blocked|cancelled`
-  - `assigned` -> `in_progress|blocked|done|cancelled`
-  - `in_progress` -> `blocked|done|assigned|cancelled`
-  - `blocked` -> `in_progress|assigned|cancelled`
-  - `done` -> (terminal, no transitions except `retired`)
-  - `cancelled` -> (terminal, no transitions except `retired`)
+  - `todo` -> `assigned|in_progress|blocked|cancelled|retired`
+  - `assigned` -> `in_progress|blocked|done|cancelled|retired`
+  - `in_progress` -> `blocked|done|assigned|cancelled|retired`
+  - `blocked` -> `in_progress|assigned|cancelled|retired`
+  - `done|cancelled` -> `retired`
   - `retired` -> `todo|in_progress` (reactivation path)
 - Any status may transition to `retired`. Use `retired` for tasks that are no longer relevant but should remain in the ledger for historical reference. Unlike `done` (completed successfully) or `cancelled` (abandoned), `retired` indicates the task was superseded, became irrelevant, or is being preserved for audit purposes only.
-- For current operating mode, assign canonical tasks to `owner: charlie` unless explicitly directed otherwise.
+- Default owner is domain-resolved: `personal` and `triv` default to `moo`, `work` defaults to `charlie`.
 - Status transitions must be logged in `dil_agentic_memory_0001/_shared/tasks/_meta/change_log.md` using `field_changes` format: `status: <old>-><new>`.
+
+9. Task archival
+- Terminal tasks (done, cancelled, retired) older than the domain's `archive.after_days` are moved from `active/` to `archived/{year}/`.
+- Year is based on the task's `updated` date (proxy for terminal date).
+- Archival uses trailing_window: the window anchors on the newest file in active/, not on today.
+- Run `_shared/scripts/archive_tasks.sh` to archive (idempotent, safe for cron).
+- Each `archived/{year}/` contains an `index.md` with a table of archived tasks.
+- Archived tasks remain as plain `.md` files (no compression) to preserve Obsidian links, search, and sync.
+- Obsidian excludes `**/archived/**` from indexing via `userIgnoreFilters` for performance.
+- Use `_shared/scripts/list_archived.sh` to search/filter archives from CLI.
 
 9. Obsidian interoperability
 - Use wiki-links for related entities/tasks (example: `[[DMDI-11330]]`, `[[DIL-1101]]`).
@@ -740,7 +814,6 @@ Elucubrate uses a capability-gated feature set: views/routes that depend on opti
   - TypeScript adoption target is future-facing but not yet required for current runtime
 - SQLite (current/near-future role):
   - Used as a runtime/cache layer for performance and operational views
-  - Users can switch to SQLite anytime, but Markdown/file-vault contracts are the default starting point for transparent operations
   - Source-of-truth remains file/vault contracts unless explicitly re-architected
 - Nerd Fonts + icon system:
   - Navigation icon rendering supports glyph names/codepoints and SVG assets

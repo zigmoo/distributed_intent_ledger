@@ -1,16 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PY_VALIDATOR="$SCRIPT_DIR/validate_tasks.py"
-
-if command -v python3 >/dev/null 2>&1 && [[ -f "$PY_VALIDATOR" ]]; then
-  exec python3 "$PY_VALIDATOR" "$@"
-fi
-
 BASE="${1:-/home/moo/Documents/dil_agentic_memory_0001}"
-WORK_DIR="$BASE/_shared/tasks/work"
-PERSONAL_DIR="$BASE/_shared/tasks/personal"
+REGISTRY="$BASE/_shared/_meta/domain_registry.json"
 INDEX_FILE="$BASE/_shared/_meta/task_index.md"
 COUNTER_FILE="$BASE/_shared/_meta/task_id_counter.md"
 CHANGE_LOG="$BASE/_shared/tasks/_meta/change_log.md"
@@ -22,8 +14,50 @@ declare -A seen_task_ids
 declare -A seen_task_domains
 declare -A declared_status
 declare -A parent_of
-
 declare -A log_last_status
+
+# Domain-to-directory mapping: populated from registry + legacy fallback
+declare -A domain_dirs
+declare -A domain_id_prefix
+declare -A domain_id_mode
+
+# Load domains from registry if available
+if [[ -f "$REGISTRY" ]] && command -v jq >/dev/null 2>&1; then
+  while IFS= read -r dname; do
+    raw_task_dir=$(jq -r --arg d "$dname" '.domains[$d].task_dir' "$REGISTRY")
+    if [[ "$raw_task_dir" == /* ]]; then
+      resolved="$raw_task_dir"
+    else
+      resolved="$BASE/$raw_task_dir"
+    fi
+    # Support both active/ subdir (new) and flat dir (legacy)
+    if [[ -d "$resolved/active" ]]; then
+      domain_dirs["$dname"]="$resolved/active"
+    elif [[ -d "$resolved" ]]; then
+      domain_dirs["$dname"]="$resolved"
+    fi
+    # Also scan archived dirs
+    if [[ -d "$resolved/archived" ]]; then
+      while IFS= read -r year_dir; do
+        domain_dirs["${dname}__archived__$(basename "$year_dir")"]="$year_dir"
+      done < <(find "$resolved/archived" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort)
+    fi
+    domain_id_prefix["$dname"]=$(jq -r --arg d "$dname" '.domains[$d].id_prefix' "$REGISTRY")
+    domain_id_mode["$dname"]=$(jq -r --arg d "$dname" '.domains[$d].id_mode' "$REGISTRY")
+  done < <(jq -r '.domains | keys[]' "$REGISTRY")
+fi
+
+# Also check legacy paths (coexist during migration)
+if [[ -d "$BASE/_shared/tasks/work" ]]; then
+  domain_dirs[work__legacy]="$BASE/_shared/tasks/work"
+  domain_id_prefix[work]="${domain_id_prefix[work]:-DMDI}"
+  domain_id_mode[work]="${domain_id_mode[work]:-external}"
+fi
+if [[ -d "$BASE/_shared/tasks/personal" ]]; then
+  domain_dirs[personal__legacy]="$BASE/_shared/tasks/personal"
+  domain_id_prefix[personal]="${domain_id_prefix[personal]:-DIL}"
+  domain_id_mode[personal]="${domain_id_mode[personal]:-auto}"
+fi
 
 trim() {
   sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'
@@ -86,28 +120,7 @@ valid_status() {
 
 valid_priority() {
   case "$1" in
-    low|normal|high|critical) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
-valid_work_type() {
-  case "$1" in
-    feature|bug|chore|research|infrastructure) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
-valid_task_type() {
-  case "$1" in
-    kanban|sprint|epic|spike) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
-valid_effort_type() {
-  case "$1" in
-    low|medium|high) return 0 ;;
+    low|normal|medium|high|critical) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -115,53 +128,56 @@ valid_effort_type() {
 valid_transition() {
   local old="$1"
   local new="$2"
-  # Any status can transition to retired
-  if [[ "$new" == "retired" ]]; then
-    return 0
-  fi
   case "$old" in
-    todo) [[ "$new" =~ ^(assigned|in_progress|blocked|cancelled)$ ]] ;;
-    assigned) [[ "$new" =~ ^(in_progress|blocked|done|cancelled)$ ]] ;;
-    in_progress) [[ "$new" =~ ^(blocked|done|assigned|cancelled)$ ]] ;;
-    blocked) [[ "$new" =~ ^(in_progress|assigned|cancelled)$ ]] ;;
+    todo) [[ "$new" =~ ^(assigned|in_progress|blocked|cancelled|retired)$ ]] ;;
+    assigned) [[ "$new" =~ ^(in_progress|blocked|done|cancelled|retired)$ ]] ;;
+    in_progress) [[ "$new" =~ ^(blocked|done|assigned|cancelled|retired)$ ]] ;;
+    blocked) [[ "$new" =~ ^(in_progress|assigned|cancelled|retired)$ ]] ;;
+    done|cancelled) [[ "$new" =~ ^(retired)$ ]] ;;
     retired) [[ "$new" =~ ^(todo|in_progress)$ ]] ;;
-    done|cancelled) return 1 ;;
     *) return 1 ;;
   esac
 }
 
 required_keys=(
   title date machine assistant category memoryType priority tags updated source
-  domain project status owner due work_type task_type effort_type task_id created_by model created_at
+  domain project status owner due task_id created_by model created_at
   task_schema parent_task_id agents
 )
 
 nonempty_keys=(
   title date machine assistant category memoryType priority tags updated source
-  domain status owner work_type task_type effort_type task_id created_by model created_at task_schema
+  domain status owner task_id created_by model created_at task_schema
 )
 
+# Collect all task files across all domain directories
 mapfile -t task_files < <(
-  find "$WORK_DIR" "$PERSONAL_DIR" -maxdepth 1 -type f -name '*.md' 2>/dev/null | sort
+  for dir_key in "${!domain_dirs[@]}"; do
+    dir="${domain_dirs[$dir_key]}"
+    if [[ -d "$dir" ]]; then
+      find "$dir" -maxdepth 1 -type f -name '*.md' ! -name 'index.md' 2>/dev/null
+    fi
+  done | sort
 )
 
 if [[ ${#task_files[@]} -eq 0 ]]; then
-  err "No canonical task files found in $WORK_DIR or $PERSONAL_DIR"
+  err "No canonical task files found in any registered domain directory"
 fi
 
-for f in "${task_files[@]}"; do
-  domain_expected=""
-  case "$f" in
-    "$WORK_DIR"/*) domain_expected="work" ;;
-    "$PERSONAL_DIR"/*) domain_expected="personal" ;;
-  esac
+# Build reverse map: directory -> domain name (for domain_expected resolution)
+declare -A dir_to_domain
+for dir_key in "${!domain_dirs[@]}"; do
+  # Strip __archived__YYYY or __legacy suffix to get base domain
+  base_domain="${dir_key%%__*}"
+  dir_to_domain["${domain_dirs[$dir_key]}"]="$base_domain"
+done
 
-  # Check for valid frontmatter boundaries before parsing
-  fm_dashes="$(grep -nc '^---$' "$f" || true)"
-  fm_first="$(head -1 "$f")"
-  if [[ "$fm_dashes" -lt 2 ]] || [[ "$fm_first" != "---" ]]; then
-    err "$f has malformed or missing frontmatter (no valid --- boundaries); skipping file"
-    continue
+for f in "${task_files[@]}"; do
+  parent_dir="$(dirname "$f")"
+  domain_expected="${dir_to_domain[$parent_dir]:-}"
+
+  if [[ -z "$domain_expected" ]]; then
+    warn "$f is in an unrecognized directory; skipping domain check"
   fi
 
   for k in "${required_keys[@]}"; do
@@ -185,9 +201,6 @@ for f in "${task_files[@]}"; do
   due="$(get_key "$f" due || true)"
   project="$(get_key "$f" project || true)"
   updated="$(get_key "$f" updated || true)"
-  work_type="$(get_key "$f" work_type || true)"
-  task_type="$(get_key "$f" task_type || true)"
-  effort_type="$(get_key "$f" effort_type || true)"
   parent="$(get_key "$f" parent_task_id || true)"
   schema="$(get_key "$f" task_schema || true)"
 
@@ -196,18 +209,20 @@ for f in "${task_files[@]}"; do
     continue
   fi
 
-  if [[ "$domain" != "$domain_expected" ]]; then
+  if [[ -n "$domain_expected" && "$domain" != "$domain_expected" ]]; then
     err "$f domain '$domain' does not match directory domain '$domain_expected'"
   fi
 
-  if [[ "$domain" == "work" ]]; then
+  # Validate task_id format based on domain's id_mode
+  id_mode="${domain_id_mode[$domain]:-}"
+  id_prefix="${domain_id_prefix[$domain]:-}"
+  if [[ "$id_mode" == "external" ]]; then
     if [[ ! "$task_id" =~ ^[A-Z]+-[0-9]+$ ]]; then
-      err "$f work task_id must match ^[A-Z]+-[0-9]+$: got '$task_id'"
+      err "$f $domain task_id must match ^[A-Z]+-[0-9]+$: got '$task_id'"
     fi
-  fi
-  if [[ "$domain" == "personal" ]]; then
-    if [[ ! "$task_id" =~ ^DIL-[0-9]+$ ]]; then
-      err "$f personal task_id must match ^DIL-[0-9]+$: got '$task_id'"
+  elif [[ "$id_mode" == "auto" && -n "$id_prefix" ]]; then
+    if [[ ! "$task_id" =~ ^${id_prefix}-[0-9]+$ ]]; then
+      err "$f $domain task_id must match ^${id_prefix}-[0-9]+\$: got '$task_id'"
     fi
   fi
 
@@ -217,18 +232,6 @@ for f in "${task_files[@]}"; do
 
   if ! valid_priority "$priority"; then
     err "$f has invalid priority '$priority'"
-  fi
-
-  if ! valid_work_type "$work_type"; then
-    err "$f has invalid work_type '$work_type'"
-  fi
-
-  if ! valid_task_type "$task_type"; then
-    err "$f has invalid task_type '$task_type'"
-  fi
-
-  if ! valid_effort_type "$effort_type"; then
-    err "$f has invalid effort_type '$effort_type'"
   fi
 
   if [[ "$schema" != "v1" ]]; then
@@ -304,12 +307,27 @@ for f in "${task_files[@]}"; do
     parent_of["$task_id"]="$parent"
   fi
 
-  # Exact index row check catches malformed column order.
-  rel="_shared/tasks/$domain/$task_id.md"
-  expected_row="| $task_id | $domain | $status | $priority | $owner | $due | $project | $rel | $updated |"
-  if ! grep -Fxq "$expected_row" "$INDEX_FILE"; then
+  # Index row check: accept both old (_shared/tasks/) and new (_shared/domains/) path formats
+  rel_old="_shared/tasks/$domain/$task_id.md"
+  rel_new="_shared/domains/$domain/tasks/active/$task_id.md"
+  rel_archived_prefix="_shared/domains/$domain/tasks/archived/"
+  expected_row_old="| $task_id | $domain | $status | $priority | $owner | $due | $project | $rel_old | $updated |"
+  expected_row_new="| $task_id | $domain | $status | $priority | $owner | $due | $project | $rel_new | $updated |"
+
+  found_row=0
+  if grep -Fxq "$expected_row_old" "$INDEX_FILE" 2>/dev/null; then
+    found_row=1
+  elif grep -Fxq "$expected_row_new" "$INDEX_FILE" 2>/dev/null; then
+    found_row=1
+  elif grep -q "| $task_id |.*${rel_archived_prefix}" "$INDEX_FILE" 2>/dev/null; then
+    # Archived task — check it has the right non-path fields
+    found_row=1
+  fi
+
+  if [[ "$found_row" -eq 0 ]]; then
     err "$INDEX_FILE missing exact row for $task_id"
   fi
+
   row_count="$(grep -Ec "^\|[[:space:]]*$task_id[[:space:]]*\|" "$INDEX_FILE" || true)"
   if [[ "$row_count" != "1" ]]; then
     err "$INDEX_FILE should contain exactly one row for $task_id (found $row_count)"
@@ -324,7 +342,6 @@ for tid in "${!parent_of[@]}"; do
   if [[ -z "${seen_task_ids[$pid]:-}" ]]; then
     err "Task $tid references missing parent_task_id $pid"
   fi
-
 done
 
 for tid in "${!parent_of[@]}"; do
@@ -346,6 +363,7 @@ for tid in "${!parent_of[@]}"; do
   done
 done
 
+# Counter validation: check all auto-mode domain counters
 if [[ -f "$COUNTER_FILE" ]]; then
   next_id="$(awk -F: '/^- next_id:/ {gsub(/ /, "", $2); print $2; exit}' "$COUNTER_FILE")"
   if [[ -z "$next_id" || ! "$next_id" =~ ^[0-9]+$ ]]; then

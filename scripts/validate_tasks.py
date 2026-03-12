@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 VALID_STATUSES = {"todo", "assigned", "in_progress", "blocked", "done", "cancelled", "retired"}
-VALID_PRIORITIES = {"low", "normal", "high", "critical"}
+VALID_PRIORITIES = {"low", "normal", "medium", "high", "critical"}
 VALID_WORK_TYPES = {"feature", "bug", "chore", "research", "infrastructure"}
 VALID_TASK_TYPES = {"kanban", "sprint", "epic", "spike"}
 VALID_EFFORT_TYPES = {"low", "medium", "high"}
@@ -194,6 +194,65 @@ def parse_change_log(change_log_path: Path) -> tuple[bool, dict[str, str]]:
     return header_ok, log_last_status
 
 
+def load_domain_registry(base: Path) -> dict:
+    """Load domain registry and return domain config dict."""
+    registry_path = base / "_shared" / "_meta" / "domain_registry.json"
+    if registry_path.exists():
+        return json.loads(registry_path.read_text(encoding="utf-8"))
+    return {}
+
+
+def resolve_domain_dirs(base: Path, registry: dict) -> dict[str, list[Path]]:
+    """Return mapping of domain_name -> list of task directories (active + archived)."""
+    domain_dirs: dict[str, list[Path]] = {}
+
+    if registry and "domains" in registry:
+        for dname, dconf in registry["domains"].items():
+            raw_task_dir = dconf.get("task_dir", "")
+            if raw_task_dir.startswith("/"):
+                resolved = Path(raw_task_dir)
+            else:
+                resolved = base / raw_task_dir
+
+            dirs: list[Path] = []
+            active = resolved / "active"
+            if active.is_dir():
+                dirs.append(active)
+            elif resolved.is_dir():
+                dirs.append(resolved)
+
+            archived = resolved / "archived"
+            if archived.is_dir():
+                for year_dir in sorted(archived.iterdir()):
+                    if year_dir.is_dir():
+                        dirs.append(year_dir)
+
+            if dirs:
+                domain_dirs[dname] = dirs
+
+    # Also check legacy paths (coexist during migration)
+    for legacy_name, legacy_subdir in [("work", "work"), ("personal", "personal")]:
+        legacy_path = base / "_shared" / "tasks" / legacy_subdir
+        if legacy_path.is_dir():
+            domain_dirs.setdefault(legacy_name, [])
+            if legacy_path not in domain_dirs[legacy_name]:
+                domain_dirs[legacy_name].append(legacy_path)
+
+    return domain_dirs
+
+
+def get_domain_id_rules(registry: dict) -> dict[str, tuple[str, str]]:
+    """Return domain -> (id_prefix, id_mode) mapping."""
+    rules: dict[str, tuple[str, str]] = {}
+    if registry and "domains" in registry:
+        for dname, dconf in registry["domains"].items():
+            rules[dname] = (dconf.get("id_prefix", ""), dconf.get("id_mode", ""))
+    # Legacy fallback
+    rules.setdefault("work", ("DMDI", "external"))
+    rules.setdefault("personal", ("DIL", "auto"))
+    return rules
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate canonical DIL task files and indexes.")
     parser.add_argument("base", nargs="?", default="/home/moo/Documents/dil_agentic_memory_0001")
@@ -203,8 +262,6 @@ def main() -> int:
 
     json_mode = args.json_output
     base = Path(args.base)
-    work_dir = base / "_shared" / "tasks" / "work"
-    personal_dir = base / "_shared" / "tasks" / "personal"
     index_file = base / "_shared" / "_meta" / "task_index.md"
     counter_file = base / "_shared" / "_meta" / "task_id_counter.md"
     change_log = base / "_shared" / "tasks" / "_meta" / "change_log.md"
@@ -224,6 +281,11 @@ def main() -> int:
         if not json_mode:
             print(f"WARNING: {message}")
 
+    # Load domain registry
+    registry = load_domain_registry(base)
+    domain_dirs = resolve_domain_dirs(base, registry)
+    id_rules = get_domain_id_rules(registry)
+
     # Load project registry
     registered_projects: set[str] = set()
     if project_registry.exists():
@@ -238,9 +300,17 @@ def main() -> int:
     else:
         warn(f"Project registry not found: {project_registry}")
 
-    task_files = sorted(work_dir.glob("*.md")) + sorted(personal_dir.glob("*.md"))
+    # Collect all task files with their domain mapping
+    task_files: list[tuple[Path, str]] = []  # (file_path, domain_name)
+    for dname, dirs in domain_dirs.items():
+        for d in dirs:
+            for tf in sorted(d.glob("*.md")):
+                if tf.name == "index.md":
+                    continue  # skip archive index files
+                task_files.append((tf, dname))
+
     if not task_files:
-        err(f"No canonical task files found in {work_dir} or {personal_dir}")
+        err("No canonical task files found in any registered domain directory")
 
     index_rows, index_counts = parse_index(index_file)
 
@@ -248,8 +318,7 @@ def main() -> int:
     declared_status: dict[str, str] = {}
     parent_of: dict[str, str] = {}
 
-    for task_file in task_files:
-        domain_expected = "work" if task_file.parent == work_dir else "personal"
+    for task_file, domain_expected in task_files:
         data, agents, fm_valid = parse_frontmatter(task_file.read_text(encoding="utf-8"))
 
         if not fm_valid:
@@ -287,10 +356,14 @@ def main() -> int:
         if domain != domain_expected:
             err(f"{task_file} domain '{domain}' does not match directory domain '{domain_expected}'")
 
-        if domain == "work" and not re.match(r"^[A-Z]+-[0-9]+$", task_id):
-            err(f"{task_file} work task_id must match ^[A-Z]+-[0-9]+$: got '{task_id}'")
-        if domain == "personal" and not re.match(r"^DIL-[0-9]+$", task_id):
-            err(f"{task_file} personal task_id must match ^DIL-[0-9]+$: got '{task_id}'")
+        # Validate task_id format based on domain's id rules
+        id_prefix, id_mode = id_rules.get(domain, ("", ""))
+        if id_mode == "external":
+            if not re.match(r"^[A-Z]+-[0-9]+$", task_id):
+                err(f"{task_file} {domain} task_id must match ^[A-Z]+-[0-9]+$: got '{task_id}'")
+        elif id_mode == "auto" and id_prefix:
+            if not re.match(rf"^{re.escape(id_prefix)}-[0-9]+$", task_id):
+                err(f"{task_file} {domain} task_id must match ^{id_prefix}-[0-9]+$: got '{task_id}'")
 
         if status not in VALID_STATUSES:
             err(f"{task_file} has invalid status '{status}'")
@@ -337,13 +410,24 @@ def main() -> int:
         if parent:
             if parent == task_id:
                 err(f"{task_file} parent_task_id cannot self-reference ({task_id})")
-            if not re.match(r"^(DIL-[0-9]+|[A-Z]+-[0-9]+)$", parent):
+            if not re.match(r"^(DIL-[0-9]+|TRIV-[0-9]+|[A-Z]+-[0-9]+)$", parent):
                 err(f"{task_file} invalid parent_task_id format '{parent}'")
             parent_of[task_id] = parent
 
-        rel = f"_shared/tasks/{domain}/{task_id}.md"
-        expected_row = f"| {task_id} | {domain} | {status} | {priority} | {owner} | {due} | {project} | {rel} | {updated} |"
-        if index_rows.get(task_id) != expected_row:
+        # Index row check: accept old, new-active, and archived path formats
+        rel_old = f"_shared/tasks/{domain}/{task_id}.md"
+        rel_new = f"_shared/domains/{domain}/tasks/active/{task_id}.md"
+
+        found_row = False
+        expected_row_old = f"| {task_id} | {domain} | {status} | {priority} | {owner} | {due} | {project} | {rel_old} | {updated} |"
+        expected_row_new = f"| {task_id} | {domain} | {status} | {priority} | {owner} | {due} | {project} | {rel_new} | {updated} |"
+
+        if index_rows.get(task_id) in (expected_row_old, expected_row_new):
+            found_row = True
+        elif task_id in index_rows and f"_shared/domains/{domain}/tasks/archived/" in index_rows[task_id]:
+            found_row = True
+
+        if not found_row:
             err(f"{index_file} missing exact row for {task_id}")
         if index_counts.get(task_id, 0) != 1:
             err(f"{index_file} should contain exactly one row for {task_id} (found {index_counts.get(task_id, 0)})")
