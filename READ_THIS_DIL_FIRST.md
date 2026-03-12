@@ -364,8 +364,8 @@ Domains are operational boundaries with distinct task directories, log paths, da
 
 2. Registered domains
 - `personal` — user-owned personal tasks, `DIL-` prefix, auto-allocated IDs.
-- `work` — employer-owned work tasks, `DMDI-` prefix, externally-assigned IDs (Jira). Logs/data at `/az/talend/` (employer-owned, external to DIL).
-- `triv` — Three Rivers Duck Club infrastructure, `TRIV-` prefix, auto-allocated IDs.
+- `work` — employer-owned work tasks, externally-assigned IDs (e.g., Jira). Logs/data may use absolute paths outside the vault if employer infrastructure requires it.
+- Additional project-specific domains (e.g., a side project or separate infrastructure) can use auto-allocated IDs with their own prefix.
 - Additional domains can be added by inserting an entry in `domain_registry.json`.
 
 3. Directory structure
@@ -376,7 +376,7 @@ Domains are operational boundaries with distinct task directories, log paths, da
 
 4. Path resolution
 - Relative paths in the registry resolve against `$BASE_DIL`.
-- Absolute paths (e.g., `/az/talend/logs`) are used as-is.
+- Absolute paths (e.g., `/opt/company/logs`) are used as-is.
 - The `path_type` field (`relative`, `absolute`, `mixed`) signals to scripts how to resolve.
 
 5. Adding a new domain
@@ -389,7 +389,7 @@ Domains are operational boundaries with distinct task directories, log paths, da
 1. Log path
 - Operational logs are domain-resolved: `$LOG_DIR/{script_name}/{script_name}.{action}.{YYYYMMDD_HHMMSS}.log`
 - `$LOG_DIR` comes from `resolve_domain` in `domains.sh`.
-- For external domains (e.g., work), logs go to the domain's absolute `log_dir` (e.g., `/az/talend/logs`).
+- For external domains (e.g., work), logs go to the domain's absolute `log_dir` if configured.
 
 2. Log file naming convention
 - `{script_name}.{action}.{YYYYMMDD_HHMMSS}.log` — example: `create_task.create.20260312_143000.log`
