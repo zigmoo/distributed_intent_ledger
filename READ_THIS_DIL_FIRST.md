@@ -376,7 +376,7 @@ Domains are operational boundaries with distinct task directories, log paths, da
 
 4. Path resolution
 - Relative paths in the registry resolve against `$BASE_DIL`.
-- Absolute paths (e.g., `/opt/company/logs`) are used as-is.
+- Absolute paths (e.g., `/org_name/team_name/logs`) are used as-is.
 - The `path_type` field (`relative`, `absolute`, `mixed`) signals to scripts how to resolve.
 
 5. Adding a new domain
