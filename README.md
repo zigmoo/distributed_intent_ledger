@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/dil-logo.svg" alt="DIL — Distributed Intent Ledger" width="260">
+</p>
+
 # Distributed Intent Ledger (DIL)
 
 Have you ever wished your agents and assistants could share memories ... across one laptop to your servers and dev machines ... from Codex to Claude to OpenCode to OpenClaw?
