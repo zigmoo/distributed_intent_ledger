@@ -15,6 +15,12 @@
       "default_owner": "moo",
       "path_type": "relative",
       "ticket_systems": [],
+      "links": [
+        {"name": "DIL on GitHub", "url": "https://github.com/zigmoo/distributed_intent_ledger", "type": "repo"},
+        {"name": "Getting Real (37signals)", "url": "https://basecamp.com/gettingreal", "type": "reference"},
+        {"name": "Shape Up (37signals)", "url": "https://basecamp.com/shapeup", "type": "reference"},
+        {"name": "1999.37signals.com", "url": "https://1999.37signals.com/", "type": "reference"}
+      ],
       "log_prune": {
         "strategy": "trailing_window",
         "window_days": 180
@@ -54,6 +60,11 @@
           "prefixes": []
         }
       ],
+      "links": [
+        {"name": "Internal App", "url": "https://app.example.com/", "type": "app"},
+        {"name": "Documentation", "url": "https://docs.example.com/", "type": "docs"},
+        {"name": "Source repo", "url": "https://gitlab.com/org/project", "type": "repo"}
+      ],
       "log_prune": {
         "strategy": "trailing_window",
         "window_days": 90
@@ -77,6 +88,7 @@
       "default_owner": "moo",
       "path_type": "relative",
       "ticket_systems": [],
+      "links": [],
       "log_prune": {
         "strategy": "trailing_window",
         "window_days": 365
