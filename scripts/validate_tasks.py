@@ -286,17 +286,23 @@ def main() -> int:
     domain_dirs = resolve_domain_dirs(base, registry)
     id_rules = get_domain_id_rules(registry)
 
-    # Load project registry
+    # Load project registry (header-driven column lookup)
     registered_projects: set[str] = set()
     if project_registry.exists():
+        col_map: dict[str, int] = {}
         for line in project_registry.read_text(encoding="utf-8").splitlines():
             if not line.startswith("|"):
                 continue
-            if re.match(r"^\|\s*(slug|---)", line):
+            if re.match(r"^\|\s*---", line):
                 continue
             parts = [p.strip() for p in line.split("|")[1:-1]]
-            if parts:
-                registered_projects.add(parts[0])
+            if not col_map:
+                # First non-separator row is the header
+                col_map = {name: idx for idx, name in enumerate(parts)}
+                continue
+            slug_idx = col_map.get("slug", 0)
+            if slug_idx < len(parts) and parts[slug_idx]:
+                registered_projects.add(parts[slug_idx])
     else:
         warn(f"Project registry not found: {project_registry}")
 

@@ -532,6 +532,190 @@ These defaults reduce drift between chat, shell history, and canonical tasks.
 - If user requested an outcome, safe/non-destructive in-scope steps are implicitly approved.
 - Pause only for high-risk deviations, missing credentials, or out-of-scope actions.
 
+## Command Registry (Required, Zero-Inference)
+
+Before doing any work, check `_shared/_meta/command_registry.md` for an existing script/tool that matches the user's intent. **Do NOT manually replicate what a script does — run the script.** The registry maps trigger phrases to commands across all domains (DIL, work, personal).
+
+Key triggers every agent must know without looking up:
+- **"morning brief"** → `_shared/scripts/morning_brief.sh` (do NOT manually gather task data)
+- **"create jira task"** → `_shared/scripts/create_jira_task.sh` — creates Jira ticket AND mirroring DIL task in one shot. **Preferred for all work-domain tasks.**
+- **"create task"** → `_shared/scripts/create_task.sh` (DIL-only, or when Jira ticket already exists via `--task-id`)
+- **Jira operations** → `jira_tool` (your Jira CLI tool) (do NOT tell user to update Jira manually)
+
+For the full list: `_shared/_meta/command_registry.md`
+
+
+## Task Discovery Runbook (Required)
+
+When a user asks to "list tasks" or "show tasks" for a project, follow these steps exactly. Do not search the filesystem for literal strings or guess — use the lookup chain.
+
+**Path variables** (used in all steps below):
+```bash
+BASE="/home/moo/Documents/dil_agentic_memory_0001"
+TASK_DIR_WORK="$BASE/_shared/domains/work/tasks/active"       # DMDI-/BIT-
+TASK_DIR_PERSONAL="$BASE/_shared/domains/personal/tasks/active"  # DIL-
+TASK_DIR_TRIV="$BASE/_shared/domains/triv/tasks/active"        # TRIV-
+```
+
+1. **Check the Project Registry**
+   - Read `_shared/_meta/project_registry.md`
+   - Match the user's words against the **aliases** column (case-insensitive, partial match OK)
+   - If matched, note the **slug**, **anchor_task**, and **domain**
+
+2. **Run the local discovery command**
+   - Pick `$TASK_DIR` based on the matched domain (work/personal/triv)
+   - If the row has an `anchor_task` (e.g., DMDI-8850), search for it:
+     `grep -l '<anchor_task>' $TASK_DIR/*.md`
+   - If no `anchor_task`, search by project slug:
+     `grep -l 'project: "<slug>"\|project: <slug>' $TASK_DIR/*.md`
+   - For each matched file, extract `task_id` and `title` from frontmatter
+
+3. **If no registry match, search broadly**
+   - Search all active task files for the keyword:
+     `grep -rl '<keyword>' $BASE/_shared/domains/*/tasks/active/`
+
+4. **Optionally query remote system**
+   - If a remote tool is available (e.g., `jira_tool` for work domain), query it for supplementary data
+   - Remote queries are supplementary, not required — local DIL files are the source of truth
+
+5. **If still nothing, ask the user**
+   - "I couldn't find tasks matching '<shorthand>'. Which project slug or task ID prefix should I search?"
+
+**Key principle**: The DIL task files are always the primary source. Remote systems (Jira, ClickUp, etc.) are mirrors — query them for supplementary data, not as the starting point.
+
+
+## Task Lifecycle Runbook (Required)
+
+When a user asks to create a task (and optionally work it through to completion), follow these steps exactly. This is the creation/completion counterpart to the Task Discovery Runbook.
+
+See also: `_shared/runbooks/task-lifecycle-runbook.md` for the standalone reference.
+
+### Safe Defaults (use when user doesn't specify)
+
+| Parameter | Default | Notes |
+| --- | --- | --- |
+| priority | normal | Escalate to high/critical only if user says urgent/emergency |
+| work_type | chore | Use feature for new functionality, bug for fixes, research for investigation |
+| task_type | kanban | Use sprint only if user explicitly mentions sprints |
+| effort_type | medium | Use low for quick fixes, high for multi-day work |
+| project | (look up) | Match task description against `_shared/_meta/project_registry.md` aliases column. If no match, ask the user. |
+
+### Step 1: Create in remote system (if applicable)
+
+For work domain tasks mirrored to a remote tracker:
+```bash
+jira_tool create --summary "<title>"
+# Note the returned task ID (e.g., DMDI-11891)
+```
+
+For personal/triv domain tasks, skip this step — IDs are auto-allocated by `create_task.sh`.
+
+### Step 2: Create DIL task file
+
+```bash
+_shared/scripts/create_task.sh \
+  --domain <domain> \
+  --task-id <ID>           # required for external-ID domains (work); omit for auto-ID domains \
+  --title "<title>" \
+  --project <slug>         # from project registry aliases lookup \
+  --priority <priority> \
+  --work-type <work_type> \
+  --task-type <task_type> \
+  --effort-type <effort_type>
+```
+
+**Project slug resolution**: Check `_shared/_meta/project_registry.md` — match the task description against the `aliases` column, then use the `slug` from that row. If ambiguous, ask the user.
+
+### Step 3: Transition to In Progress
+
+**DO NOT SKIP THIS STEP.** This is the most commonly forgotten step — agents and humans both tend to jump straight from creation to doing the work. Transition BEFORE posting comments or doing work.
+
+```bash
+# Remote system (if applicable)
+jira_tool transition <ID> "In Progress"
+```
+
+Update the DIL task file `status:` field to `in_progress`.
+
+**Self-check before step 4:** If you are about to run `jira_tool comment` on a ticket, verify it is already In Progress. If not, transition it first.
+
+### Step 4: Do the work / log evidence
+
+Perform the actual work. Collect evidence (terminal output, screenshots, verification commands).
+
+### Step 5: Add completion evidence
+
+```bash
+# Remote system (if applicable) — wrap terminal output in {noformat} blocks
+jira_tool comment <ID> '{noformat}<terminal output>{noformat}'
+```
+
+Append execution notes to the DIL task file's `## Execution Notes` section.
+
+### Step 6: Transition to Done
+
+```bash
+# Remote system (if applicable)
+jira_tool transition <ID> "Done"
+```
+
+Update the DIL task file `status:` field to `done`.
+
+### Step 7: Verify
+
+Confirm both systems are in sync:
+```bash
+jira_tool status <ID>           # should show Done
+grep "^status:" <task_file>     # should show done
+```
+
+### Partial Completion
+
+Not every task goes through all steps in one session:
+- If only creating: do steps 1-2, leave status as `todo`
+- If starting work: do steps 1-3
+- If finishing later: pick up at step 4 with the existing task ID
+- User may ask to do any subset — follow their lead
+
+### Jira Wiki Markup Quick Reference
+
+When posting to Jira via `jira_tool comment`, use Jira wiki markup (not Markdown):
+- Terminal/code output: `{noformat}...{noformat}`
+- Bold: `*bold*`
+- Italic: `_italic_`
+- Bullet list: `* item` (not `- item`)
+- Numbered list: `# item`
+- Heading: `h3. Heading Text`
+- Link: `[text|url]`
+- Use `md2jira` to convert Markdown to Jira markup if needed.
+
+
+## Work Logging Tenet (Required)
+
+> "If it doesn't get noted, it didn't happen."
+
+All work must be logged to a task note, traced back to the source note. For mirrored systems (Jira, Teamwork, etc.), the remote/origin site is the source-of-truth — post there first, then sync to the DIL .md file. If no task exists, create one before starting. Ad-hoc work that produces outcomes must still be logged retroactively. Policy file: `_shared/policies/work-logging-tenet-2026-03-13.md`
+
+
+## Tool Telemetry Auto-Disable Rules (Required)
+
+Agents must proactively disable telemetry/phone-home on known tools before invoking them. This section is the canonical registry of tools with known telemetry.
+
+### Lightpanda Browser (and forks)
+
+- **Detection:** `command -v lightpanda` or check for fork binaries
+- **Telemetry endpoint:** `https://telemetry.lightpanda.io` (PostHog-backed)
+- **Disable env var:** `LIGHTPANDA_DISABLE_TELEMETRY=true`
+- **Invocation pattern:** Always prefix commands: `LIGHTPANDA_DISABLE_TELEMETRY=true lightpanda ...`
+- **Residual cleanup:** Remove `~/.local/share/lightpanda/iid` if present (persistent install UUID)
+- **System-wide disable (if sudo available):**
+  - `/etc/profile.d/lightpanda-no-telemetry.sh` → `export LIGHTPANDA_DISABLE_TELEMETRY=true`
+  - `/etc/environment` → `LIGHTPANDA_DISABLE_TELEMETRY=true`
+- **Per-user disable:** Ensure `export LIGHTPANDA_DISABLE_TELEMETRY=true` in `~/.bashrc`
+- **Verified working:** v0.2.5, 2026-03-13. Source code audit confirms two-layer disable (init skip + record() early return).
+- **Policy file:** `_shared/policies/lightpanda-telemetry-auto-disable-2026-03-13.md`
+- **Jira:** [[DMDI-11813]]
+
 ## How to get useful work from lesser models
 
 When using smaller/local models (including many Ollama-hosted models), prefer scripted, typed execution over free-form autonomous behavior.

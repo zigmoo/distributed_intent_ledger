@@ -1,16 +1,18 @@
 {
   "$schema": "dil-domain-registry-v1",
-  "description": "Sample domain registry for DIL operational path resolution. Copy to _shared/_meta/domain_registry.json in your vault and customize.",
+  "description": "Canonical domain registry for DIL operational path resolution",
   "updated": "2026-03-12",
   "domains": {
     "personal": {
       "name": "Personal",
+      "display_order": 2,
+      "briefing_label": "Personal",
       "task_dir": "_shared/domains/personal/tasks",
       "log_dir": "_shared/domains/personal/logs",
       "data_dir": "_shared/domains/personal/data",
       "id_prefix": "DIL",
       "id_mode": "auto",
-      "default_owner": "your-username",
+      "default_owner": "moo",
       "path_type": "relative",
       "log_prune": {
         "strategy": "trailing_window",
@@ -24,20 +26,44 @@
       "status": "active"
     },
     "work": {
-      "name": "Your Employer",
+      "name": "AutoZone",
+      "display_order": 1,
+      "briefing_label": "Work \u2014 AutoZone",
       "task_dir": "_shared/domains/work/tasks",
-      "log_dir": "_shared/domains/work/logs",
-      "data_dir": "_shared/domains/work/data",
-      "id_prefix": "WORK",
+      "log_dir": "/az/talend/logs",
+      "data_dir": "/az/talend/data",
+      "id_prefix": "DMDI",
       "id_mode": "external",
-      "default_owner": "your-work-username",
-      "path_type": "relative",
+      "default_owner": "charlie",
+      "path_type": "mixed",
       "log_prune": {
         "strategy": "trailing_window",
         "window_days": 90
       },
       "archive": {
         "after_days": 90,
+        "year_key": "terminal_date",
+        "strategy": "active_archived"
+      },
+      "status": "active"
+    },
+    "triv": {
+      "name": "Three Rivers Duck Club",
+      "display_order": 3,
+      "briefing_label": "Triv \u2014 Three Rivers Duck Club",
+      "task_dir": "_shared/domains/triv/tasks",
+      "log_dir": "_shared/domains/triv/logs",
+      "data_dir": "_shared/domains/triv/data",
+      "id_prefix": "TRIV",
+      "id_mode": "auto",
+      "default_owner": "moo",
+      "path_type": "relative",
+      "log_prune": {
+        "strategy": "trailing_window",
+        "window_days": 365
+      },
+      "archive": {
+        "after_days": 365,
         "year_key": "terminal_date",
         "strategy": "active_archived"
       },
@@ -52,6 +78,7 @@
   },
   "path_resolution": {
     "description": "relative paths resolve against $BASE_DIL. absolute paths used as-is. mixed means task_dir is relative but log_dir/data_dir may be absolute.",
-    "base_var": "BASE_DIL"
+    "base_var": "BASE_DIL",
+    "default_base": "/home/moo/Documents/dil_agentic_memory_0001"
   }
 }
