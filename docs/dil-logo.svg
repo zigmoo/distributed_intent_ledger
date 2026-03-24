@@ -11,8 +11,6 @@
     </filter>
   </defs>
 
-  <!-- Background -->
-  <rect width="400" height="500" fill="#f8f6f0"/>
 
   <!-- Notebook body - slightly rotated for artistic feel -->
   <g transform="translate(200,250) rotate(-3) translate(-200,-250)" filter="url(#sketch)">
