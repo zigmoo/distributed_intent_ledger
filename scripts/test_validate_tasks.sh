@@ -770,9 +770,9 @@ title: "Test Registry"
 
 # Test Registry
 
-| slug | name | domain | status | parent | owner | description | notes |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| registered-proj | Registered | personal | active | | moo | A registered project | |
+| slug | aliases | domain | name | status | parent | anchor_task | repo_path | owner | description |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| registered-proj | | personal | Registered | active | | | | moo | A registered project |
 REG
 
   # Task uses project "test" which is NOT in the registry — should produce a warning

@@ -1,3 +1,21 @@
+---
+title: "Agent Registry Contract (v1)"
+date: 2026-03-03
+machine: shared
+assistant: shared
+category: system
+memoryType: registry
+priority: critical
+tags: [dil, registry, agents, runtimes, ollama, fallback]
+updated: 2026-03-03
+source: internal
+domain: operations
+project: dil
+status: active
+owner: shared
+due:
+---
+	''
 # Agent Registry Contract (v1)
 
 ## Purpose
@@ -11,7 +29,7 @@ Define a canonical agent registry so DIL can reliably coordinate:
 ## Canonical Location
 
 - Suggested path in a DIL vault: `_shared/_meta/agent_registry.json`
-- Schema: `schema/agent_registry.schema.json`
+- Schema: `_shared/_meta/agent_registry.schema.json`
 
 ## Required Bootstrap Behavior
 
@@ -36,7 +54,7 @@ Define a canonical agent registry so DIL can reliably coordinate:
 - Every agent record MUST include:
   - identity (`agent_id`, `display_name`)
   - ownership/accountability (`owner`, `maintainers`)
-  - machine/runtime binding (`machine`, `runtime_host`)
+  - machine/runtime binding (`machine_binding`, `runtime_host`)
   - model configuration (`primary_model`, provider/runtime metadata)
   - runtime profiles (`runtime_profiles`) for local/cloud runtimes and inventories
   - fallback capability (`supports_fallback_llms`)
@@ -45,10 +63,7 @@ Define a canonical agent registry so DIL can reliably coordinate:
 - Agents that do not support fallback LLMs MUST explicitly declare:
   - `supports_fallback_llms: false`
   - `fallback_models: []`
-
-- Local model inventories SHOULD be captured when discoverable:
-  - e.g., Ollama model list + key metadata (name, size, quantization, context)
-  - inventories SHOULD be attached to the runtime profile that discovered them
+  - `fallback_strategy: "none"`
 
 ## Supported Format Categories (minimum)
 
@@ -75,18 +90,3 @@ Example runtime types:
 - `openai-compatible`
 - `anthropic`
 - `custom-gateway`
-
-## Fallback LLM Semantics
-
-- `supports_fallback_llms=true`: agent may route to backup models when policy allows.
-- `supports_fallback_llms=false`: fallback is prohibited for that agent/runtime.
-- For agents like `zeroclaw` (current behavior), set:
-  - `supports_fallback_llms: false`
-  - `model_config.supports_fallback_llms: false`
-  - `model_config.fallback_models: []`
-  - `model_config.fallback_strategy: "none"`
-
-## Notes
-
-- Registry is contract-first and append/update auditable.
-- Inventory fields are intentionally extensible to support mixed environments (cloud APIs, local runtimes, hybrid deployments).
