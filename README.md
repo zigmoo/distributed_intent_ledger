@@ -2,7 +2,8 @@
   <img src="docs/dil-logo.svg" alt="DIL — Distributed Intent Ledger" width="160">
 </p>
 
-# DIL: Distributed Intent Ledger
+# DIL: Your All-Terrain Memory System. Everywhere you go.
+Relies on Obsidian vault sync.
 
 Have you ever wished your agents and assistants could share memories ... across one laptop to your servers and dev machines ... from Codex to Claude to OpenCode to OpenClaw?
 
