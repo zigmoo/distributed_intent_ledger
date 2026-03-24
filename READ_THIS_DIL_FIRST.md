@@ -490,7 +490,14 @@ These rules define task tracking for all assistants across all machines.
   - `scripts/tee_task_execution_note.sh <task_id> "<note>"`
   - Fallback append-only helper: `scripts/append_task_execution_note.sh <task_id> "<note>"`
 
-11. Validation gate (required before task-system replies that mutate tasks)
+11. Clickable ticket ID rule (required)
+- When displaying a ticket/task ID that belongs to a domain with a configured `ticket_systems` entry in `domain_registry.json`, wrap it in a clickable Markdown link using the `browse_url_template`.
+- Example: if domain `work` has a Jira ticket system with `browse_url_template` = `https://jira.example.com/browse/{ticket_id}`, then `PROJ-123` must be rendered as `[PROJ-123](https://jira.example.com/browse/PROJ-123)`.
+- Match the ticket prefix against the `prefixes` array in each domain's `ticket_systems` to find the correct `browse_url_template`. Replace `{ticket_id}` with the full ticket ID.
+- Domains with empty `ticket_systems` (e.g., `personal`) have no external URL — display the ID as plain text.
+- This rule applies to all agent output: chat replies, execution notes, briefings, and any generated documentation.
+
+12. Validation gate (required before task-system replies that mutate tasks)
 - Run:
   - `dil_agentic_memory_0001/_shared/tasks/_meta/scripts/validate_tasks.sh`
 - If validation fails, report errors and do not claim completion.
