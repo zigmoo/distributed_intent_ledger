@@ -33,14 +33,14 @@
       },
       "status": "active"
     },
-    "work-clickup": {
-      "name": "Acme Corp (ClickUp)",
+    "work-happytime": {
+      "name": "Happytime Meat Company",
       "display_order": 1,
-      "briefing_label": "Work — Acme Corp",
-      "task_dir": "_shared/domains/work-clickup/tasks",
+      "briefing_label": "Work — Happytime Meat Co",
+      "task_dir": "_shared/domains/work-happytime/tasks",
       "log_dir": "/path/to/org/logs",
       "data_dir": "/path/to/org/data",
-      "id_prefix": "ACM",
+      "id_prefix": "HMC",
       "id_mode": "external",
       "default_owner": "user",
       "path_type": "mixed",
@@ -50,7 +50,7 @@
           "type": "clickup",
           "base_url": "https://app.clickup.com",
           "browse_url_template": "https://app.clickup.com/t/{ticket_id}",
-          "prefixes": ["ACM"]
+          "prefixes": ["HMC"]
         },
         {
           "name": "Fizzy",
@@ -62,9 +62,9 @@
         }
       ],
       "links": [
-        {"name": "Internal App", "url": "https://app.acme.com/", "type": "app"},
-        {"name": "Documentation", "url": "https://docs.acme.com/", "type": "docs"},
-        {"name": "GitHub Org", "url": "https://github.com/acme-corp", "type": "repo"},
+        {"name": "Meat Portal", "url": "https://app.happytimemeat.com/", "type": "app"},
+        {"name": "Recipes Wiki", "url": "https://docs.happytimemeat.com/", "type": "docs"},
+        {"name": "GitHub Org", "url": "https://github.com/happytime-meat-co", "type": "repo"},
         {"name": "Fizzy Board", "url": "https://app.fizzy.do/6180619/boards/main", "type": "app"}
       ],
       "log_prune": {
@@ -78,24 +78,24 @@
       },
       "status": "active"
     },
-    "work-teamwork": {
-      "name": "Initech (Teamwork)",
-      "display_order": 1,
-      "briefing_label": "Work — Initech",
-      "task_dir": "_shared/domains/work-teamwork/tasks",
+    "work-penetrode": {
+      "name": "Penetrode",
+      "display_order": 2,
+      "briefing_label": "Work — Penetrode",
+      "task_dir": "_shared/domains/work-penetrode/tasks",
       "log_dir": "/path/to/org/logs",
       "data_dir": "/path/to/org/data",
-      "id_prefix": "INT",
+      "id_prefix": "PEN",
       "id_mode": "external",
       "default_owner": "user",
       "path_type": "mixed",
       "ticket_systems": [
         {
-          "name": "Teamwork",
-          "type": "teamwork",
-          "base_url": "https://initech.teamwork.com",
-          "browse_url_template": "https://initech.teamwork.com/app/tasks/{ticket_id}",
-          "prefixes": ["INT"]
+          "name": "Jira",
+          "type": "jira",
+          "base_url": "https://jira.penetrode.com",
+          "browse_url_template": "https://jira.penetrode.com/browse/{ticket_id}",
+          "prefixes": ["PEN"]
         },
         {
           "name": "Fizzy",
@@ -107,9 +107,53 @@
         }
       ],
       "links": [
+        {"name": "Penetrode Portal", "url": "https://app.penetrode.com/", "type": "app"},
+        {"name": "Engineering Wiki", "url": "https://wiki.penetrode.com/", "type": "docs"},
+        {"name": "Fizzy Board", "url": "https://app.fizzy.do/7291730/boards/main", "type": "app"}
+      ],
+      "log_prune": {
+        "strategy": "trailing_window",
+        "window_days": 90
+      },
+      "archive": {
+        "after_days": 90,
+        "year_key": "terminal_date",
+        "strategy": "active_archived"
+      },
+      "status": "active"
+    },
+    "work-initech": {
+      "name": "Initech",
+      "display_order": 3,
+      "briefing_label": "Work — Initech",
+      "task_dir": "_shared/domains/work-initech/tasks",
+      "log_dir": "/path/to/org/logs",
+      "data_dir": "/path/to/org/data",
+      "id_prefix": "INI",
+      "id_mode": "external",
+      "default_owner": "peter.gibbons",
+      "path_type": "mixed",
+      "ticket_systems": [
+        {
+          "name": "Teamwork",
+          "type": "teamwork",
+          "base_url": "https://initech.teamwork.com",
+          "browse_url_template": "https://initech.teamwork.com/app/tasks/{ticket_id}",
+          "prefixes": ["INI"]
+        },
+        {
+          "name": "Fizzy",
+          "type": "fizzy",
+          "base_url": "https://app.fizzy.do",
+          "browse_url_template": "https://app.fizzy.do/{workspace_id}/cards/{ticket_id}",
+          "workspace_id": "8402841",
+          "prefixes": []
+        }
+      ],
+      "links": [
         {"name": "TPS Reports", "url": "https://initech.com/tps/", "type": "app"},
         {"name": "Wiki", "url": "https://initech.teamwork.com/spaces", "type": "docs"},
-        {"name": "Fizzy Board", "url": "https://app.fizzy.do/7291730/boards/main", "type": "app"}
+        {"name": "Fizzy Board", "url": "https://app.fizzy.do/8402841/boards/main", "type": "app"}
       ],
       "log_prune": {
         "strategy": "trailing_window",
