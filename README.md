@@ -2,8 +2,7 @@
   <img src="docs/dil-logo.svg" alt="DIL — Distributed Intent Ledger" width="160">
 </p>
 
-# DIL: Your All-Terrain Memory System. Everywhere you go.
-Relies on Obsidian vault sync.
+# DIL: Your All-Terrain Memory System.<br>For everywhere you cli.
 
 Have you ever wished your agents and assistants could share memories ... across one laptop to your servers and dev machines ... from Codex to Claude to OpenCode to OpenClaw?
 
@@ -11,6 +10,7 @@ Here's the plan for doing all those things and keeping memories and priorities s
 
 Distributed Intent Ledger (DIL) is a local-first, filesystem-native protocol for persistent multi-agent and multi-environment memory coordination.
 In current deployments, Tailscale is used as the private network fabric for secure cross-machine agent communication and coordination.
+Relies on Obsidian vault sync.
 
 For a compact human-readable summary of the whole system, start with [`docs/dil-overview.md`](./docs/dil-overview.md).
 
