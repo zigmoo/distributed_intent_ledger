@@ -129,16 +129,47 @@ This project is licensed under the Apache License 2.0. See `LICENSE` and `NOTICE
 
 ## Repository Layout
 
-- `docs/spec-v1.md`: normative protocol contract (MUST/SHOULD/MAY)
-- `docs/dil-overview.md`: concise human-readable overview of the full DIL system
-- `docs/recommended-agent-workflow-discipline.md`: optional shared workflow-discipline policy
-- `docs/machine-registry-contract.md`: machine inventory and runtime host contract
-- `docs/agent-registry-contract.md`: agent capabilities, formats, models, and fallback contract
+- `READ_THIS_DIL_FIRST.md`: bootstrap spec — every agent reads this first, every session
+- `_shared/`: operational shared state (domains, meta, tasks)
+  - `_shared/_meta/`: bootstrap config files
+    - `domain_registry.json`: registered domains with ID prefixes, paths, and archive policies
+    - `project_registry.md`: canonical project slugs with aliases for task discovery
+    - `command_registry.md`: zero-inference command lookup table
+    - `agent_aliases.conf`: agent identity alias mappings
+    - `task_id_counter.md`: auto-allocated task ID counters per prefix
+    - `task_index.md`: scan-first task index
+  - `_shared/domains/`: domain-scoped task directories
+    - `personal/tasks/{active,archived}/`: personal-domain tasks (DIL- prefix)
+    - `work/tasks/{active,archived}/`: work-domain tasks (external IDs)
+- `docs/`: protocol documentation
+  - `spec-v1.md`: normative protocol contract (MUST/SHOULD/MAY)
+  - `dil-overview.md`: concise human-readable overview of the full DIL system
+  - `recommended-agent-workflow-discipline.md`: optional shared workflow-discipline policy
+  - `machine-registry-contract.md`: machine inventory and runtime host contract
+  - `agent-registry-contract.md`: agent capabilities, formats, models, and fallback contract
+- `runbooks/`: procedural runbooks
+  - `task-lifecycle-runbook.md`: create-to-done task lifecycle steps
 - `schema/`: JSON schemas for notes and tasks
-- `examples/`: sample vault structure, records, and starter agent config templates
-  - `examples/sample-agent-registry.json`: multi-agent runtime/capability coverage
-  - `examples/sample-machine-registry.json`: multi-machine lifecycle coverage
-  - `examples/sample-task.md`: expanded canonical task example with acceptance criteria
-  - `examples/sample-memory-note.md`: decision-style memory note example
-  - `examples/sample-change-log.md`: multi-entry mutation/change-log example
+- `examples/`: sample records and starter config templates
+  - `sample-domain-registry.json`: multi-domain registry with generalized paths
+  - `sample-project-registry.md`: project slugs with aliases and column reference
+  - `sample-command-registry.md`: command trigger lookup table
+  - `sample-agent-aliases.conf`: agent identity alias mappings
+  - `sample-agent-registry.json`: multi-agent runtime/capability coverage
+  - `sample-machine-registry.json`: multi-machine lifecycle coverage
+  - `sample-task.md`: expanded canonical task example with acceptance criteria
+  - `sample-memory-note.md`: decision-style memory note example
+  - `sample-change-log.md`: multi-entry mutation/change-log example
 - `scripts/`: reference helpers and validators
+  - `create_task.sh`: canonical task creation with ID allocation and index update
+  - `create_project.sh`: project registry management
+  - `create_jira_task.sh`: Jira + DIL mirrored task creation
+  - `create_engineering_notebook_entry.sh`: structured engineering notes
+  - `morning_brief.sh`: daily task briefing generator
+  - `identify_agent.sh`: runtime agent identity resolution
+  - `validate_tasks.sh` / `validate_tasks.py`: task system validation
+  - `archive_tasks.sh`: move terminal tasks to archived/
+  - `list_archived.sh`: search/filter archived tasks
+  - `rebuild_task_index.sh`: regenerate task index from files
+  - `lib/domains.sh`: domain registry lookup helpers
+  - `lib/registry.sh`: project registry lookup helpers
