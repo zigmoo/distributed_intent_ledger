@@ -10,6 +10,10 @@ ACTOR="codex"
 MODEL="gpt-5"
 DRY_RUN=0
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/domains.sh
+source "$SCRIPT_DIR/lib/domains.sh"
+
 usage() {
   cat << 'USAGE'
 Usage:
@@ -17,7 +21,7 @@ Usage:
 
 Required:
   --task-id ID
-  --status todo|assigned|in_progress|blocked|done|cancelled
+  --status todo|assigned|in_progress|blocked|done|cancelled|retired
 
 Options:
   --owner TEXT            Optional owner update
@@ -36,7 +40,7 @@ trim() {
 
 valid_status() {
   case "$1" in
-    todo|assigned|in_progress|blocked|done|cancelled) return 0 ;;
+    todo|assigned|in_progress|blocked|done|cancelled|retired) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -45,11 +49,12 @@ valid_transition() {
   local old="$1"
   local new="$2"
   case "$old" in
-    todo) [[ "$new" =~ ^(assigned|in_progress|blocked|cancelled)$ ]] ;;
-    assigned) [[ "$new" =~ ^(in_progress|blocked|done|cancelled)$ ]] ;;
-    in_progress) [[ "$new" =~ ^(blocked|done|assigned|cancelled)$ ]] ;;
-    blocked) [[ "$new" =~ ^(in_progress|assigned|cancelled)$ ]] ;;
-    done|cancelled) return 1 ;;
+    todo) [[ "$new" =~ ^(assigned|in_progress|blocked|cancelled|retired)$ ]] ;;
+    assigned) [[ "$new" =~ ^(in_progress|blocked|done|cancelled|retired)$ ]] ;;
+    in_progress) [[ "$new" =~ ^(blocked|done|assigned|cancelled|retired)$ ]] ;;
+    blocked) [[ "$new" =~ ^(in_progress|assigned|cancelled|retired)$ ]] ;;
+    done|cancelled) [[ "$new" =~ ^(retired)$ ]] ;;
+    retired) [[ "$new" =~ ^(todo|in_progress)$ ]] ;;
     *) return 1 ;;
   esac
 }
@@ -97,20 +102,34 @@ if ! valid_status "$NEW_STATUS"; then
   exit 1
 fi
 
-WORK_DIR="$BASE/_shared/tasks/work"
-PERSONAL_DIR="$BASE/_shared/tasks/personal"
+# Build search dirs dynamically from domain registry
+export BASE_DIL="$BASE"
+SEARCH_DIRS=()
+while IFS= read -r dom; do
+  resolve_domain "$dom"
+  active_dir="$TASK_DIR/active"
+  if [[ -d "$active_dir" ]]; then
+    SEARCH_DIRS+=("$active_dir")
+  fi
+done < <(list_domains)
+
 INDEX_FILE="$BASE/_shared/_meta/task_index.md"
 CHANGE_LOG="$BASE/_shared/tasks/_meta/change_log.md"
 VALIDATOR="$BASE/_shared/scripts/validate_tasks.sh"
 
-for req in "$WORK_DIR" "$PERSONAL_DIR" "$INDEX_FILE" "$CHANGE_LOG" "$VALIDATOR"; do
+for req in "$INDEX_FILE" "$CHANGE_LOG" "$VALIDATOR"; do
   if [[ ! -e "$req" ]]; then
     echo "Missing required path: $req" >&2
     exit 1
   fi
 done
 
-mapfile -t matches < <(find "$WORK_DIR" "$PERSONAL_DIR" -maxdepth 1 -type f -name "$TASK_ID.md" | sort)
+if [[ ${#SEARCH_DIRS[@]} -eq 0 ]]; then
+  echo "No domain task directories found" >&2
+  exit 1
+fi
+
+mapfile -t matches < <(find "${SEARCH_DIRS[@]}" -maxdepth 1 -type f -name "$TASK_ID.md" | sort)
 if [[ ${#matches[@]} -ne 1 ]]; then
   echo "Expected exactly one task file for $TASK_ID, found ${#matches[@]}" >&2
   exit 1
@@ -147,7 +166,9 @@ fi
 
 DATE_UTC="$(date -u +%Y-%m-%d)"
 TS_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-TASK_REL="_shared/tasks/$domain/$TASK_ID.md"
+
+# Derive relative path from actual file location
+TASK_REL="${TASK_FILE#"$BASE/"}"
 
 row="| $TASK_ID | $domain | $NEW_STATUS | $priority | $NEW_OWNER | $due | $project | $TASK_REL | $DATE_UTC |"
 
