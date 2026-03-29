@@ -1,7 +1,7 @@
 {
   "$schema": "dil-domain-registry-v1",
   "description": "Canonical domain registry for DIL operational path resolution",
-  "updated": "2026-03-12",
+  "updated": "2026-03-29",
   "domains": {
     "personal": {
       "name": "Personal",
@@ -14,7 +14,18 @@
       "id_mode": "auto",
       "default_owner": "moo",
       "path_type": "relative",
-      "ticket_systems": [],
+      "ticket_systems": [
+        {
+          "name": "Obsidian Vault",
+          "type": "obsidian",
+          "base_url": "obsidian://open?vault=dil_agentic_memory_0001",
+          "browse_url_template": "obsidian://open?vault=dil_agentic_memory_0001&file=_shared%2Fdomains%2Fpersonal%2Ftasks%2Factive%2F{ticket_id}.md",
+          "prefixes": ["DIL"],
+          "url_templates": {
+            "ticket": "{base_url}&file=_shared%2Fdomains%2Fpersonal%2Ftasks%2Factive%2F{ticket_id}.md"
+          }
+        }
+      ],
       "links": [
         {"name": "DIL on GitHub", "url": "https://github.com/zigmoo/distributed_intent_ledger", "type": "repo"},
         {"name": "Fizzy", "url": "https://app.fizzy.do/", "type": "app"},
@@ -33,14 +44,14 @@
       },
       "status": "active"
     },
-    "work-happytime": {
-      "name": "Happytime Meat Company",
+    "work-zigmoo": {
+      "name": "Zigmoo Industrial",
       "display_order": 1,
-      "briefing_label": "Work — Happytime Meat Co",
-      "task_dir": "_shared/domains/work-happytime/tasks",
+      "briefing_label": "Work — Zigmoo Industrial",
+      "task_dir": "_shared/domains/work-zigmoo/tasks",
       "log_dir": "/path/to/org/logs",
       "data_dir": "/path/to/org/data",
-      "id_prefix": "HMC",
+      "id_prefix": "ZIG",
       "id_mode": "external",
       "default_owner": "user",
       "path_type": "mixed",
@@ -50,7 +61,10 @@
           "type": "clickup",
           "base_url": "https://app.clickup.com",
           "browse_url_template": "https://app.clickup.com/t/{ticket_id}",
-          "prefixes": ["HMC"]
+          "prefixes": ["ZIG"],
+          "url_templates": {
+            "ticket": "{base_url}/t/{ticket_id}"
+          }
         },
         {
           "name": "Fizzy",
@@ -58,13 +72,16 @@
           "base_url": "https://app.fizzy.do",
           "browse_url_template": "https://app.fizzy.do/{workspace_id}/cards/{ticket_id}",
           "workspace_id": "6180619",
-          "prefixes": []
+          "prefixes": [],
+          "url_templates": {
+            "ticket": "{base_url}/{workspace_id}/cards/{ticket_id}"
+          }
         }
       ],
       "links": [
-        {"name": "Meat Portal", "url": "https://app.happytimemeat.com/", "type": "app"},
-        {"name": "Recipes Wiki", "url": "https://docs.happytimemeat.com/", "type": "docs"},
-        {"name": "GitHub Org", "url": "https://github.com/happytime-meat-co", "type": "repo"},
+        {"name": "Zigmoo Portal", "url": "https://portal.zigmoo.com/", "type": "app"},
+        {"name": "Engineering Docs", "url": "https://docs.zigmoo.com/", "type": "docs"},
+        {"name": "GitHub Org", "url": "https://github.com/zigmoo-industrial", "type": "repo"},
         {"name": "Fizzy Board", "url": "https://app.fizzy.do/6180619/boards/main", "type": "app"}
       ],
       "log_prune": {
@@ -80,7 +97,7 @@
     },
     "work-penetrode": {
       "name": "Penetrode",
-      "display_order": 2,
+      "display_order": 3,
       "briefing_label": "Work — Penetrode",
       "task_dir": "_shared/domains/work-penetrode/tasks",
       "log_dir": "/path/to/org/logs",
@@ -95,7 +112,11 @@
           "type": "jira",
           "base_url": "https://jira.penetrode.com",
           "browse_url_template": "https://jira.penetrode.com/browse/{ticket_id}",
-          "prefixes": ["PEN"]
+          "prefixes": ["PEN"],
+          "url_templates": {
+            "ticket": "{base_url}/browse/{ticket_id}",
+            "comment": "{base_url}/browse/{ticket_id}?focusedCommentId={comment_id}"
+          }
         },
         {
           "name": "Fizzy",
@@ -103,7 +124,10 @@
           "base_url": "https://app.fizzy.do",
           "browse_url_template": "https://app.fizzy.do/{workspace_id}/cards/{ticket_id}",
           "workspace_id": "7291730",
-          "prefixes": []
+          "prefixes": [],
+          "url_templates": {
+            "ticket": "{base_url}/{workspace_id}/cards/{ticket_id}"
+          }
         }
       ],
       "links": [
@@ -124,7 +148,7 @@
     },
     "work-initech": {
       "name": "Initech",
-      "display_order": 3,
+      "display_order": 4,
       "briefing_label": "Work — Initech",
       "task_dir": "_shared/domains/work-initech/tasks",
       "log_dir": "/path/to/org/logs",
@@ -139,7 +163,10 @@
           "type": "teamwork",
           "base_url": "https://initech.teamwork.com",
           "browse_url_template": "https://initech.teamwork.com/app/tasks/{ticket_id}",
-          "prefixes": ["INI"]
+          "prefixes": ["INI"],
+          "url_templates": {
+            "ticket": "{base_url}/app/tasks/{ticket_id}"
+          }
         },
         {
           "name": "Fizzy",
@@ -147,7 +174,10 @@
           "base_url": "https://app.fizzy.do",
           "browse_url_template": "https://app.fizzy.do/{workspace_id}/cards/{ticket_id}",
           "workspace_id": "8402841",
-          "prefixes": []
+          "prefixes": [],
+          "url_templates": {
+            "ticket": "{base_url}/{workspace_id}/cards/{ticket_id}"
+          }
         }
       ],
       "links": [
@@ -166,9 +196,85 @@
       },
       "status": "active"
     },
+    "work-xlmedia": {
+      "name": "Extra Large Media",
+      "display_order": 5,
+      "briefing_label": "Work — Extra Large Media",
+      "task_dir": "_shared/domains/work-xlmedia/tasks",
+      "log_dir": "/path/to/org/logs",
+      "data_dir": "/path/to/org/data",
+      "id_prefix": "XLM",
+      "id_mode": "external",
+      "default_owner": "user",
+      "path_type": "mixed",
+      "ticket_systems": [
+        {
+          "name": "Linear",
+          "type": "linear",
+          "base_url": "https://linear.app",
+          "browse_url_template": "https://linear.app/xlmedia/issue/{ticket_id}",
+          "prefixes": ["XLM"],
+          "url_templates": {
+            "ticket": "{base_url}/xlmedia/issue/{ticket_id}"
+          }
+        }
+      ],
+      "links": [
+        {"name": "Studio Dashboard", "url": "https://studio.extralargemedia.com/", "type": "app"},
+        {"name": "Linear Board", "url": "https://linear.app/xlmedia", "type": "app"}
+      ],
+      "log_prune": {
+        "strategy": "trailing_window",
+        "window_days": 90
+      },
+      "archive": {
+        "after_days": 90,
+        "year_key": "terminal_date",
+        "strategy": "active_archived"
+      },
+      "status": "active"
+    },
+    "work-statcaster": {
+      "name": "StatCaster",
+      "display_order": 6,
+      "briefing_label": "Work — StatCaster",
+      "task_dir": "_shared/domains/work-statcaster/tasks",
+      "log_dir": "/path/to/org/logs",
+      "data_dir": "/path/to/org/data",
+      "id_prefix": "STC",
+      "id_mode": "external",
+      "default_owner": "user",
+      "path_type": "mixed",
+      "ticket_systems": [
+        {
+          "name": "GitHub Issues",
+          "type": "github",
+          "base_url": "https://github.com",
+          "browse_url_template": "https://github.com/statcaster/platform/issues/{ticket_id}",
+          "prefixes": ["STC"],
+          "url_templates": {
+            "ticket": "{base_url}/statcaster/platform/issues/{ticket_id}"
+          }
+        }
+      ],
+      "links": [
+        {"name": "StatCaster App", "url": "https://app.statcaster.io/", "type": "app"},
+        {"name": "GitHub Org", "url": "https://github.com/statcaster", "type": "repo"}
+      ],
+      "log_prune": {
+        "strategy": "trailing_window",
+        "window_days": 90
+      },
+      "archive": {
+        "after_days": 90,
+        "year_key": "terminal_date",
+        "strategy": "active_archived"
+      },
+      "status": "active"
+    },
     "triv": {
       "name": "Three Rivers Duck Club",
-      "display_order": 3,
+      "display_order": 7,
       "briefing_label": "Triv \u2014 Three Rivers Duck Club",
       "task_dir": "_shared/domains/triv/tasks",
       "log_dir": "_shared/domains/triv/logs",
@@ -177,7 +283,18 @@
       "id_mode": "auto",
       "default_owner": "moo",
       "path_type": "relative",
-      "ticket_systems": [],
+      "ticket_systems": [
+        {
+          "name": "Obsidian Vault",
+          "type": "obsidian",
+          "base_url": "obsidian://open?vault=dil_agentic_memory_0001",
+          "browse_url_template": "obsidian://open?vault=dil_agentic_memory_0001&file=_shared%2Fdomains%2Ftriv%2Ftasks%2Factive%2F{ticket_id}.md",
+          "prefixes": ["TRIV"],
+          "url_templates": {
+            "ticket": "{base_url}&file=_shared%2Fdomains%2Ftriv%2Ftasks%2Factive%2F{ticket_id}.md"
+          }
+        }
+      ],
       "links": [],
       "log_prune": {
         "strategy": "trailing_window",
