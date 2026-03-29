@@ -27,6 +27,8 @@ Zero-inference lookup table for agent commands. Before doing any work, check thi
 | "morning brief" | `_shared/scripts/morning_brief.sh` | Do NOT manually gather task data |
 | "create task" | `_shared/scripts/create_task.sh` | Handles ID allocation, index update |
 | "create project" | `_shared/scripts/create_project.sh` | Adds to project registry |
+| "search tasks", "list tasks", "show tasks", "find task" | `_shared/scripts/task_tool.sh search [--status STATUS] [--project SLUG] [--domain DOMAIN] [--latest N] [--count] [--json]` | Fast task discovery and filtering from index |
+| "review task", "show task details" | `_shared/scripts/task_tool.sh review <TASK_ID> [--json]` | Show full task details for a single task |
 | "validate tasks" | `_shared/scripts/validate_tasks.sh` | Run before claiming task-system completion |
 | "archive tasks" | `_shared/scripts/archive_tasks.sh` | Moves terminal tasks to archived/ |
 | "list archived" | `_shared/scripts/list_archived.sh` | Search/filter archived tasks |
