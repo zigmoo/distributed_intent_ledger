@@ -29,9 +29,7 @@ Relies on Obsidian vault sync.
 
 For a compact human-readable summary of the whole system, start with [`docs/dil-overview.md`](./docs/dil-overview.md).
 
-## Start Every Session Correctly
-
-Make good use of `READ_THIS_DIL_FIRST.md`: require every AI Agent and AI Assistant to read it at the beginning of every session.
+DIL requires each AI Agent to have shared memories to include `~/dil.md` at the beginning of every session.
 This bootstrap step is critical for consistent behavior, correct memory scoping, and reliable cross-agent/cross-machine coordination.
 `READ_ME_FIRST.md` should be maintained as a compatibility alias for bootstrap flows that look for that filename first.
 
