@@ -12,14 +12,15 @@ Here's the plan for doing all those things and keeping memories and priorities s
 # Minimal DIL Onboarding:
 mkdir -p dil_agentic_memory && cd dil_agentic_memory ;
 git clone https://github.com/zigmoo/distributed_intent_ledger.git ;
+ln -s $HOME/dil_agentic_memory/distributed_intent_ledger/READ_THIS_DIL_FIRST.md $HOME/dil.md ;
 
 # Bootstrap your agent (pick one):
-# echo '## DIL Session Bootstrap (required)\nRead `~/dil_agentic_memory/distributed_intent_ledger/READ_THIS_DIL_FIRST.md` first.' >> ~/.claude/CLAUDE.md
-# echo '## DIL Session Bootstrap (required)\nRead `~/dil_agentic_memory/distributed_intent_ledger/READ_THIS_DIL_FIRST.md` first.' >> ~/.opencode/AGENTS.md
-# echo '## DIL Session Bootstrap (required)\nRead `~/dil_agentic_memory/distributed_intent_ledger/READ_THIS_DIL_FIRST.md` first.' >> ~/.codex/AGENTS.md
-# echo '## DIL Session Bootstrap (required)\nRead `~/dil_agentic_memory/distributed_intent_ledger/READ_THIS_DIL_FIRST.md` first.' >> ~/.openclaw/config.md
-# echo '## DIL Session Bootstrap (required)\nRead `~/dil_agentic_memory/distributed_intent_ledger/READ_THIS_DIL_FIRST.md` first.' >> ~/.pi/config.md
-# echo '## DIL Session Bootstrap (required)\nRead `~/dil_agentic_memory/distributed_intent_ledger/READ_THIS_DIL_FIRST.md` first.' >> ~/.zeroclaw/config.md
+# echo '## DIL Session Bootstrap\nRead $HOME/dil.md first.' >> $HOME/.claude/CLAUDE.md
+# echo '## DIL Session Bootstrap\nRead $HOME/dil.md first.' >> $HOME/.config/opencode/AGENTS.md
+# echo '## DIL Session Bootstrap\nRead $HOME/dil.md first.' >> $HOME/.codex/instructions.md
+# echo '## DIL Session Bootstrap\nRead $HOME/dil.md first.' >> $HOME/.openclaw/workspace_01/AGENTS.md
+# echo '## DIL Session Bootstrap\nRead $HOME/dil.md first.' >> $HOME/.pi/AGENTS.md
+# echo '## DIL Session Bootstrap\nRead $HOME/dil.md first.' >> $HOME/.zeroclaw/AGENTS.md
 ```
 
 Distributed Intent Ledger (DIL) is a local-first, filesystem-native protocol for persistent multi-agent and multi-environment memory coordination.
