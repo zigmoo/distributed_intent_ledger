@@ -32,7 +32,8 @@ GENERIC_RUNTIMES='bash|sh|zsh|fish|dash|ksh|csh|tcsh|node|nodejs|bun|deno|python
 #   cc=claude-code
 #   claude=claude-code
 
-ALIAS_MAP_FILE="${DIL_ALIAS_MAP:-${HOME}/Documents/dil_agentic_memory_0001/_shared/_meta/agent_aliases.conf}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ALIAS_MAP_FILE="${DIL_ALIAS_MAP:-$(cd "$SCRIPT_DIR/.." && pwd)/_shared/_meta/agent_aliases.conf}"
 declare -A ALIAS_MAP=()
 
 if [[ -f "$ALIAS_MAP_FILE" ]]; then
