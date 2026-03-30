@@ -24,7 +24,7 @@ ln -s $HOME/dil_agentic_memory/distributed_intent_ledger/READ_THIS_DIL_FIRST.md 
 ```
 
 Distributed Intent Ledger (DIL) is a local-first, filesystem-native protocol for persistent multi-agent and multi-environment memory coordination.
-In current deployments, Tailscale is used as an optional private network fabric for secure cross-machine agent communication and coordination.
+In current deployments, [Tailscale](https://github.com/tailscale/tailscale) is used as an optional private network fabric for secure cross-machine agent communication and coordination.
 Relies on Obsidian vault sync.
 
 For a compact human-readable summary of the whole system, start with [`docs/dil-overview.md`](./docs/dil-overview.md).
