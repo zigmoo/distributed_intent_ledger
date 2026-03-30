@@ -255,7 +255,7 @@ def get_domain_id_rules(registry: dict) -> dict[str, tuple[str, str]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate canonical DIL task files and indexes.")
-    parser.add_argument("base", nargs="?", default="/home/moo/Documents/dil_agentic_memory_0001")
+    parser.add_argument("base", nargs="?", default=os.environ.get("DIL_BASE", os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
     parser.add_argument("--json", action="store_true", dest="json_output",
                         help="Output results as a JSON object")
     args = parser.parse_args()

@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 # archive_tasks.py
 # DIL Protocol: Automates the archiving of completed/cancelled tasks.
 
-BASE = os.environ.get("DIL_BASE", "/home/moo/Documents/dil_agentic_memory_0001")
+BASE = os.environ.get("DIL_BASE", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 INDEX_PATH = os.path.join(BASE, "_shared/_meta/task_index.md")
 ARCHIVE_DIR = os.path.join(BASE, "_shared/tasks/_archive")
 THRESHOLD_DAYS = 30

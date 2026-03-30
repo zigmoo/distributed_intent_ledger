@@ -51,7 +51,7 @@ _resolve_registry() {
     if [[ -n "${URL_TOOL_REGISTRY:-}" ]]; then echo "$URL_TOOL_REGISTRY"; return; fi
     local scripts_lib="/az/talend/data/url_tool/domain_registry.json"
     if [[ -f "$scripts_lib" ]]; then echo "$scripts_lib"; return; fi
-    local dil_path="${HOME}/Documents/dil_agentic_memory_0001/_shared/_meta/domain_registry.json"
+    local dil_path="${DIL_BASE:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}/_shared/_meta/domain_registry.json"
     if [[ -f "$dil_path" ]]; then echo "$dil_path"; return; fi
     echo "NOT_FOUND"
 }

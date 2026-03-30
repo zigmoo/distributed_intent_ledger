@@ -103,7 +103,7 @@ def normalize_agents(owner: str, existing_ids: list[str]) -> list[str]:
         if c and c not in out:
             out.append(c)
     if not out:
-        out = ["moo", "columbus"]
+        out = [os.environ.get("USER", "user")]
     return out
 
 
@@ -117,7 +117,7 @@ def role_for(agent_id: str, idx: int) -> str:
 
 def canonical_frontmatter(data: dict[str, str], path: Path, task_id: str, body: str, today: str) -> str:
     domain = data.get("domain") or ("work" if "/work/" in str(path) else "personal")
-    owner = (data.get("owner") or "moo").strip() or "moo"
+    owner = (data.get("owner") or os.environ.get("USER", "user")).strip() or os.environ.get("USER", "user")
     title = (data.get("title") or task_id).strip() or task_id
 
     status = (data.get("status") or "todo").strip()
@@ -194,7 +194,7 @@ def in_scope(task_id: str, min_id: int, max_id: int, include_work: bool) -> bool
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Migrate task files to task contract v1")
-    ap.add_argument("--base", default="/home/moo/Documents/dil_agentic_memory_0001")
+    ap.add_argument("--base", default=os.environ.get("DIL_BASE", os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
     ap.add_argument("--min-id", type=int, default=0)
     ap.add_argument("--max-id", type=int, default=999999)
     ap.add_argument("--apply", action="store_true")

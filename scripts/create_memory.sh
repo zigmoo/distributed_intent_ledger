@@ -63,7 +63,7 @@ resolve_identity() {
       cc) ASSISTANT="claude-code" ;;
       bash|sh|zsh)
         # Smart fallback for interactive shells
-        if [[ "$MACHINE" == "framemoowork" && "$USER" == "moo" ]]; then
+        if [[ -n "$MACHINE" && -n "$USER" ]]; then
            ASSISTANT="mainthread"
         fi
         ;;

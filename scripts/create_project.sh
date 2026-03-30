@@ -11,7 +11,7 @@ PARENT=""
 ANCHOR_TASK=""
 REPO_PATH=""
 ALIASES=""
-OWNER="moo"
+OWNER="${USER:-$(whoami)}"
 DESCRIPTION=""
 DRY_RUN=0
 
@@ -31,7 +31,7 @@ Options:
   --anchor-task TEXT    DIL task ID that groups related tasks (e.g., PRJ-100)
   --repo-path TEXT      Primary filesystem path(s) for this project
   --aliases TEXT        Comma-separated shorthand names for this project
-  --owner TEXT          Default: moo
+  --owner TEXT          Default: current user
   --description TEXT    One-line description
   --base PATH           Default: auto-detected from script location
   --dry-run             Show what would be done without writing

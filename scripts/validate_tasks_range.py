@@ -16,7 +16,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Validate task range; optionally migrate to contract v1 before validation.")
     ap.add_argument("--min-id", type=int, required=True, help="Minimum MOO numeric id")
     ap.add_argument("--max-id", type=int, default=999999, help="Maximum MOO numeric id")
-    ap.add_argument("--base", default="/home/moo/Documents/dil_agentic_memory_0001")
+    ap.add_argument("--base", default=os.environ.get("DIL_BASE", os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
     ap.add_argument("--fix", action="store_true", help="Migrate selected range to contract v1 before validation")
     args = ap.parse_args()
 
