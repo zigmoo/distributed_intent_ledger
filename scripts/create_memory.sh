@@ -4,7 +4,8 @@ set -euo pipefail
 # create_memory.sh
 # Automates the creation of ClawVault memory notes with schema compliance and indexing.
 
-BASE="${CLAWVAULT_BASE:-/home/moo/Documents/dil_agentic_memory_0001}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DIL_BASE="${DIL_BASE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 TYPE=""
 CATEGORY=""
 TITLE=""
@@ -30,7 +31,7 @@ Options:
   --machine TEXT       Target machine scope (default: derived from hostname)
   --assistant TEXT     Target assistant scope (default: derived from env/process)
   --content-file PATH  File containing the note body (if omitted, reads from stdin)
-  --base PATH          Base vault path (default: $CLAWVAULT_BASE or /home/moo/Documents/dil_agentic_memory_0001)
+  --base PATH          Base vault path (default: auto-detected from script location)
   --dry-run            Print actions without executing
   -h, --help           Show this help
 USAGE
@@ -79,7 +80,7 @@ while [[ $# -gt 0 ]]; do
     --machine) MACHINE="${2:-}"; shift 2 ;;
     --assistant) ASSISTANT="${2:-}"; shift 2 ;;
     --content-file) CONTENT_FILE="${2:-}"; shift 2 ;;
-    --base) BASE="${2:-}"; shift 2 ;;
+    --base) DIL_BASE="${2:-}"; shift 2 ;;
     --dry-run) DRY_RUN=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown arg: $1"; usage; exit 1 ;;
@@ -101,7 +102,7 @@ if [[ -z "$MACHINE" || -z "$ASSISTANT" ]]; then
 fi
 
 # Determine Scope Paths
-SCOPE_DIR="$BASE/$MACHINE/$ASSISTANT"
+SCOPE_DIR="$DIL_BASE/$MACHINE/$ASSISTANT"
 if [[ ! -d "$SCOPE_DIR" ]]; then
   echo "Error: Assistant scope directory not found: $SCOPE_DIR" >&2
   exit 1

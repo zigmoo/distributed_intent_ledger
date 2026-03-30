@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE="/home/moo/Documents/dil_agentic_memory_0001"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DIL_BASE="${DIL_BASE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 TASK_ID=""
 NEW_STATUS=""
 NEW_OWNER=""
@@ -28,7 +29,7 @@ Options:
   --reason TEXT           Change reason for log
   --actor TEXT            Default: codex
   --model TEXT            Default: gpt-5
-  --base PATH             Default: /home/moo/Documents/dil_agentic_memory_0001
+  --base PATH             Default: auto-detected from script location
   --dry-run
   -h, --help
 USAGE
@@ -81,7 +82,7 @@ while [[ $# -gt 0 ]]; do
     --reason) REASON="${2:-}"; shift 2 ;;
     --actor) ACTOR="${2:-}"; shift 2 ;;
     --model) MODEL="${2:-}"; shift 2 ;;
-    --base) BASE="${2:-}"; shift 2 ;;
+    --base) DIL_BASE="${2:-}"; shift 2 ;;
     --dry-run) DRY_RUN=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown arg: $1" >&2; usage; exit 1 ;;
@@ -103,7 +104,7 @@ if ! valid_status "$NEW_STATUS"; then
 fi
 
 # Build search dirs dynamically from domain registry
-export BASE_DIL="$BASE"
+export DIL_BASE="$DIL_BASE"
 SEARCH_DIRS=()
 while IFS= read -r dom; do
   resolve_domain "$dom"
@@ -113,9 +114,9 @@ while IFS= read -r dom; do
   fi
 done < <(list_domains)
 
-INDEX_FILE="$BASE/_shared/_meta/task_index.md"
-CHANGE_LOG="$BASE/_shared/tasks/_meta/change_log.md"
-VALIDATOR="$BASE/_shared/scripts/validate_tasks.sh"
+INDEX_FILE="$DIL_BASE/_shared/_meta/task_index.md"
+CHANGE_LOG="$DIL_BASE/_shared/tasks/_meta/change_log.md"
+VALIDATOR="$DIL_BASE/_shared/scripts/validate_tasks.sh"
 
 for req in "$INDEX_FILE" "$CHANGE_LOG" "$VALIDATOR"; do
   if [[ ! -e "$req" ]]; then
@@ -168,7 +169,7 @@ DATE_UTC="$(date -u +%Y-%m-%d)"
 TS_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 # Derive relative path from actual file location
-TASK_REL="${TASK_FILE#"$BASE/"}"
+TASK_REL="${TASK_FILE#"$DIL_BASE/"}"
 
 row="| $TASK_ID | $domain | $NEW_STATUS | $priority | $NEW_OWNER | $due | $project | $TASK_REL | $DATE_UTC |"
 
@@ -192,7 +193,7 @@ if (( DRY_RUN == 1 )); then
   exit 0
 fi
 
-LOCKDIR="$BASE/_shared/tasks/_meta/.status_update.lock"
+LOCKDIR="$DIL_BASE/_shared/tasks/_meta/.status_update.lock"
 acquired=0
 for _ in $(seq 1 50); do
   if mkdir "$LOCKDIR" 2>/dev/null; then

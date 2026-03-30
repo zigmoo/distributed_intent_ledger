@@ -7,7 +7,7 @@ set -euo pipefail
 
 SCRIPT_NAME="archive_tasks"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BASE="${BASE_DIL:-/home/moo/Documents/dil_agentic_memory_0001}"
+DIL_BASE="${DIL_BASE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 DRY_RUN=0
 
 for arg in "$@"; do
@@ -183,7 +183,7 @@ fi
 if (( moved > 0 )); then
   echo ""
   echo "Rebuilding task index..."
-  "$BASE/_shared/scripts/rebuild_task_index.sh" "$BASE"
+  "$DIL_BASE/_shared/scripts/rebuild_task_index.sh" "$DIL_BASE"
 fi
 
 if (( errors > 0 )); then

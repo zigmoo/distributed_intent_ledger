@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE="/home/moo/Documents/dil_agentic_memory_0001"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DIL_BASE="${DIL_BASE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 SLUG=""
 NAME=""
 DOMAIN=""
@@ -32,7 +33,7 @@ Options:
   --aliases TEXT        Comma-separated shorthand names for this project
   --owner TEXT          Default: moo
   --description TEXT    One-line description
-  --base PATH           Default: /home/moo/Documents/dil_agentic_memory_0001
+  --base PATH           Default: auto-detected from script location
   --dry-run             Show what would be done without writing
   -h, --help            Show this help
 USAGE
@@ -50,14 +51,14 @@ while [[ $# -gt 0 ]]; do
     --aliases) ALIASES="$2"; shift 2 ;;
     --owner) OWNER="$2"; shift 2 ;;
     --description) DESCRIPTION="$2"; shift 2 ;;
-    --base) BASE="$2"; shift 2 ;;
+    --base) DIL_BASE="$2"; shift 2 ;;
     --dry-run) DRY_RUN=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown arg: $1" >&2; usage; exit 1 ;;
   esac
 done
 
-REGISTRY="$BASE/_shared/_meta/project_registry.md"
+REGISTRY="$DIL_BASE/_shared/_meta/project_registry.md"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Source the registry library
@@ -84,7 +85,7 @@ if [[ ! "$SLUG" =~ ^[a-z0-9][a-z0-9._-]*$ ]]; then
 fi
 
 # --- Validate domain against domain_registry.json ---
-DOMAIN_REGISTRY_JSON="$BASE/_shared/_meta/domain_registry.json"
+DOMAIN_REGISTRY_JSON="$DIL_BASE/_shared/_meta/domain_registry.json"
 if [[ -f "$DOMAIN_REGISTRY_JSON" ]] && command -v jq >/dev/null 2>&1; then
   if ! jq -e ".domains[\"$DOMAIN\"]" "$DOMAIN_REGISTRY_JSON" >/dev/null 2>&1; then
     echo "ERROR: domain '$DOMAIN' not found in domain_registry.json" >&2

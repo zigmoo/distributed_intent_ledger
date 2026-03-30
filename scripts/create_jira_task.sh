@@ -29,9 +29,9 @@ set -euo pipefail
 #
 # Requires: jira_tool, create_task.sh
 
-BASE="${BASE_DIL:-/home/moo/Documents/dil_agentic_memory_0001}"
+DIL_BASE="${DIL_BASE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 JIRA_TOOL="/path/to/jira_tool"
-CREATE_TASK="$BASE/_shared/scripts/create_task.sh"
+CREATE_TASK="$DIL_BASE/_shared/scripts/create_task.sh"
 
 # --- Parse args into jira vs dil buckets ---
 SUMMARY=""

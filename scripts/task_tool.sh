@@ -48,12 +48,12 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BASE="${BASE_DIL:-/home/moo/Documents/dil_agentic_memory_0001}"
-INDEX_FILE="$BASE/_shared/_meta/task_index.md"
+DIL_BASE="${DIL_BASE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+INDEX_FILE="$DIL_BASE/_shared/_meta/task_index.md"
 URL_TOOL="$SCRIPT_DIR/url_tool.sh"
 
 # Force url_tool to use the DIL registry (not the scripts-library work-only copy)
-export URL_TOOL_REGISTRY="$BASE/_shared/_meta/domain_registry.json"
+export URL_TOOL_REGISTRY="$DIL_BASE/_shared/_meta/domain_registry.json"
 
 # shellcheck source=lib/domains.sh
 source "$SCRIPT_DIR/lib/domains.sh"
@@ -271,12 +271,12 @@ cmd_review() {
 
   local task_file=""
   if [[ -n "$task_path" ]]; then
-    task_file="$BASE/$task_path"
+    task_file="$DIL_BASE/$task_path"
   fi
 
   # Fallback: scan domain dirs
   if [[ -z "$task_file" || ! -f "$task_file" ]]; then
-    export BASE_DIL="$BASE"
+    export DIL_BASE="$DIL_BASE"
     local found=()
     while IFS= read -r dom; do
       resolve_domain "$dom"
@@ -347,7 +347,7 @@ main() {
 
   # Validate domain filter if provided
   if [[ -n "$FILTER_DOMAIN" ]]; then
-    export BASE_DIL="$BASE"
+    export DIL_BASE="$DIL_BASE"
     if ! domain_exists "$FILTER_DOMAIN"; then
       die "unknown domain: $FILTER_DOMAIN" 2
     fi

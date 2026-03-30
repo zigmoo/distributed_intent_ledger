@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE="/home/moo/Documents/dil_agentic_memory_0001"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DIL_BASE="${DIL_BASE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 KEEP_TEMP=0
 QUIET=0
 
@@ -11,7 +12,7 @@ Usage:
   test_validate_tasks.sh [options]
 
 Options:
-  --base PATH        Base path for agentic_memory (default: /home/moo/Documents/dil_agentic_memory_0001)
+  --base PATH        Base path for agentic_memory (default: auto-detected from script location)
   --keep-temp        Keep temporary test workspace for debugging
   --quiet            Show only summary/errors
   -h, --help         Show help
@@ -76,7 +77,7 @@ skip() {
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --base) BASE="${2:-}"; shift 2 ;;
+    --base) DIL_BASE="${2:-}"; shift 2 ;;
     --keep-temp) KEEP_TEMP=1; shift ;;
     --quiet) QUIET=1; shift ;;
     -h|--help) usage; exit 0 ;;
@@ -84,11 +85,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-VALIDATOR="$BASE/_shared/scripts/validate_tasks.sh"
-PY_VALIDATOR="$BASE/_shared/scripts/validate_tasks.py"
+VALIDATOR="$DIL_BASE/_shared/scripts/validate_tasks.sh"
+PY_VALIDATOR="$DIL_BASE/_shared/scripts/validate_tasks.py"
 
-if [[ ! -d "$BASE" ]]; then
-  echo "Base path not found: $BASE" >&2
+if [[ ! -d "$DIL_BASE" ]]; then
+  echo "Base path not found: $DIL_BASE" >&2
   exit 1
 fi
 
@@ -276,11 +277,11 @@ log ""
 
 # --- Test 0: Live vault baseline ---
 log "${C_CYAN}[0] Live vault baseline${C_RESET}"
-if "$VALIDATOR" "$BASE" >/dev/null 2>&1; then
+if "$VALIDATOR" "$DIL_BASE" >/dev/null 2>&1; then
   pass "Live vault validates clean"
 else
   fail "Live vault has errors — fix before trusting other results"
-  "$VALIDATOR" "$BASE" 2>&1 | head -20 >&2
+  "$VALIDATOR" "$DIL_BASE" 2>&1 | head -20 >&2
 fi
 log ""
 

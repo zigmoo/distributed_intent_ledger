@@ -7,7 +7,7 @@ set -euo pipefail
 
 SCRIPT_NAME="create_task"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BASE="${BASE_DIL:-/home/moo/Documents/dil_agentic_memory_0001}"
+DIL_BASE="${DIL_BASE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
 
 # Source domain registry
@@ -113,7 +113,7 @@ Options:
   --due YYYY-MM-DD|TEXT
   --actor TEXT            Default: detected from env/process
   --model TEXT            Default: detected from env
-  --base PATH             Default: /home/moo/Documents/dil_agentic_memory_0001
+  --base PATH             Default: auto-detected from script location
   --dry-run
   -h, --help
 
@@ -300,7 +300,7 @@ cmd_create() {
       --due) DUE="${2:-}"; shift 2 ;;
       --actor) ACTOR="${2:-}"; shift 2 ;;
       --model) MODEL="${2:-}"; shift 2 ;;
-      --base) BASE="${2:-}"; shift 2 ;;
+      --base) DIL_BASE="${2:-}"; shift 2 ;;
       --dry-run) DRY_RUN=1; shift ;;
       -h|--help) usage; exit 0 ;;
       *) _output_error 2 "Unknown arg: $1"; usage; exit 2 ;;
@@ -374,10 +374,10 @@ cmd_create() {
   fi
 
   # Paths
-  INDEX_FILE="$BASE/_shared/_meta/task_index.md"
-  COUNTER_FILE="$BASE/_shared/_meta/task_id_counter.md"
-  CHANGE_LOG="$BASE/_shared/tasks/_meta/change_log.md"
-  VALIDATOR="$BASE/_shared/tasks/_meta/scripts/validate_tasks.sh"
+  INDEX_FILE="$DIL_BASE/_shared/_meta/task_index.md"
+  COUNTER_FILE="$DIL_BASE/_shared/_meta/task_id_counter.md"
+  CHANGE_LOG="$DIL_BASE/_shared/tasks/_meta/change_log.md"
+  VALIDATOR="$DIL_BASE/_shared/tasks/_meta/scripts/validate_tasks.sh"
   ACTIVE_DIR="$TASK_DIR/active"
 
   for req in "$INDEX_FILE" "$COUNTER_FILE" "$CHANGE_LOG"; do
@@ -432,7 +432,7 @@ cmd_create() {
       local raw_td
       raw_td=$(jq -r --arg d "$dname" '.domains[$d].task_dir' "$_DOMAIN_REGISTRY")
       local resolved_td
-      if [[ "$raw_td" == /* ]]; then resolved_td="$raw_td"; else resolved_td="$BASE/$raw_td"; fi
+      if [[ "$raw_td" == /* ]]; then resolved_td="$raw_td"; else resolved_td="$DIL_BASE/$raw_td"; fi
       if [[ -f "$resolved_td/active/$PARENT_TASK_ID.md" ]]; then parent_found=1; break; fi
       if find "$resolved_td/archived" -name "$PARENT_TASK_ID.md" -print -quit 2>/dev/null | grep -q .; then parent_found=1; break; fi
     done < <(list_domains)
@@ -452,7 +452,7 @@ cmd_create() {
     exit 3
   fi
 
-  TASK_REL="${TASK_PATH#$BASE/}"
+  TASK_REL="${TASK_PATH#$DIL_BASE/}"
 
   # Build summary section
   local summary_content
@@ -545,7 +545,7 @@ EOT
   notify_elucubrate_cache_refresh || true
 
   _log "Running post-creation validation..."
-  if ! "$VALIDATOR" "$BASE"; then
+  if ! "$VALIDATOR" "$DIL_BASE"; then
     _log "POST-CREATION VALIDATION FAILED"
     _output_error 5 "Task $TASK_ID created but post-creation validation failed. File: $TASK_PATH"
     exit 5

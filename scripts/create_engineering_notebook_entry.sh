@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE="${DIL_BASE:-/home/moo/Documents/dil_agentic_memory_0001}"
-TARGET_DIR="$BASE/_shared/engineering-notebook"
-INDEX_FILE="$BASE/_shared/_meta/vault_index.md"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DIL_BASE="${DIL_BASE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+TARGET_DIR="$DIL_BASE/_shared/engineering-notebook"
+INDEX_FILE="$DIL_BASE/_shared/_meta/vault_index.md"
 
 TITLE=""
 PROJECT=""

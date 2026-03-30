@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE="${1:-/home/moo/Documents/dil_agentic_memory_0001}"
-REGISTRY="$BASE/_shared/_meta/domain_registry.json"
-INDEX_FILE="$BASE/_shared/_meta/task_index.md"
-COUNTER_FILE="$BASE/_shared/_meta/task_id_counter.md"
-CHANGE_LOG="$BASE/_shared/tasks/_meta/change_log.md"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DIL_BASE="${1:-${DIL_BASE:-$(cd "$SCRIPT_DIR/.." && pwd)}}"
+REGISTRY="$DIL_BASE/_shared/_meta/domain_registry.json"
+INDEX_FILE="$DIL_BASE/_shared/_meta/task_index.md"
+COUNTER_FILE="$DIL_BASE/_shared/_meta/task_id_counter.md"
+CHANGE_LOG="$DIL_BASE/_shared/tasks/_meta/change_log.md"
 
 errors=0
 warnings=0
@@ -28,7 +29,7 @@ if [[ -f "$REGISTRY" ]] && command -v jq >/dev/null 2>&1; then
     if [[ "$raw_task_dir" == /* ]]; then
       resolved="$raw_task_dir"
     else
-      resolved="$BASE/$raw_task_dir"
+      resolved="$DIL_BASE/$raw_task_dir"
     fi
     # Support both active/ subdir (new) and flat dir (legacy)
     if [[ -d "$resolved/active" ]]; then
@@ -48,13 +49,13 @@ if [[ -f "$REGISTRY" ]] && command -v jq >/dev/null 2>&1; then
 fi
 
 # Also check legacy paths (coexist during migration)
-if [[ -d "$BASE/_shared/tasks/work" ]]; then
-  domain_dirs[work__legacy]="$BASE/_shared/tasks/work"
+if [[ -d "$DIL_BASE/_shared/tasks/work" ]]; then
+  domain_dirs[work__legacy]="$DIL_BASE/_shared/tasks/work"
   domain_id_prefix[work]="${domain_id_prefix[work]:-DMDI}"
   domain_id_mode[work]="${domain_id_mode[work]:-external}"
 fi
-if [[ -d "$BASE/_shared/tasks/personal" ]]; then
-  domain_dirs[personal__legacy]="$BASE/_shared/tasks/personal"
+if [[ -d "$DIL_BASE/_shared/tasks/personal" ]]; then
+  domain_dirs[personal__legacy]="$DIL_BASE/_shared/tasks/personal"
   domain_id_prefix[personal]="${domain_id_prefix[personal]:-DIL}"
   domain_id_mode[personal]="${domain_id_mode[personal]:-auto}"
 fi

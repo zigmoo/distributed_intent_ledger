@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE="/home/moo/Documents/dil_agentic_memory_0001"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DIL_BASE="${DIL_BASE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 TASK_ID=""
 OWNER=""
 REASON="assign_task.sh"
@@ -22,7 +23,7 @@ Options:
   --reason TEXT           Change reason for log
   --actor TEXT            Default: codex
   --model TEXT            Default: gpt-5
-  --base PATH             Default: /home/moo/Documents/dil_agentic_memory_0001
+  --base PATH             Default: auto-detected from script location
   --dry-run
   -h, --help
 USAGE
@@ -53,7 +54,7 @@ while [[ $# -gt 0 ]]; do
     --reason) REASON="${2:-}"; shift 2 ;;
     --actor) ACTOR="${2:-}"; shift 2 ;;
     --model) MODEL="${2:-}"; shift 2 ;;
-    --base) BASE="${2:-}"; shift 2 ;;
+    --base) DIL_BASE="${2:-}"; shift 2 ;;
     --dry-run) DRY_RUN=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown arg: $1" >&2; usage; exit 1 ;;
@@ -69,9 +70,9 @@ if [[ -z "$TASK_ID" || -z "$OWNER" ]]; then
   exit 1
 fi
 
-WORK_DIR="$BASE/_shared/tasks/work"
-PERSONAL_DIR="$BASE/_shared/tasks/personal"
-STATUS_SCRIPT="$BASE/_shared/scripts/set_task_status.sh"
+WORK_DIR="$DIL_BASE/_shared/tasks/work"
+PERSONAL_DIR="$DIL_BASE/_shared/tasks/personal"
+STATUS_SCRIPT="$DIL_BASE/_shared/scripts/set_task_status.sh"
 
 for req in "$WORK_DIR" "$PERSONAL_DIR" "$STATUS_SCRIPT"; do
   if [[ ! -e "$req" ]]; then
@@ -95,7 +96,7 @@ fi
 
 cmd=(
   "$STATUS_SCRIPT"
-  --base "$BASE"
+  --base "$DIL_BASE"
   --task-id "$TASK_ID"
   --status "$current_status"
   --owner "$OWNER"

@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE="${1:-/home/moo/Documents/dil_agentic_memory_0001}"
-REGISTRY="$BASE/_shared/_meta/domain_registry.json"
-INDEX_FILE="$BASE/_shared/_meta/task_index.md"
-COUNTER_FILE="$BASE/_shared/_meta/task_id_counter.md"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DIL_BASE="${1:-${DIL_BASE:-$(cd "$SCRIPT_DIR/.." && pwd)}}"
+REGISTRY="$DIL_BASE/_shared/_meta/domain_registry.json"
+INDEX_FILE="$DIL_BASE/_shared/_meta/task_index.md"
+COUNTER_FILE="$DIL_BASE/_shared/_meta/task_id_counter.md"
 TODAY="$(date -u +%Y-%m-%d)"
 
 trim() {
@@ -34,7 +35,7 @@ if [[ -f "$REGISTRY" ]] && command -v jq >/dev/null 2>&1; then
     if [[ "$raw_task_dir" == /* ]]; then
       resolved="$raw_task_dir"
     else
-      resolved="$BASE/$raw_task_dir"
+      resolved="$DIL_BASE/$raw_task_dir"
     fi
     # Add active/ subdir if it exists, otherwise flat dir
     if [[ -d "$resolved/active" ]]; then
@@ -52,7 +53,7 @@ if [[ -f "$REGISTRY" ]] && command -v jq >/dev/null 2>&1; then
 fi
 
 # Also check legacy paths (coexist during migration)
-for legacy_dir in "$BASE/_shared/tasks/work" "$BASE/_shared/tasks/personal"; do
+for legacy_dir in "$DIL_BASE/_shared/tasks/work" "$DIL_BASE/_shared/tasks/personal"; do
   if [[ -d "$legacy_dir" ]]; then
     # Avoid duplicates
     already=0

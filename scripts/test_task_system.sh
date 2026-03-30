@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE="/home/moo/Documents/dil_agentic_memory_0001"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DIL_BASE="${DIL_BASE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 KEEP_TEMP=0
 QUIET=0
 
@@ -11,7 +12,7 @@ Usage:
   test_task_system.sh [options]
 
 Options:
-  --base PATH        Base path for agentic_memory (default: /home/moo/Documents/dil_agentic_memory_0001)
+  --base PATH        Base path for agentic_memory (default: auto-detected from script location)
   --keep-temp        Keep temporary test workspace for debugging
   --quiet            Show only summary/errors
   -h, --help         Show help
@@ -69,7 +70,7 @@ expect_failure() {
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --base) BASE="${2:-}"; shift 2 ;;
+    --base) DIL_BASE="${2:-}"; shift 2 ;;
     --keep-temp) KEEP_TEMP=1; shift ;;
     --quiet) QUIET=1; shift ;;
     -h|--help) usage; exit 0 ;;
@@ -77,16 +78,16 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ ! -d "$BASE" ]]; then
-  echo "Base path not found: $BASE" >&2
+if [[ ! -d "$DIL_BASE" ]]; then
+  echo "Base path not found: $DIL_BASE" >&2
   exit 1
 fi
 
 for req in \
-  "$BASE/_shared/scripts/validate_tasks.sh" \
-  "$BASE/_shared/scripts/create_task.sh" \
-  "$BASE/_shared/scripts/set_task_status.sh" \
-  "$BASE/_shared/scripts/assign_task.sh"
+  "$DIL_BASE/_shared/scripts/validate_tasks.sh" \
+  "$DIL_BASE/_shared/scripts/create_task.sh" \
+  "$DIL_BASE/_shared/scripts/set_task_status.sh" \
+  "$DIL_BASE/_shared/scripts/assign_task.sh"
 do
   if [[ ! -x "$req" ]]; then
     echo "Missing executable script: $req" >&2
@@ -96,7 +97,7 @@ done
 
 TMP_ROOT="$(mktemp -d /tmp/agentic-memory-tests.XXXXXX)"
 TEST_BASE="$TMP_ROOT/agentic_memory"
-cp -a "$BASE" "$TEST_BASE"
+cp -a "$DIL_BASE" "$TEST_BASE"
 
 cleanup() {
   if (( KEEP_TEMP == 0 )); then
@@ -216,7 +217,7 @@ expect_success "final validator" "$VALIDATE" "$TEST_BASE"
 
 echo
 echo "Task System Integration Test Summary"
-echo "- Base under test: $BASE"
+echo "- Base under test: $DIL_BASE"
 echo "- Temp workspace: $TMP_ROOT"
 echo "- Passed: $pass_count"
 echo "- Failed: $fail_count"

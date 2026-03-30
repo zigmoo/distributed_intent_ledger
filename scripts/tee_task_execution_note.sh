@@ -18,13 +18,14 @@ Required:
     --file PATH
 
 Options:
-  --base PATH            Vault base path (default: /home/moo/Documents/dil_agentic_memory_0001)
+  --base PATH            Vault base path (default: auto-detected from script location)
   --timestamp ISO8601    Override timestamp
   -h, --help             Show this help
 USAGE
 }
 
-BASE="/home/moo/Documents/dil_agentic_memory_0001"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DIL_BASE="${DIL_BASE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 TASK_ID=""
 TASK_FILE=""
 TS=""
@@ -33,7 +34,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --task-id) TASK_ID="${2:-}"; shift 2 ;;
     --file) TASK_FILE="${2:-}"; shift 2 ;;
-    --base) BASE="${2:-}"; shift 2 ;;
+    --base) DIL_BASE="${2:-}"; shift 2 ;;
     --timestamp) TS="${2:-}"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown arg: $1" >&2; usage; exit 2 ;;
@@ -62,7 +63,7 @@ fi
 
 cat "$tmp"
 
-args=(--base "$BASE" --content-file "$tmp")
+args=(--base "$DIL_BASE" --content-file "$tmp")
 if [[ -n "$TASK_ID" ]]; then
   args+=(--task-id "$TASK_ID")
 else
@@ -72,4 +73,4 @@ if [[ -n "$TS" ]]; then
   args+=(--timestamp "$TS")
 fi
 
-"$BASE/_shared/scripts/append_task_execution_note.sh" "${args[@]}" >/dev/null
+"$DIL_BASE/_shared/scripts/append_task_execution_note.sh" "${args[@]}" >/dev/null

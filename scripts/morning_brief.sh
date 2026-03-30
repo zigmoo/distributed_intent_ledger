@@ -25,10 +25,10 @@ set -euo pipefail
 #     - Carried-forward items with no matching fresh task (orphaned)
 #   - Requires: jq, bash 4+
 
-BASE="${BASE_DIL:-/home/moo/Documents/dil_agentic_memory_0001}"
-REMINDERS_FILE="$BASE/_shared/reminders.md"
-REGISTRY="$BASE/_shared/_meta/domain_registry.json"
-RECURRING_FILE="$BASE/_shared/recurring_reminders.md"
+DIL_BASE="${DIL_BASE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+REMINDERS_FILE="$DIL_BASE/_shared/reminders.md"
+REGISTRY="$DIL_BASE/_shared/_meta/domain_registry.json"
+RECURRING_FILE="$DIL_BASE/_shared/recurring_reminders.md"
 DRY_RUN=0
 TODAY=$(date +%Y-%m-%d)
 TODAY_EPOCH=$(date +%s)
@@ -44,7 +44,7 @@ LEAD_HIGH=30
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --dry-run) DRY_RUN=1; shift ;;
-    --base) BASE="$2"; REMINDERS_FILE="$BASE/_shared/reminders.md"; REGISTRY="$BASE/_shared/_meta/domain_registry.json"; RECURRING_FILE="$BASE/_shared/recurring_reminders.md"; shift 2 ;;
+    --base) DIL_BASE="$2"; REMINDERS_FILE="$DIL_BASE/_shared/reminders.md"; REGISTRY="$DIL_BASE/_shared/_meta/domain_registry.json"; RECURRING_FILE="$DIL_BASE/_shared/recurring_reminders.md"; shift 2 ;;
     -h|--help)
       cat << 'USAGE'
 Usage: morning_brief.sh [--dry-run] [--base PATH]

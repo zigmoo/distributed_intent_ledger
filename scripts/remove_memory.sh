@@ -4,7 +4,8 @@ set -euo pipefail
 # remove_memory.sh
 # Safely removes or retires DIL memory notes with audit logging and index cleanup.
 
-BASE="${CLAWVAULT_BASE:-/home/moo/Documents/dil_agentic_memory_0001}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DIL_BASE="${DIL_BASE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 FILE_PATH=""
 REASON=""
 PERMANENT=0
@@ -21,7 +22,7 @@ Required:
 
 Options:
   --permanent        Actually delete the file (default: soft-delete/retire)
-  --base PATH        Base vault path (default: /home/moo/Documents/dil_agentic_memory_0001)
+  --base PATH        Base vault path (default: auto-detected from script location)
   --dry-run          Print actions without executing
   -h, --help         Show this help
 USAGE
@@ -36,7 +37,7 @@ while [[ $# -gt 0 ]]; do
     --file) FILE_PATH="${2:-}"; shift 2 ;;
     --reason) REASON="${2:-}"; shift 2 ;;
     --permanent) PERMANENT=1; shift ;;
-    --base) BASE="${2:-}"; shift 2 ;;
+    --base) DIL_BASE="${2:-}"; shift 2 ;;
     --dry-run) DRY_RUN=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown arg: $1"; usage; exit 1 ;;
@@ -50,7 +51,7 @@ if [[ -z "$FILE_PATH" || -z "$REASON" ]]; then
   exit 1
 fi
 
-FULL_PATH="$BASE/$FILE_PATH"
+FULL_PATH="$DIL_BASE/$FILE_PATH"
 if [[ ! -f "$FULL_PATH" ]]; then
   echo "Error: File not found at $FULL_PATH" >&2
   exit 1
@@ -95,7 +96,7 @@ cleanup_index() {
   local index_file=""
   
   # Search upwards for _meta/vault_index.md
-  while [[ "$current_dir" != "$BASE" && "$current_dir" != "/" ]]; do
+  while [[ "$current_dir" != "$DIL_BASE" && "$current_dir" != "/" ]]; do
     if [[ -f "$current_dir/_meta/vault_index.md" ]]; then
       index_file="$current_dir/_meta/vault_index.md"
       break
@@ -123,7 +124,7 @@ log_action() {
   local current_dir=$(dirname "$FULL_PATH")
   local log_file=""
   
-  while [[ "$current_dir" != "$BASE" && "$current_dir" != "/" ]]; do
+  while [[ "$current_dir" != "$DIL_BASE" && "$current_dir" != "/" ]]; do
     if [[ -f "$current_dir/handoffs/change_log.md" ]]; then
       log_file="$current_dir/handoffs/change_log.md"
       break

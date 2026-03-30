@@ -5,7 +5,7 @@ set -euo pipefail
 # Usage: list_archived.sh [--domain DOMAIN] [--year YEAR] [--grep PATTERN] [--status STATUS] [--json]
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BASE="${BASE_DIL:-/home/moo/Documents/dil_agentic_memory_0001}"
+DIL_BASE="${DIL_BASE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 
 # Source domain registry
 source "$SCRIPT_DIR/lib/domains.sh"

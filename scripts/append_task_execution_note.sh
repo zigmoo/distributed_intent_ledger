@@ -15,14 +15,15 @@ Required:
 
 Options:
   --content-file PATH    Read note content from file (default: stdin)
-  --base PATH            Vault base path (default: /home/moo/Documents/dil_agentic_memory_0001)
+  --base PATH            Vault base path (default: auto-detected from script location)
   --timestamp ISO8601    Override timestamp (default: current UTC)
   --dry-run              Print output preview only
   -h, --help             Show this help
 USAGE
 }
 
-BASE="/home/moo/Documents/dil_agentic_memory_0001"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DIL_BASE="${DIL_BASE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 TASK_ID=""
 TASK_FILE=""
 CONTENT_FILE=""
@@ -34,7 +35,7 @@ while [[ $# -gt 0 ]]; do
     --task-id) TASK_ID="${2:-}"; shift 2 ;;
     --file) TASK_FILE="${2:-}"; shift 2 ;;
     --content-file) CONTENT_FILE="${2:-}"; shift 2 ;;
-    --base) BASE="${2:-}"; shift 2 ;;
+    --base) DIL_BASE="${2:-}"; shift 2 ;;
     --timestamp) TS="${2:-}"; shift 2 ;;
     --dry-run) DRY_RUN=1; shift ;;
     -h|--help) usage; exit 0 ;;
@@ -54,7 +55,7 @@ if [[ -n "$TASK_ID" && -n "$TASK_FILE" ]]; then
 fi
 
 if [[ -n "$TASK_ID" ]]; then
-  TASK_FILE="$BASE/_shared/tasks/personal/${TASK_ID}.md"
+  TASK_FILE="$DIL_BASE/_shared/tasks/personal/${TASK_ID}.md"
 fi
 
 if [[ ! -f "$TASK_FILE" ]]; then
