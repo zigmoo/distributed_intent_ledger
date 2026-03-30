@@ -23,9 +23,7 @@ ln -s $HOME/dil_agentic_memory/distributed_intent_ledger/READ_THIS_DIL_FIRST.md 
 # echo '## DIL Session Bootstrap\nRead $HOME/dil.md first.' >> $HOME/.zeroclaw/AGENTS.md
 ```
 
-Distributed Intent Ledger (DIL) is a local-first, filesystem-native protocol for persistent multi-agent and multi-environment memory coordination.
-In current deployments, [Tailscale](https://github.com/tailscale/tailscale) is used as an optional private network fabric for secure cross-machine agent communication and coordination.
-Relies on Obsidian vault sync.
+Distributed Intent Ledger (DIL) is a local-first, filesystem-native protocol for persistent multi-agent memory coordination. Shared memory across agents. Persistent memory across conversations. Plain Markdown on disk.
 
 For a compact human-readable summary of the whole system, start with [`docs/dil-overview.md`](./docs/dil-overview.md).
 
@@ -82,16 +80,7 @@ DIL defines:
    - `machine`: `hostname -s | tr '[:upper:]' '[:lower:]'`
    - `assistant`: env/process-derived slug (no guessing from folder names)
 
-### Scenario 2: Shared Memory Across All Agents on Multiple Machines
-
-1. Create an Obsidian vault and configure remote syncing.
-2. Set up Tailscale on each machine and join them to your tailnet.
-3. Clone this repository into that synced vault:
-   - `git clone https://github.com/zigmoo/distributed_intent_ledger.git`
-4. In each agent/assistant session, start with:
-   - `Read ~/READ_THIS_DIL_FIRST.md now and acknowledge.`
-
-### Common Operating Steps (Both Scenarios)
+### Common Operating Steps
 
 1. Create memory notes via script (preferred):
    - `scripts/create_memory.sh --type observations --title "..." --base <vault>`
@@ -121,6 +110,16 @@ The generic repo can also carry reusable policy and project-template artifacts t
   - optional shared policy guidance for planning, verification, self-correction, and security hygiene
 - `examples/project-claude-md.md`
   - starter project-level agent guidance file that can be adapted into `CLAUDE.md`
+
+## Optional: Shared Memory Across Multiple Machines
+
+Want optional memory sharing across all your machines? Just add Obsidian, Dropbox, or similar filesystem sync tool.
+
+1. Sync your `dil_agentic_memory/` directory across machines using your preferred sync tool.
+2. Optionally set up [Tailscale](https://github.com/tailscale/tailscale) as a private network fabric for secure cross-machine agent communication.
+3. Run the same bootstrap on each machine — DIL handles identity scoping per-machine automatically.
+
+DIL works on one machine with zero sync infrastructure. Multi-machine sync is an additive layer, not a requirement.
 
 ## License
 
