@@ -4,9 +4,9 @@
 
 # DIL: Your All-Terrain Memory System.<br>For everywhere you cli.
 
-Ever wished your agents and assistants could share memories ... across one laptop to your servers and dev machines ... from Codex to Claude to OpenCode to OpenClaw?
+Want your agents and assistants to share memories ... across one laptop to your servers and dev machines ... from Codex to Claude to [OpenCode](https://x.com/openaborant) to [OpenClaw](https://x.com/OpenClawAI)?
 
-Here's the plan for doing all those things and keeping memories and priorities straight.
+DIL is a simple, working plan for unified memory across all your agents.
 
 ```bash
 # Minimal DIL Onboarding:
