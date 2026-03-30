@@ -14,7 +14,7 @@ mkdir -p dil_agentic_memory && cd dil_agentic_memory ;
 git clone https://github.com/zigmoo/distributed_intent_ledger.git ;
 ln -s $HOME/dil_agentic_memory/distributed_intent_ledger/READ_THIS_DIL_FIRST.md $HOME/dil.md ;
 
-# Bootstrap your agent (pick one):
+# Bootstrap your agent (pick one or more):
 # echo '## DIL Session Bootstrap\nRead $HOME/dil.md first.' >> $HOME/.claude/CLAUDE.md
 # echo '## DIL Session Bootstrap\nRead $HOME/dil.md first.' >> $HOME/.config/opencode/AGENTS.md
 # echo '## DIL Session Bootstrap\nRead $HOME/dil.md first.' >> $HOME/.codex/instructions.md
