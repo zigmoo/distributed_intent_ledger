@@ -9,6 +9,7 @@ Have you ever wished your agents and assistants could share memories ... across 
 Here's the plan for doing all those things and keeping memories and priorities straight.
 
 ```bash
+# Minimal DIL Onboarding:
 mkdir -p dil_agentic_memory && cd dil_agentic_memory ;
 git clone https://github.com/zigmoo/distributed_intent_ledger.git ;
 ```
