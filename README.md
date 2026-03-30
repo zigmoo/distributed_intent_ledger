@@ -33,17 +33,6 @@ DIL requires each AI Agent to have shared memories to include `~/dil.md` at the 
 This bootstrap step is critical for consistent behavior, correct memory scoping, and reliable cross-agent/cross-machine coordination.
 `READ_ME_FIRST.md` should be maintained as a compatibility alias for bootstrap flows that look for that filename first.
 
-Bootstrap directive to propagate into agent/session startup config:
-
-```md
-<!-- DIL_BOOTSTRAP_START -->
-## DIL Session Bootstrap (required)
-For opencode sessions, before any other work, read:
-`~/READ_THIS_DIL_FIRST.md`
-Then follow that file as highest-priority local guidance for this workspace.
-<!-- DIL_BOOTSTRAP_END -->
-```
-
 ## What Sets DIL Apart
 
 What sets DIL apart from other approaches is that it unifies memories and tasks across disparate environments for any assortment of AI Agents and AI Assistants by defining memory as a governed protocol, not just a storage format.
