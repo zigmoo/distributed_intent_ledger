@@ -4,7 +4,7 @@
 
 # DIL: Your All-Terrain Memory System.<br>For everywhere you cli.
 
-Have you ever wished your agents and assistants could share memories ... across one laptop to your servers and dev machines ... from Codex to Claude to OpenCode to OpenClaw?
+Ever wished your agents and assistants could share memories ... across one laptop to your servers and dev machines ... from Codex to Claude to OpenCode to OpenClaw?
 
 Here's the plan for doing all those things and keeping memories and priorities straight.
 
