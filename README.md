@@ -12,17 +12,16 @@ DIL is unified memory for all your agents — one directory, plain Markdown, no 
 
 ```bash
 # Minimal DIL Onboarding:
-mkdir -p dil_agentic_memory && cd dil_agentic_memory ;
-git clone https://github.com/zigmoo/distributed_intent_ledger.git ;
-ln -s $HOME/dil_agentic_memory/distributed_intent_ledger/READ_THIS_DIL_FIRST.md $HOME/dil.md ;
+git clone https://github.com/zigmoo/distributed_intent_ledger.git $HOME/dil_agentic_memory ;
+ln -s $HOME/dil_agentic_memory/READ_THIS_DIL_FIRST.md $HOME/dil.md ;
 
 # Bootstrap your agent (pick one or more):
-# echo '## DIL Session Bootstrap\nRead $HOME/dil.md first.' >> $HOME/.claude/CLAUDE.md
-# echo '## DIL Session Bootstrap\nRead $HOME/dil.md first.' >> $HOME/.config/opencode/AGENTS.md
-# echo '## DIL Session Bootstrap\nRead $HOME/dil.md first.' >> $HOME/.codex/instructions.md
-# echo '## DIL Session Bootstrap\nRead $HOME/dil.md first.' >> $HOME/.openclaw/workspace_01/AGENTS.md
-# echo '## DIL Session Bootstrap\nRead $HOME/dil.md first.' >> $HOME/.pi/AGENTS.md
-# echo '## DIL Session Bootstrap\nRead $HOME/dil.md first.' >> $HOME/.zeroclaw/AGENTS.md
+# echo 'Read $HOME/dil.md first.' >> $HOME/.claude/CLAUDE.md
+# echo 'Read $HOME/dil.md first.' >> $HOME/.config/opencode/AGENTS.md
+# echo 'Read $HOME/dil.md first.' >> $HOME/.codex/instructions.md
+# echo 'Read $HOME/dil.md first.' >> $HOME/.openclaw/workspace_01/AGENTS.md
+# echo 'Read $HOME/dil.md first.' >> $HOME/.pi/AGENTS.md
+# echo 'Read $HOME/dil.md first.' >> $HOME/.zeroclaw/AGENTS.md
 ```
 
 Distributed Intent Ledger (DIL) is a local-first, filesystem-native protocol for persistent multi-agent memory coordination. Shared memory across agents. Persistent memory across conversations. Plain Markdown on disk.
@@ -73,11 +72,12 @@ DIL defines:
 
 ### Scenario 1: Shared Memory Across All Agents on One Machine
 
-1. Choose a local vault path on that machine.
-2. Clone this repository into the vault:
-   - `git clone https://github.com/zigmoo/distributed_intent_ledger.git`
+1. Clone this repository:
+   - `git clone https://github.com/zigmoo/distributed_intent_ledger.git $HOME/dil_agentic_memory`
+2. Create the symlink:
+   - `ln -s $HOME/dil_agentic_memory/READ_THIS_DIL_FIRST.md $HOME/dil.md`
 3. In each agent/assistant session, start with:
-   - `Read ~/READ_THIS_DIL_FIRST.md now and acknowledge.`
+   - `Read $HOME/dil.md now and acknowledge.`
 4. Resolve runtime identity before read/write:
    - `machine`: `hostname -s | tr '[:upper:]' '[:lower:]'`
    - `assistant`: env/process-derived slug (no guessing from folder names)
@@ -117,7 +117,7 @@ The generic repo can also carry reusable policy and project-template artifacts t
 
 Want optional memory sharing across all your machines? Just add Obsidian, Dropbox, or similar filesystem sync tool.
 
-1. Sync your `dil_agentic_memory/` directory across machines using your preferred sync tool.
+1. Sync your `$HOME/dil_agentic_memory/` directory across machines using your preferred sync tool.
 2. Optionally set up [Tailscale](https://github.com/tailscale/tailscale) as a private network fabric for secure cross-machine agent communication.
 3. Run the same bootstrap on each machine — DIL handles identity scoping per-machine automatically.
 
