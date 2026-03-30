@@ -4,8 +4,8 @@
 
 # DIL: Your All-Terrain Memory System.<br>For everywhere you cli.
 
-Want to share memories across all conversations and agents?
-Claude + [OpenCode](https://grokipedia.com/page/OpenCode) + Codex + Gemini + [OpenClaw](https://grokipedia.com/page/Clawdbot)?
+Want to share memories across all conversations and agents?<br>
+Claude + [OpenCode](https://grokipedia.com/page/OpenCode) + Codex + Gemini + [OpenClaw](https://grokipedia.com/page/Clawdbot)?<br>
 Just add DIL.
 
 DIL is unified memory for all your agents — one directory, plain Markdown, no dependencies.
