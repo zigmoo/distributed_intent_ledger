@@ -29,9 +29,6 @@ Relies on Obsidian vault sync.
 
 For a compact human-readable summary of the whole system, start with [`docs/dil-overview.md`](./docs/dil-overview.md).
 
-DIL requires each AI Agent to have shared memories to include `~/dil.md` at the beginning of every session.
-This bootstrap step is critical for consistent behavior, correct memory scoping, and reliable cross-agent/cross-machine coordination.
-
 ## What Sets DIL Apart
 
 What sets DIL apart from other approaches is that it unifies memories and tasks across disparate environments for any assortment of AI Agents and AI Assistants by defining memory as a governed protocol, not just a storage format.
