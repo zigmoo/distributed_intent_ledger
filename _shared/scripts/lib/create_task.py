@@ -212,41 +212,60 @@ class TaskLock:
 # ---------------------------------------------------------------------------
 
 def read_counter(counter_file, prefix):
-    """Read next_id for a given prefix from the multi-prefix counter file."""
+    """Read next_id for a given prefix from the multi-prefix counter file.
+    Supports both formats:
+      Active DIL:  ### DIL (personal domain) / - next_id: 1437
+      Template:    ## DIL / next_id: 1001
+    """
     in_section = False
     with open(counter_file, "r") as f:
         for line in f:
-            if line.startswith("### "):
-                in_section = line.startswith(f"### {prefix} ")
+            stripped = line.strip()
+            # Match section headers: ## PREFIX or ### PREFIX (...)
+            if stripped.startswith("## ") or stripped.startswith("### "):
+                header_text = stripped.lstrip("#").strip()
+                # Match if header starts with the prefix (e.g. "DIL" or "DIL (personal domain)")
+                in_section = header_text == prefix or header_text.startswith(f"{prefix} ")
                 continue
-            if in_section and line.strip().startswith("- next_id:"):
-                val = line.split(":", 1)[1].strip()
-                if val.isdigit():
-                    return int(val)
+            if in_section:
+                # Match "- next_id: N" or "next_id: N"
+                check = stripped.lstrip("- ").strip()
+                if check.startswith("next_id:"):
+                    val = check.split(":", 1)[1].strip()
+                    if val.isdigit():
+                        return int(val)
     return None
 
 
 def update_counter(counter_file, prefix, new_next_id, actor, model):
-    """Update next_id, last_allocator, last_model for a given prefix."""
+    """Update next_id, last_allocator, last_model for a given prefix.
+    Supports both formats (see read_counter)."""
     with open(counter_file, "r") as f:
         lines = f.readlines()
 
     in_section = False
     out = []
     for line in lines:
-        if line.startswith("### "):
-            in_section = line.startswith(f"### {prefix} ")
+        stripped = line.strip()
+        if stripped.startswith("## ") or stripped.startswith("### "):
+            header_text = stripped.lstrip("#").strip()
+            in_section = header_text == prefix or header_text.startswith(f"{prefix} ")
             out.append(line)
             continue
         if in_section:
-            if line.strip().startswith("- next_id:"):
-                out.append(f"- next_id: {new_next_id}\n")
+            check = stripped.lstrip("- ").strip()
+            if check.startswith("next_id:"):
+                # Preserve original formatting (with or without "- " prefix)
+                indent = "- " if stripped.startswith("- ") else ""
+                out.append(f"{indent}next_id: {new_next_id}\n")
                 continue
-            if line.strip().startswith("- last_allocator:"):
-                out.append(f"- last_allocator: {actor}\n")
+            if check.startswith("last_allocator:"):
+                indent = "- " if stripped.startswith("- ") else ""
+                out.append(f"{indent}last_allocator: {actor}\n")
                 continue
-            if line.strip().startswith("- last_model:"):
-                out.append(f"- last_model: {model}\n")
+            if check.startswith("last_model:"):
+                indent = "- " if stripped.startswith("- ") else ""
+                out.append(f"{indent}last_model: {model}\n")
                 continue
         out.append(line)
 

@@ -86,10 +86,18 @@ if [[ "$PY_MAJOR" -lt 3 ]]; then
 fi
 
 # --- Translate json subcommand for backwards compatibility ---
-ARGS=("$@")
-if [[ "${1:-}" == "json" && $# -ge 2 ]]; then
-  ARGS=("--json-manifest" "${@:2}")
-fi
+# Scan for "json" anywhere in args (e.g. create_task.sh --base /path json manifest.json)
+ARGS=()
+JSON_NEXT=0
+for arg in "$@"; do
+  if [[ "$arg" == "json" && $JSON_NEXT -eq 0 ]]; then
+    ARGS+=("--json-manifest")
+    JSON_NEXT=1
+  else
+    ARGS+=("$arg")
+    JSON_NEXT=0
+  fi
+done
 
 # --- Delegate to Python ---
 exec "$PYTHON" "$SCRIPT_DIR/lib/create_task.py" --base "$BASE" "${ARGS[@]}"
