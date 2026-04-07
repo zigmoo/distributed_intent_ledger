@@ -43,3 +43,8 @@ Zero-inference lookup table for agent commands. Before doing any work, check thi
 | Jira operations | `/path/to/jira_tool` | Do NOT tell user to update Jira manually |
 | SMAX operations | `/path/to/smax_tool` | Firewall requests, change records |
 | Teams notifications | `/path/to/teams_tool` | Webhook notifications |
+
+## Notes
+
+- **Script portability rule**: all DIL scripts must resolve base path in this order: `BASE_DIL` -> repo-relative from script location -> legacy `$HOME/Documents/dil_agentic_memory_0001`; fail clearly if unresolved.
+- **Never hardcode user-specific paths** (for example `/home/moo/...`) as default DIL base resolution.

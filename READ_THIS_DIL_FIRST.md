@@ -153,12 +153,17 @@ When an assistant answers memory-sensitive questions, retrieve in this order:
 
 Do not start from `_shared` first unless explicitly requested.
 
+## Search Philosophy (Required)
+
+From the human user perspective, DIL should provide seamless, effortless, super-powered memory by synthesizing the stacked efforts of all agents across all machines. Tasks are first-class short-term memory for work in progress, including backlog context. Therefore, default user search should be cross-scope and aggregated, while writes remain scope-first and ownership-safe.
+
 ## DIL Memory Protocol (Required)
 
 Agents must follow the 5-step memory protocol on every session. Full specification: `_shared/preferences/memory-protocol-2026-04-07.md`
 
-1. **RECALL** — before answering factual questions, search DIL in order:
-   MEMORY.md index → memory/ files → tasks/ → preferences/
+1. **RECALL** — before answering factual questions, search DIL using the
+   canonical Retrieval Order (local scope → machine scope → shared scope).
+   For quick lookups: MEMORY.md index → memory/ → tasks/ → preferences/
 2. **VERIFY** — if a recalled memory names a path, tool, function, or config,
    confirm it exists in current state before recommending
 3. **PERSIST** — immediately write durable findings (corrections, decisions,
@@ -234,6 +239,14 @@ Agents must use the provided automation scripts for creating content to ensure t
 4. **Listing Archived Tasks**: `_shared/scripts/list_archived.sh`
    - Usage: `list_archived.sh [--domain DOMAIN] [--year YEAR] [--grep PATTERN] [--status STATUS] [--json]`
    - Searches and filters archived tasks across all domains.
+
+5. **DIL Base Resolution (Required for all scripts)**
+   - Resolve DIL base path in this order:
+     1) `BASE_DIL` environment variable (explicit override)
+     2) repo-relative from script location
+     3) legacy fallback: `$HOME/Documents/dil_agentic_memory_0001`
+   - If unresolved, fail with a clear error that asks for `BASE_DIL`.
+   - Do **not** hardcode user-specific absolute defaults (for example `/home/moo/...`) in script path resolution.
 
 ## Index Policy
 
