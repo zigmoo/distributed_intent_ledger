@@ -370,8 +370,11 @@ def extract(raw_path, manifest, output_dir):
     # Determine if browser rendering is needed
     import urllib.parse
     parsed_url = urllib.parse.urlparse(original_source)
-    domain = parsed_url.netloc.lower().lstrip("www.")
-    needs_browser = any(d in parsed_url.netloc.lower() for d in BROWSER_REQUIRED_DOMAINS)
+    netloc = parsed_url.netloc.lower()
+    # Strip port if present, then check exact domain match (with and without www.)
+    domain = netloc.split(":")[0]
+    domain_no_www = domain.lstrip("www.") if domain.startswith("www.") else domain
+    needs_browser = domain in BROWSER_REQUIRED_DOMAINS or domain_no_www in BROWSER_REQUIRED_DOMAINS
 
     extracted_data = None
     error = None
