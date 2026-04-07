@@ -315,9 +315,10 @@ def update_registry_row(manifest):
 
 
 def append_changelog(ingest_id, previous_state, new_state, command, manifest_path, actor):
-    """Append a row to the unified changelog."""
+    """Append a row to the unified changelog. Escapes pipe chars in values."""
     now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    row = f"| {now} | {actor} | {ingest_id} | {previous_state} | {new_state} | {command} | {manifest_path} |"
+    cols = [now, actor, ingest_id, previous_state, new_state, command, manifest_path]
+    row = "| " + " | ".join(_escape_pipe(c) for c in cols) + " |"
     with open(UNIFIED_CHANGELOG_PATH, "a", encoding="utf-8") as f:
         f.write(row + "\n")
 

@@ -28,8 +28,13 @@ MAX_OCR_PAGES = 50
 
 def check_tooling():
     """Check if required system tools are available for PDF extraction.
-    Called by retry_ingest --check-tooling to verify host dependencies."""
-    return shutil.which("pdftotext") is not None
+    Called by retry_ingest --check-tooling to verify host dependencies.
+    Requires pdftotext (text PDFs) and pdftoppm + tesseract (scanned PDFs).
+    Returns True only when the full toolchain is present, since we cannot
+    distinguish text vs scanned PDFs at triage time."""
+    has_pdftotext = shutil.which("pdftotext") is not None
+    has_ocr = shutil.which("pdftoppm") is not None and shutil.which("tesseract") is not None
+    return has_pdftotext and has_ocr
 
 
 def _yaml_scalar(value):
