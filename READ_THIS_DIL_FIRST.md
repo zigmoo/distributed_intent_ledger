@@ -153,6 +153,21 @@ When an assistant answers memory-sensitive questions, retrieve in this order:
 
 Do not start from `_shared` first unless explicitly requested.
 
+## DIL Memory Protocol (Required)
+
+Agents must follow the 5-step memory protocol on every session. Full specification: `_shared/preferences/memory-protocol-2026-04-07.md`
+
+1. **RECALL** — before answering factual questions, search DIL in order:
+   MEMORY.md index → memory/ files → tasks/ → preferences/
+2. **VERIFY** — if a recalled memory names a path, tool, function, or config,
+   confirm it exists in current state before recommending
+3. **PERSIST** — immediately write durable findings (corrections, decisions,
+   discoveries) to memory/ via DIL scripts; do not defer
+4. **COMPACT_FALLBACK** — if runtime exposes pre-compaction hooks, run a
+   final persistence pass as best-effort backup
+5. **RECONCILE** — when memory conflicts with current state, update or retire
+   the stale record and log what changed and why
+
 ## Write Policy (How the Ledger Is Maintained)
 
 1. Write new memory into the narrowest valid scope first to maintain DIL integrity.
