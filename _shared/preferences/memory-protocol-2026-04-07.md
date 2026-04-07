@@ -25,8 +25,9 @@ Governs how agents recall, verify, persist, and reconcile memory across sessions
 
 ## Protocol Steps
 
-1. **RECALL** -- before answering factual questions, search DIL in order:
-   MEMORY.md index -> memory/ files -> tasks/ -> preferences/
+1. **RECALL** -- before answering factual questions, search DIL using the
+   canonical Retrieval Order (local scope -> machine scope -> shared scope).
+   For quick lookups: MEMORY.md index -> memory/ -> tasks/ -> preferences/
 2. **VERIFY** -- if a recalled memory names a path, tool, function, or config,
    confirm it exists in current state before recommending
 3. **PERSIST** -- immediately write durable findings (corrections, decisions,
@@ -38,7 +39,7 @@ Governs how agents recall, verify, persist, and reconcile memory across sessions
 
 ## Design Rationale
 
-- **RECALL ordering** follows the existing DIL Retrieval Order (local scope -> machine scope -> shared scope) but adds the MEMORY.md index as a fast first-pass filter.
+- **RECALL ordering** defers to the canonical DIL Retrieval Order (local scope -> machine scope -> shared scope) defined in READ_THIS_DIL_FIRST.md. The quick-lookup path (MEMORY.md index -> memory/ -> tasks/ -> preferences/) is a fast-path shortcut for factual lookups, not a replacement for scope-first retrieval.
 - **VERIFY** prevents stale memory from generating bad recommendations. A memory that names a file/function/flag is a claim about a past state, not current reality.
 - **PERSIST** is event-driven (triggered by corrections, decisions, discoveries), not timer-driven. This avoids noisy low-quality writes.
 - **COMPACT_FALLBACK** is conditional -- only fires if the runtime exposes pre-compaction hooks. It is a best-effort backup, not the primary persistence trigger.
