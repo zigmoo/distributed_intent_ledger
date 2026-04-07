@@ -419,8 +419,10 @@ def extract(raw_path, manifest, output_dir):
         extracted_data, error = _extract_static_html(raw_path, manifest)
 
     if extracted_data is None:
-        if needs_browser and error:
+        if needs_browser and not _cdp_available():
+            # CDP went away mid-extraction — genuinely missing tooling
             return {"status": "pending_tooling", "notes": [], "error": error}
+        # CDP was available (or not needed) but extraction still failed — real failure
         return {"status": "failed", "notes": [], "error": error or "No content extracted"}
 
     # Write extraction note

@@ -26,6 +26,12 @@ MIN_TEXT_LENGTH = 50
 MAX_OCR_PAGES = 50
 
 
+def check_tooling():
+    """Check if required system tools are available for PDF extraction.
+    Called by retry_ingest --check-tooling to verify host dependencies."""
+    return shutil.which("pdftotext") is not None
+
+
 def _yaml_scalar(value):
     if value is None:
         return "null"
