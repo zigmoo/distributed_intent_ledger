@@ -248,6 +248,18 @@ Agents must use the provided automation scripts for creating content to ensure t
    - If unresolved, fail with a clear error that asks for `BASE_DIL`.
    - Do **not** hardcode user-specific absolute defaults (for example `/home/moo/...`) in script path resolution.
 
+## Knowledge Ingestion Decision Rule (Required)
+
+Before storing knowledge content, read:
+- `_shared/runbooks/knowledge-ingestion-runbook.md`
+
+Mandatory split:
+- Use `_shared/scripts/ingest_source.sh` for externally sourced assets such as URLs, downloaded files, imported documents, repos, media, code, and datasets.
+- Use `_shared/scripts/create_memory.sh` for authored DIL notes such as preferences, lessons, observations, decisions, and commitments.
+- Do not use `create_memory.sh` to stand in for ingestion of an external asset.
+
+Full architecture spec: `docs/ingestion-pipeline-spec.md`
+
 ## Index Policy
 
 - Keep `_meta/vault_index.md` current in each scope.
