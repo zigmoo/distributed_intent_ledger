@@ -129,6 +129,9 @@ def check_tooling(source_type, mime_type):
     """Check if required tooling is available for a given source.
 
     Returns True if tooling is available, False otherwise.
+    For non-URL adapters, calls the adapter's check_tooling() if it exposes one,
+    so host dependencies (e.g. pdftotext, tesseract) are verified — not just
+    the adapter module's existence.
     """
     if source_type == "url":
         # URL adapter needs CDP for browser-rendered sites
@@ -136,7 +139,14 @@ def check_tooling(source_type, mime_type):
             return False
         return check_cdp_available()
     else:
-        return check_adapter_available(mime_type, source_type)
+        if not check_adapter_available(mime_type, source_type):
+            return False
+        # If the adapter exposes a check_tooling() function, call it
+        adapter_name = route_adapter(mime_type, source_type)
+        adapter_module = load_adapter(adapter_name)
+        if adapter_module and hasattr(adapter_module, "check_tooling"):
+            return adapter_module.check_tooling()
+        return True
 
 
 # ---------------------------------------------------------------------------

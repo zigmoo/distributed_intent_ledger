@@ -15,6 +15,7 @@ import hashlib
 import json
 import mimetypes
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -200,12 +201,24 @@ _REG_COLS = {
 }
 
 
+def _escape_pipe(value):
+    """Escape pipe characters in cell values to prevent column misalignment."""
+    return str(value).replace("|", "\\|")
+
+
+def _unescape_pipe(value):
+    """Unescape pipe characters in cell values."""
+    return value.replace("\\|", "|")
+
+
 def _parse_registry_row(line):
     """Parse a registry table row into a dict. Returns None for non-data rows."""
     stripped = line.strip()
     if not stripped or not stripped.startswith("|"):
         return None
-    cols = [c.strip() for c in stripped.split("|")]
+    # Split on unescaped pipes: use regex to split on | not preceded by \
+    raw_cols = re.split(r'(?<!\\)\|', stripped)
+    cols = [_unescape_pipe(c.strip()) for c in raw_cols]
     # Skip header and separator rows
     if len(cols) < 18:
         return None
@@ -251,7 +264,7 @@ def check_duplicate(sha256_hash, domain):
 # ---------------------------------------------------------------------------
 
 def _format_registry_row(manifest):
-    """Format a manifest dict as a registry table row."""
+    """Format a manifest dict as a registry table row. Escapes pipe chars in values."""
     cols = [
         manifest.get("ingest_id", ""),
         manifest.get("domain", ""),
@@ -271,7 +284,7 @@ def _format_registry_row(manifest):
         manifest.get("ingested_at", ""),
         manifest.get("actor", ""),
     ]
-    return "| " + " | ".join(cols) + " |"
+    return "| " + " | ".join(_escape_pipe(c) for c in cols) + " |"
 
 
 def append_registry_row(manifest):
