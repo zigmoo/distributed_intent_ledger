@@ -25,6 +25,7 @@ Define a canonical agent registry so DIL can reliably coordinate:
 - model/provider routing (including local model inventories such as Ollama)
 - capability and format support for the real file/media types users handle
 - operational constraints (for example, agents that do not support fallback LLMs)
+- low-inference routing signals so callers can make deterministic choices without guessing at agent capability
 
 ## Canonical Location
 
@@ -48,6 +49,10 @@ Define a canonical agent registry so DIL can reliably coordinate:
    - updated path
    - updated agent excerpt
    - timestamp
+
+## Guidance
+
+Agent records should be explicit enough to support handoff, routing, and fallback decisions without relying on model memory or inference. Prefer discoverable fields over implied behavior.
 
 ## Core Requirements
 

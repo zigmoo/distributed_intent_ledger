@@ -49,6 +49,7 @@ check    -> [e.g. pnpm lint && pnpm test]
 3. After changes, run the relevant checks and summarize the result.
 4. Keep changes focused and avoid unrelated cleanup.
 5. Do not commit secrets or sensitive data.
+6. Minimize inference, maximize determinism. Assume assistants are unreliable and context is partial. Prefer fixed action graphs, explicit commands, durable artifacts, and validated handoffs over free-form reasoning.
 
 ## 6. Lessons and Anti-Patterns
 

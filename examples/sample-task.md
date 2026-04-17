@@ -27,6 +27,7 @@ subcategory: infrastructure
 - [ ] Agent registry and machine registry examples remain schema-valid.
 - [ ] Example docs use host shortnames only (`framemoowork`, `pi500`, `omarchy-zbook`).
 - [ ] No environment-specific domains or raw IPs in public examples.
+- [ ] The example remains readable as a standalone artifact: a new reader can understand the action, constraints, and next step without cross-referencing hidden context.
 
 ## Execution Notes
 - 2026-03-04T00:05:00Z: Collected baseline sample files and identified sparse sections.

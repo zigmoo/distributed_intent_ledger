@@ -32,6 +32,8 @@ For a compact human-readable summary of the whole system, start with [`docs/dil-
 
 What sets DIL apart from other approaches is that it unifies memories and tasks across disparate environments for any assortment of AI Agents and AI Assistants by defining memory as a governed protocol, not just a storage format.
 
+DIL is intentionally low-inference: it assumes assistants can be inconsistent, sessions can be reset, and context can be incomplete. The protocol therefore favors explicit commands, durable artifacts, deterministic scripts, and validated handoffs over free-form reasoning.
+
 - Deterministic identity and scope boundaries:
   - Runtime-derived `machine` and `assistant` identities.
   - Scope-first writes to `<machine>/<assistant>` with explicit promotion to `_shared`.
@@ -56,6 +58,10 @@ What sets DIL apart from other approaches is that it unifies memories and tasks 
   - Script-first, idempotent workflows.
   - Validation gates before side effects.
   - Fail-closed behavior suitable for weaker/local models as well as frontier models.
+- Inference-minimizing handoffs:
+  - Treat models and agents as unreliable by default.
+  - Keep workflows explicit, durable, and script-driven.
+  - Use validated handoffs so sessions can resume after partial context loss.
 
 ## Scope
 
