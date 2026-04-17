@@ -61,8 +61,8 @@ Safety boundary:
 - it may switch between buy/sell tabs and inspect visible UI state only
 
 What is in the bash wrapper now:
-- per-run DIL log files under `_shared/domains/personal/logs/browser_cdp_tool/`
-- per-run DIL data artifacts under `_shared/domains/personal/data/browser_cdp_tool/`
+- per-run DIL log files under `_shared/domains/${DOMAIN_NAME}/logs/browser_cdp_tool/`
+- per-run DIL data artifacts under `_shared/domains/${DOMAIN_NAME}/data/browser_cdp_tool/`
 - action-based filenames of the form `<script_name>.<action>.<YYYYMMDD-HHMMSS>.<ext>`
 - stable latest-per-action data artifact files
 - richer start/end log banners with timestamps, duration, file paths, git identifiers, Obsidian links, and stdout/stderr capture

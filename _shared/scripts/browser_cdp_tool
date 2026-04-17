@@ -20,7 +20,8 @@ source "$SCRIPT_DIR/lib/resolve_base.sh"
 source "$SCRIPT_DIR/lib/domains.sh"
 
 BASE="$(resolve_dil_base_or_die "$SCRIPT_DIR" "${BASE_DIL:-}")"
-resolve_domain personal
+DOMAIN_NAME="${DOMAIN_NAME:-personal}"
+resolve_domain "$DOMAIN_NAME"
 
 ACTION_RAW="${1:-run}"
 ACTION="$(printf '%s' "$ACTION_RAW" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9._-' '-')"
@@ -127,7 +128,7 @@ WRAPPER_SHA256="$(sha256_or_na "$SCRIPT_PATH")"
 PYTHON_SHA256="$(sha256_or_na "$PYTHON_SCRIPT_PATH")"
 OBSIDIAN_VAULT_NAME="${OBSIDIAN_VAULT_NAME:-$(basename "$BASE")}"
 OBSIDIAN_SCRIPT_DOC_URL="obsidian://open?vault=${OBSIDIAN_VAULT_NAME}&file=_shared%2Fscripts%2Fbrowser_cdp_tool.md"
-OBSIDIAN_TASK_URL="obsidian://open?vault=${OBSIDIAN_VAULT_NAME}&file=_shared%2Fdomains%2Fpersonal%2Ftasks%2Factive%2F${IMPLEMENTATION_TASK_ID}.md"
+OBSIDIAN_TASK_URL="obsidian://open?vault=${OBSIDIAN_VAULT_NAME}&file=_shared%2Fdomains%2F${DOMAIN_NAME}%2Ftasks%2Factive%2F${IMPLEMENTATION_TASK_ID}.md"
 
 log_banner "$SCRIPT_NAME start"
 log_line INFO "script_name: $SCRIPT_NAME"
