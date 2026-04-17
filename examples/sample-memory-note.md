@@ -34,3 +34,4 @@ When building GitHub-facing examples:
 ## Follow-up
 - Expand examples to include active/paused/offline style coverage.
 - Keep schema-valid examples for both agent and machine registries.
+- Make example notes and tasks explicit enough that a reader does not need to infer missing context or hunt through other files for the next step.

@@ -78,3 +78,7 @@ Implementations SHOULD apply these defaults for operational reliability:
 - future to-do requests are converted into canonical shared tasks
 - agents execute runnable steps directly instead of bouncing to the user
 - safe in-scope non-destructive steps are treated as implicitly approved
+
+## 12. Low-Inference Handoffs
+
+Implementations SHOULD treat assistants as unreliable by default and minimize reliance on inference. Workflows should prefer explicit commands, durable artifacts, deterministic scripts, typed schemas, and validated handoffs so sessions can resume even when context is partial or stale.

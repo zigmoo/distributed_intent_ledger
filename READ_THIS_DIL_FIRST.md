@@ -69,6 +69,7 @@ The DIL architecture solves "context amnesia" by treating the filesystem—not t
 4.  **Canonical Task Backbone**: The `DIL-xxxx` task system decouples the *intent* (the task) from the *actor* (the specific agent/machine), enabling seamless handoffs across the distributed mesh without context loss.
 5.  **Resilient Decentralization (No SPOF)**: DIL explicitly rejects centralized API gates in favor of robust local-first logic (CSMA/CD locking and first-available ID detection), ensuring the system remains functional even in "DIL" (Disconnected, Intermittent, Limited) network scenarios.
 6.  **Pragmatism for Mixed Models**: Explicit guidance for smaller/local models—preferring strict schemas and idempotent scripts over open-ended planning—ensures reliability in a multi-model environment.
+7.  **Minimize inference, maximize determinism**: Treat models/agents as unreliable by default. Prefer explicit commands, durable artifacts, typed schemas, and validated handoffs so workflows remain robust even when context is partial or sessions are reset.
 
 ## Core Principles
 

@@ -10,6 +10,7 @@
 - For operational assistant replies tied to work execution (status, progress, blockers, completion, implementation notes), include the canonical `task_id`.
 - If no canonical task exists, create one before continuing operational updates.
 - Casual conversation does not require task-id tagging.
+- Keep execution updates low-inference: include what changed, where it lives, and the exact next action without requiring the reader to reconstruct missing context.
 
 ## Execution Note Dual-Write Rule
 

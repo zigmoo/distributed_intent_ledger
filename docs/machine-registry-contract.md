@@ -6,6 +6,7 @@ Define a canonical machine registry for DIL so agents can:
 - resolve host identity consistently
 - discover runtime routing targets (`agent_runtime_host`)
 - maintain a shared, auditable machine inventory
+- resolve hosts deterministically during handoff and recovery
 
 ## Canonical Location
 
@@ -46,3 +47,4 @@ Define a canonical machine registry for DIL so agents can:
 
 - `agent_runtime_host` is the primary runtime routing block for cross-machine agent operations.
 - MagicDNS names SHOULD be preferred when available and stable.
+- Machine records should be explicit and discoverable so callers do not need to infer host identity or hunt through logs during session pickup.

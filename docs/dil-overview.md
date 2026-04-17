@@ -30,6 +30,8 @@ The operating rule is simple:
 - write to the narrowest valid scope first
 - promote to `_shared` only when the information is truly broader than one assistant or one machine
 
+DIL is intentionally low-inference. It works best when agents are treated as unreliable, sessions are effectively stateless, and workflows are driven by explicit scripts, durable artifacts, and validated handoffs instead of free-form reasoning.
+
 ## Runtime Identity
 
 Agents must derive their identity from the real runtime environment, not by guessing from folder names.

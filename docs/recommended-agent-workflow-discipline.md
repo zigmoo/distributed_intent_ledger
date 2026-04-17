@@ -63,4 +63,8 @@ Capture recurring mistakes and project-specific gotchas in the narrowest useful 
 - remove debug logging before considering work complete
 - verify external webhook signatures when applicable
 
+## 8. Minimize Inference, Maximize Determinism
+
+Assume assistants are unreliable and context is partial. Prefer fixed action graphs, explicit commands, durable artifacts, typed schemas, and validated handoffs over free-form reasoning or memory-heavy planning.
+
 Treat this document as a policy pack you can adopt, trim, or override per deployment.

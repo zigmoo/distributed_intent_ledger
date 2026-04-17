@@ -12,6 +12,8 @@
 
 Define a universal DIL-local inbox ingestion specification that accepts any incoming asset type (URL, repo, documents, media, data, code, unknown), preserves original files in raw storage, applies adapter-based extraction when available, records deterministic manifests, enforces sensitivity-aware promotion gates, and emits auditable proof paths.
 
+The pipeline is intentionally low-inference: callers should not have to guess source classification, destination paths, or promotion rules when a deterministic rule can be applied.
+
 ## 2. Scope
 
 - Build ingestion for `dil-active` first, then generalize to DIL template.
