@@ -58,7 +58,7 @@ DIL is intentionally low-inference: it assumes assistants can be inconsistent, s
   - Script-first, idempotent workflows.
   - Validation gates before side effects.
   - Fail-closed behavior suitable for weaker/local models as well as frontier models.
-- Inference-minimizing handoffs:
+- Low-inference handoffs:
   - Treat models and agents as unreliable by default.
   - Keep workflows explicit, durable, and script-driven.
   - Use validated handoffs so sessions can resume after partial context loss.
