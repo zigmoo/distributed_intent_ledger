@@ -1,0 +1,230 @@
+#!/usr/bin/env bash
+# browser_cdp_tool — Robinhood CDP reader with DIL-compliant logs and data artifacts.
+
+set -euo pipefail
+
+SCRIPT_NAME="browser_cdp_tool"
+SCRIPT_VERSION="2026-04-13"
+SCRIPT_AUTHOR="codex"
+SCRIPT_MODEL="gpt-5.4"
+SCRIPT_OWNER="${SCRIPT_OWNER:-shared}"
+IMPLEMENTATION_TASK_ID="${IMPLEMENTATION_TASK_ID:-DIL-0000}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_PATH="$SCRIPT_DIR/$SCRIPT_NAME"
+PYTHON_SCRIPT_PATH="$SCRIPT_DIR/browser_cdp_tool.py"
+DOC_PATH="$SCRIPT_DIR/browser_cdp_tool.md"
+
+# shellcheck source=lib/resolve_base.sh
+source "$SCRIPT_DIR/lib/resolve_base.sh"
+# shellcheck source=lib/domains.sh
+source "$SCRIPT_DIR/lib/domains.sh"
+
+BASE="$(resolve_dil_base_or_die "$SCRIPT_DIR" "${BASE_DIL:-}")"
+resolve_domain personal
+
+ACTION_RAW="${1:-run}"
+ACTION="$(printf '%s' "$ACTION_RAW" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9._-' '-')"
+ACTION="${ACTION#-}"
+ACTION="${ACTION%-}"
+if [[ -z "$ACTION" ]]; then
+  ACTION="run"
+fi
+
+START_TS="$(date -u +%Y-%m-%dT%H:%M:%S.%6NZ)"
+START_US="$(date -u +%s%6N)"
+HOSTNAME_SHORT="$(hostname -s | tr '[:upper:]' '[:lower:]')"
+
+LOG_ROOT="$LOG_DIR/$SCRIPT_NAME"
+DATA_ROOT="$DATA_DIR/$SCRIPT_NAME"
+mkdir -p "$LOG_ROOT" "$DATA_ROOT"
+
+LOCK_DIR=""
+while :; do
+  STAMP="$(date -u +%Y%m%d-%H%M%S)"
+  LOCK_DIR="$LOG_ROOT/.lock.${SCRIPT_NAME}.${ACTION}.${STAMP}"
+  if mkdir "$LOCK_DIR" 2>/dev/null; then
+    break
+  fi
+  sleep 0.2
+done
+
+LOG_FILE="$LOG_ROOT/${SCRIPT_NAME}.${ACTION}.${STAMP}.log"
+DATA_FILE="$DATA_ROOT/${SCRIPT_NAME}.${ACTION}.${STAMP}.json"
+LATEST_DATA_FILE="$DATA_ROOT/${SCRIPT_NAME}.${ACTION}.latest.json"
+
+TMP_OUT="$(mktemp)"
+TMP_ERR="$(mktemp)"
+TMP_REPORT="$(mktemp)"
+cleanup() {
+  if [[ -n "$LOCK_DIR" && -d "$LOCK_DIR" ]]; then
+    rmdir "$LOCK_DIR" 2>/dev/null || true
+  fi
+  rm -f "$TMP_OUT" "$TMP_ERR" "$TMP_REPORT"
+}
+trap cleanup EXIT
+
+SUPPRESS_REPORT=0
+PY_ARGS=()
+for arg in "$@"; do
+  case "$arg" in
+    --quiet-report|--json)
+      SUPPRESS_REPORT=1
+      ;;
+    *)
+      PY_ARGS+=("$arg")
+      ;;
+  esac
+done
+
+log_line() {
+  local level="$1"
+  shift
+  local ts
+  ts="$(date -u +%Y-%m-%dT%H:%M:%S.%6NZ)"
+  printf '[%s] [%s] [%s] %s\n' "$ts" "$SCRIPT_NAME" "$level" "$*" >> "$LOG_FILE"
+}
+
+log_banner() {
+  local title="$1"
+  printf '============================================================\n' >> "$LOG_FILE"
+  printf '%s\n' "$title" >> "$LOG_FILE"
+  printf '============================================================\n' >> "$LOG_FILE"
+}
+
+format_duration() {
+  local total_us="$1"
+  local hours=$((total_us / 3600000000))
+  local rem=$((total_us % 3600000000))
+  local mins=$((rem / 60000000))
+  rem=$((rem % 60000000))
+  local secs=$((rem / 1000000))
+  local frac=$(((rem % 1000000) / 100))
+  printf '%02dh%02dm%02d.%04ds' "$hours" "$mins" "$secs" "$frac"
+}
+
+sha256_or_na() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  else
+    printf 'n/a\n'
+  fi
+}
+
+git_value() {
+  local args=("$@")
+  if command -v git >/dev/null 2>&1 && git -C "$BASE" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    git -C "$BASE" "${args[@]}" 2>/dev/null || true
+  fi
+}
+
+COMMAND_DISPLAY="$(printf '%q ' "$SCRIPT_PATH" "$@")"
+COMMAND_DISPLAY="${COMMAND_DISPLAY% }"
+GIT_ROOT="$(git_value rev-parse --show-toplevel)"
+GIT_HEAD="$(git_value rev-parse HEAD)"
+GIT_BRANCH="$(git_value rev-parse --abbrev-ref HEAD)"
+GIT_STATUS_SHORT="$(git_value status --short)"
+WRAPPER_SHA256="$(sha256_or_na "$SCRIPT_PATH")"
+PYTHON_SHA256="$(sha256_or_na "$PYTHON_SCRIPT_PATH")"
+OBSIDIAN_VAULT_NAME="${OBSIDIAN_VAULT_NAME:-$(basename "$BASE")}"
+OBSIDIAN_SCRIPT_DOC_URL="obsidian://open?vault=${OBSIDIAN_VAULT_NAME}&file=_shared%2Fscripts%2Fbrowser_cdp_tool.md"
+OBSIDIAN_TASK_URL="obsidian://open?vault=${OBSIDIAN_VAULT_NAME}&file=_shared%2Fdomains%2Fpersonal%2Ftasks%2Factive%2F${IMPLEMENTATION_TASK_ID}.md"
+
+log_banner "$SCRIPT_NAME start"
+log_line INFO "script_name: $SCRIPT_NAME"
+log_line INFO "action: $ACTION"
+log_line INFO "script_version: $SCRIPT_VERSION"
+log_line INFO "script_author: $SCRIPT_AUTHOR"
+log_line INFO "script_model: $SCRIPT_MODEL"
+log_line INFO "script_owner: $SCRIPT_OWNER"
+log_line INFO "implementation_task_id: $IMPLEMENTATION_TASK_ID"
+log_line INFO "hostname_short: $HOSTNAME_SHORT"
+log_line INFO "pid: $$"
+log_line INFO "start_ts_utc: $START_TS"
+log_line INFO "start_us: $START_US"
+log_line INFO "base_dil: $BASE"
+log_line INFO "domain_name: ${DOMAIN_NAME:-personal}"
+log_line INFO "script_path: $SCRIPT_PATH"
+log_line INFO "python_script_path: $PYTHON_SCRIPT_PATH"
+log_line INFO "doc_path: $DOC_PATH"
+log_line INFO "log_file: $LOG_FILE"
+log_line INFO "data_file: $DATA_FILE"
+log_line INFO "latest_data_file: $LATEST_DATA_FILE"
+log_line INFO "command: $COMMAND_DISPLAY"
+log_line INFO "wrapper_sha256: $WRAPPER_SHA256"
+log_line INFO "python_sha256: $PYTHON_SHA256"
+log_line INFO "git_root: ${GIT_ROOT:-n/a}"
+log_line INFO "git_branch: ${GIT_BRANCH:-n/a}"
+log_line INFO "git_head: ${GIT_HEAD:-n/a}"
+if [[ -n "$GIT_STATUS_SHORT" ]]; then
+  log_line INFO "git_status_short: dirty"
+else
+  log_line INFO "git_status_short: clean-or-unavailable"
+fi
+log_line INFO "obsidian_vault: ${OBSIDIAN_VAULT_NAME}"
+log_line INFO "obsidian_script_doc_url: $OBSIDIAN_SCRIPT_DOC_URL"
+log_line INFO "obsidian_task_url: $OBSIDIAN_TASK_URL"
+
+set +e
+python3 "$PYTHON_SCRIPT_PATH" "${PY_ARGS[@]}" >"$TMP_OUT" 2>"$TMP_ERR"
+STATUS=$?
+set -e
+
+if [[ -s "$TMP_OUT" ]]; then
+  cp "$TMP_OUT" "$DATA_FILE"
+  cp "$TMP_OUT" "$LATEST_DATA_FILE"
+fi
+
+if [[ -s "$TMP_OUT" ]]; then
+  log_banner "$SCRIPT_NAME stdout"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    log_line STDOUT "$line"
+  done < "$TMP_OUT"
+fi
+
+if [[ -s "$TMP_ERR" ]]; then
+  log_banner "$SCRIPT_NAME stderr"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    log_line STDERR "$line"
+  done < "$TMP_ERR"
+fi
+
+if [[ "$ACTION" == "portfolio" && $SUPPRESS_REPORT -eq 0 && -s "$TMP_OUT" && $STATUS -eq 0 ]]; then
+  set +e
+  python3 "$PYTHON_SCRIPT_PATH" report --input "$DATA_FILE" >"$TMP_REPORT" 2>>"$TMP_ERR"
+  REPORT_STATUS=$?
+  set -e
+  if [[ $REPORT_STATUS -eq 0 && -s "$TMP_REPORT" ]]; then
+    log_banner "$SCRIPT_NAME report"
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      log_line REPORT "$line"
+    done < "$TMP_REPORT"
+    cat "$TMP_REPORT"
+  else
+    cat "$TMP_OUT"
+  fi
+elif [[ -s "$TMP_OUT" ]]; then
+  cat "$TMP_OUT"
+fi
+
+END_TS="$(date -u +%Y-%m-%dT%H:%M:%S.%6NZ)"
+END_US="$(date -u +%s%6N)"
+DURATION_US=$((END_US - START_US))
+DURATION_HUMAN="$(format_duration "$DURATION_US")"
+
+log_banner "$SCRIPT_NAME end summary"
+log_line INFO "end_ts_utc: $END_TS"
+log_line INFO "end_us: $END_US"
+log_line INFO "duration_us: $DURATION_US"
+log_line INFO "duration_human: $DURATION_HUMAN"
+log_line INFO "exit_code: $STATUS"
+if [[ -s "$TMP_OUT" ]]; then
+  log_line INFO "data_artifact_written: yes"
+else
+  log_line INFO "data_artifact_written: no"
+fi
+
+if [[ -s "$TMP_ERR" ]]; then
+  cat "$TMP_ERR" >&2
+fi
+
+exit "$STATUS"
