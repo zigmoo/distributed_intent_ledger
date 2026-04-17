@@ -21,6 +21,7 @@ due:
 Zero-inference lookup table for agent commands. Before doing any work, check this registry for an existing script/tool that matches the user's intent. **Do NOT manually replicate what a script does — run the script.**
 
 This sample exists to show how a caller can map intent directly to a command without model-side guesswork.
+It is a concrete zero-inference implementation of the broader low-inference DIL principle.
 
 ## DIL Operations
 
