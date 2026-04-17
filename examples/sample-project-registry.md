@@ -21,6 +21,8 @@ due:
 Canonical list of valid project slugs. Tasks must reference a registered slug in their `project:` field.
 Also serves as zero-inference lookup for task discovery: match user shorthand against the `aliases` column, then use `anchor_task` and `repo_path` to find related tasks and code.
 
+This is one concrete example of the broader low-inference principle: the registry should let a caller map intent to the right project without model-side guesswork.
+
 New projects are added with `create_project.sh`:
 
 ```bash
