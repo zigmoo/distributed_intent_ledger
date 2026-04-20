@@ -31,6 +31,7 @@ This principle applies to ALL communication: code, configs, error messages, log 
 5. **Answer "what do I do next?"** Every output should make the next step obvious without the reader leaving the screen.
 6. **No mental mapping.** Show literal tool names, not concepts. Show file paths, not "check the docs."
 7. **Self-documenting.** Variable names, function names, comments, config keys — a reader should understand intent without tracing call chains.
+8. **Whitespace between thoughts.** Humans parse blocks of text faster when sentences are separated by blank lines. A wall of text forces the reader to find paragraph boundaries mentally. In chat messages, Jira comments, and agent output: one idea per paragraph, blank line between them.
 
 ## Assume Self-Taught Users
 
