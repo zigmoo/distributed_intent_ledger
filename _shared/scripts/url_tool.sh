@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -euo pipefail
 # url_tool — Zero-inference URL formatter using domain_registry ticket_systems templates
 #
