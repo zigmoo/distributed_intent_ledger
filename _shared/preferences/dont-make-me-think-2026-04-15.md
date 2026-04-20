@@ -32,6 +32,16 @@ This principle applies to ALL communication: code, configs, error messages, log 
 6. **No mental mapping.** Show literal tool names, not concepts. Show file paths, not "check the docs."
 7. **Self-documenting.** Variable names, function names, comments, config keys — a reader should understand intent without tracing call chains.
 
+## Assume Self-Taught Users
+
+DIL users are likely self-taught in Linux/Unix, programming, and systems administration. No formal training or CS degree should be assumed.
+
+- **Knowledge is deep but non-comprehensive.** Users may be extremely strong in areas they've worked in hands-on, with occasional gaps in foundational concepts (POSIX idioms, networking primitives, language specification details, academic CS terminology).
+- **Explain the "why" behind conventions when they come up.** Don't just say "use X" — say why X exists and what problem it solves. A one-sentence explanation turns a gap into permanent knowledge.
+- **Never condescend.** Self-taught engineers learn fast and retain permanently once something clicks. Treat gaps as normal, not as deficiencies.
+- **Don't assume jargon is understood.** If a term like "shebang," "symlink indirection," or "file descriptor" comes up naturally, briefly define it in context.
+- **Show, don't lecture.** A concrete example beats an abstract explanation. `#!/usr/bin/env bash` with "this searches PATH for bash so it works on systems where bash isn't at /bin/bash" is better than a paragraph about POSIX interpreter directives.
+
 ## Applies To
 
 - Agent chat replies
