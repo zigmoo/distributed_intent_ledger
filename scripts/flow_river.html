@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DIL Flow River — Operational Activity Visualization</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a1a; color: #c0c0c0; font-family: 'JetBrains Mono', 'Fira Code', monospace; overflow: hidden; }
+  #ui {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+    background: rgba(10,10,26,0.9); border-bottom: 1px solid #333;
+    padding: 12px 20px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap;
+  }
+  #ui h1 { font-size: 16px; color: #7aa2f7; font-weight: 400; }
+  #ui label { font-size: 12px; color: #888; }
+  #ui select, #ui input { background: #1a1b26; color: #c0caf5; border: 1px solid #333; padding: 4px 8px; border-radius: 4px; font-family: inherit; font-size: 12px; }
+  #stats { position: fixed; bottom: 0; left: 0; right: 0; z-index: 10; background: rgba(10,10,26,0.9); border-top: 1px solid #333; padding: 8px 20px; font-size: 11px; display: flex; gap: 24px; }
+  #stats .stat-label { color: #565f89; }
+  #stats .stat-value { color: #7aa2f7; }
+  #tooltip { position: fixed; display: none; background: rgba(26,27,38,0.95); border: 1px solid #7aa2f7; border-radius: 6px; padding: 10px 14px; font-size: 12px; z-index: 20; pointer-events: none; max-width: 300px; }
+  #tooltip .tt-tool { color: #7aa2f7; font-size: 14px; font-weight: bold; }
+  #tooltip .tt-action { color: #bb9af7; }
+  #tooltip .tt-time { color: #565f89; }
+  #tooltip .tt-count { color: #9ece6a; }
+  #legend { position: fixed; top: 60px; right: 20px; z-index: 10; background: rgba(10,10,26,0.85); border: 1px solid #333; border-radius: 6px; padding: 10px 14px; font-size: 11px; min-width: 160px; min-height: 80px; max-height: 80vh; overflow-y: auto; overflow-x: hidden; cursor: grab; user-select: none; resize: both; }
+  #legend.dragging { cursor: grabbing; opacity: 0.9; box-shadow: 0 4px 20px rgba(122,162,247,0.3); }
+  #legend .leg-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid #333; padding-bottom: 6px; }
+  #legend .leg-title { color: #7aa2f7; font-size: 12px; font-weight: bold; }
+  #legend .leg-drag-handle { color: #565f89; font-size: 10px; letter-spacing: 2px; cursor: grab; }
+  #legend .leg-item { display: flex; align-items: center; gap: 8px; margin: 3px 0; cursor: pointer; }
+  #legend .leg-item:hover { opacity: 0.7; }
+  #legend .leg-swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+  #legend .leg-name { color: #c0caf5; }
+  #legend .leg-count { color: #565f89; margin-left: auto; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+
+<div id="ui">
+  <h1>DIL Flow River</h1>
+  <div>
+    <label>Time Window:</label>
+    <select id="bucket-size">
+      <option value="3600">1 hour</option>
+      <option value="14400">4 hours</option>
+      <option value="86400" selected>1 day</option>
+      <option value="604800">1 week</option>
+    </select>
+  </div>
+  <div>
+    <label>Date Range:</label>
+    <input type="date" id="date-start">
+    <input type="date" id="date-end">
+  </div>
+  <div>
+    <label>Min ops to show tool:</label>
+    <input type="number" id="min-ops" value="3" min="1" max="100" style="width:50px">
+  </div>
+</div>
+
+<div id="stats">
+  <span><span class="stat-label">Total Events:</span> <span class="stat-value" id="s-total">0</span></span>
+  <span><span class="stat-label">Tools:</span> <span class="stat-value" id="s-tools">0</span></span>
+  <span><span class="stat-label">Date Range:</span> <span class="stat-value" id="s-range">—</span></span>
+  <span><span class="stat-label">Busiest Day:</span> <span class="stat-value" id="s-busiest">—</span></span>
+</div>
+
+<div id="tooltip"></div>
+<div id="legend"></div>
+<canvas id="canvas"></canvas>
+
+<script>
+// ── Log data will be injected here by the harvester script ──
+let RAW_EVENTS = [];
+
+// ── Color palette (Tokyo Night inspired) ──
+const PALETTE = [
+  '#7aa2f7', '#bb9af7', '#9ece6a', '#e0af68', '#f7768e',
+  '#7dcfff', '#73daca', '#ff9e64', '#c0caf5', '#2ac3de',
+  '#b4f9f8', '#89ddff', '#a9b1d6', '#d5d6db', '#c3e88d',
+  '#ff7a93', '#ffc777', '#4fd6be', '#c099ff', '#fc7b7b',
+];
+
+function assignColors(tools) {
+  const map = {};
+  tools.forEach((t, i) => { map[t] = PALETTE[i % PALETTE.length]; });
+  return map;
+}
+
+// ── Parse log filenames ──
+function parseLogFilename(path) {
+  const basename = path.split('/').pop().replace(/\.log$/, '');
+  // Standard: hostname.tool.action.YYYYMMDD_HHMMSS
+  // Or: tool.action.YYYYMMDD_HHMMSS
+  // Or: tool_YYYYMMDD-HHMMSS
+  let m;
+
+  // hostname.tool.action.YYYYMMDD_HHMMSS
+  m = basename.match(/^([^.]+)\.([^.]+)\.([^.]+)\.(\d{8}_\d{6})$/);
+  if (m) return { machine: m[1], tool: m[2], action: m[3], ts: parseTS(m[4]) };
+
+  // tool.action.YYYYMMDD_HHMMSS
+  m = basename.match(/^([^.]+)\.([^.]+)\.(\d{8}_\d{6})$/);
+  if (m) return { machine: 'unknown', tool: m[1], action: m[2], ts: parseTS(m[3]) };
+
+  // tool_YYYYMMDD-HHMMSS
+  m = basename.match(/^(.+?)_(\d{8})-(\d{6})$/);
+  if (m) return { machine: 'unknown', tool: m[1], action: 'run', ts: parseTS(m[2] + '_' + m[3]) };
+
+  // tool.action.YYYYMMDD_HHMMSS (with dots in tool name)
+  m = basename.match(/(\d{8}_\d{6})$/);
+  if (m) {
+    const prefix = basename.replace(/\.?\d{8}_\d{6}$/, '');
+    const parts = prefix.split('.');
+    const action = parts.length > 1 ? parts.pop() : 'run';
+    const tool = parts.join('.') || 'unknown';
+    return { machine: 'unknown', tool, action, ts: parseTS(m[1]) };
+  }
+
+  return null;
+}
+
+function parseTS(s) {
+  // YYYYMMDD_HHMMSS -> Date
+  const y = s.substr(0,4), mo = s.substr(4,2), d = s.substr(6,2);
+  const h = s.substr(9,2), mi = s.substr(11,2), se = s.substr(13,2);
+  return new Date(`${y}-${mo}-${d}T${h}:${mi}:${se}`);
+}
+
+// ── Bucket events ──
+function bucketEvents(events, bucketSec, minOps) {
+  if (!events.length) return { buckets: [], tools: [], colorMap: {} };
+
+  const toolCounts = {};
+  events.forEach(e => { toolCounts[e.tool] = (toolCounts[e.tool]||0) + 1; });
+
+  const tools = Object.entries(toolCounts)
+    .filter(([,c]) => c >= minOps)
+    .sort((a,b) => b[1] - a[1])
+    .map(([t]) => t);
+
+  const toolSet = new Set(tools);
+  const filtered = events.filter(e => toolSet.has(e.tool));
+
+  const minT = Math.min(...filtered.map(e => e.ts.getTime()));
+  const maxT = Math.max(...filtered.map(e => e.ts.getTime()));
+  const bucketMs = bucketSec * 1000;
+  const nBuckets = Math.max(1, Math.ceil((maxT - minT) / bucketMs) + 1);
+
+  const buckets = [];
+  for (let i = 0; i < nBuckets; i++) {
+    const t0 = minT + i * bucketMs;
+    const b = { t0: new Date(t0), t1: new Date(t0 + bucketMs), counts: {}, events: [] };
+    tools.forEach(t => { b.counts[t] = 0; });
+    buckets.push(b);
+  }
+
+  filtered.forEach(e => {
+    const idx = Math.min(Math.floor((e.ts.getTime() - minT) / bucketMs), nBuckets - 1);
+    buckets[idx].counts[e.tool]++;
+    buckets[idx].events.push(e);
+  });
+
+  const colorMap = assignColors(tools);
+  return { buckets, tools, colorMap, toolCounts };
+}
+
+// ── Rendering ──
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let currentData = null;
+let hoveredBucket = -1;
+let hoveredTool = null;
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  render();
+}
+
+function render() {
+  if (!currentData || !currentData.buckets.length) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#565f89';
+    ctx.font = '16px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('No data loaded. Paste log file list or load via harvester.', canvas.width/2, canvas.height/2);
+    return;
+  }
+
+  const { buckets, tools, colorMap } = currentData;
+  const W = canvas.width;
+  const H = canvas.height;
+  const TOP = 56;
+  const BOTTOM = 36;
+  const LEFT = 20;
+  const RIGHT = 200;
+  const plotW = W - LEFT - RIGHT;
+  const plotH = H - TOP - BOTTOM;
+  const centerY = TOP + plotH / 2;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Find max total per bucket for scaling
+  const maxTotal = Math.max(1, ...buckets.map(b => {
+    let s = 0; tools.forEach(t => { s += b.counts[t]; }); return s;
+  }));
+
+  const ribbonMaxH = plotH * 0.8;
+  const dx = plotW / Math.max(1, buckets.length - 1);
+
+  // Draw each tool as a stacked ribbon
+  // Build stacked paths from center outward
+  tools.forEach((tool, ti) => {
+    const points = [];
+    buckets.forEach((b, bi) => {
+      // Calculate offset: sum of tools above this one
+      let below = 0, thisH = 0;
+      for (let j = 0; j <= ti; j++) {
+        if (j < ti) below += b.counts[tools[j]];
+        else thisH = b.counts[tool];
+      }
+      const scale = ribbonMaxH / maxTotal;
+      const y0 = centerY - (below + thisH) * scale / 2;
+      const y1 = y0 + thisH * scale;
+      points.push({ x: LEFT + bi * dx, y0, y1, count: thisH });
+    });
+
+    // Draw filled ribbon with smooth curves
+    const color = colorMap[tool];
+    const isHovered = hoveredTool === tool;
+    const alpha = hoveredTool ? (isHovered ? 0.9 : 0.15) : 0.7;
+
+    ctx.beginPath();
+    // Top edge (left to right)
+    ctx.moveTo(points[0].x, points[0].y0);
+    for (let i = 1; i < points.length; i++) {
+      const cx = (points[i-1].x + points[i].x) / 2;
+      ctx.bezierCurveTo(cx, points[i-1].y0, cx, points[i].y0, points[i].x, points[i].y0);
+    }
+    // Bottom edge (right to left)
+    for (let i = points.length - 1; i >= 0; i--) {
+      if (i === points.length - 1) {
+        ctx.lineTo(points[i].x, points[i].y1);
+      } else {
+        const cx = (points[i+1].x + points[i].x) / 2;
+        ctx.bezierCurveTo(cx, points[i+1].y1, cx, points[i].y1, points[i].x, points[i].y1);
+      }
+    }
+    ctx.closePath();
+
+    // Gradient fill
+    const grad = ctx.createLinearGradient(LEFT, 0, LEFT + plotW, 0);
+    grad.addColorStop(0, color + Math.round(alpha * 255).toString(16).padStart(2,'0'));
+    grad.addColorStop(0.5, color + Math.round(alpha * 200).toString(16).padStart(2,'0'));
+    grad.addColorStop(1, color + Math.round(alpha * 255).toString(16).padStart(2,'0'));
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Subtle edge glow
+    if (isHovered) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  });
+
+  // Time axis labels
+  ctx.fillStyle = '#565f89';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  const labelEvery = Math.max(1, Math.floor(buckets.length / 15));
+  buckets.forEach((b, bi) => {
+    if (bi % labelEvery === 0 || bi === buckets.length - 1) {
+      const x = LEFT + bi * dx;
+      const label = formatDate(b.t0, currentData.bucketSec);
+      ctx.fillText(label, x, H - BOTTOM + 16);
+
+      // Tick mark
+      ctx.beginPath();
+      ctx.moveTo(x, TOP);
+      ctx.lineTo(x, H - BOTTOM);
+      ctx.strokeStyle = 'rgba(86,95,137,0.15)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+  });
+
+  // Hover column highlight
+  if (hoveredBucket >= 0 && hoveredBucket < buckets.length) {
+    const x = LEFT + hoveredBucket * dx;
+    ctx.beginPath();
+    ctx.moveTo(x, TOP);
+    ctx.lineTo(x, H - BOTTOM);
+    ctx.strokeStyle = 'rgba(122,162,247,0.3)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+}
+
+function formatDate(d, bucketSec) {
+  const mo = String(d.getMonth()+1).padStart(2,'0');
+  const da = String(d.getDate()).padStart(2,'0');
+  if (bucketSec >= 86400) return `${mo}/${da}`;
+  const h = String(d.getHours()).padStart(2,'0');
+  const m = String(d.getMinutes()).padStart(2,'0');
+  return `${mo}/${da} ${h}:${m}`;
+}
+
+// ── Interaction ──
+canvas.addEventListener('mousemove', (e) => {
+  if (!currentData || !currentData.buckets.length) return;
+  const { buckets, tools, colorMap } = currentData;
+  const LEFT = 20, RIGHT = 200, TOP = 56;
+  const plotW = canvas.width - LEFT - RIGHT;
+  const dx = plotW / Math.max(1, buckets.length - 1);
+
+  const bi = Math.round((e.clientX - LEFT) / dx);
+  hoveredBucket = Math.max(0, Math.min(buckets.length - 1, bi));
+
+  // Determine hovered tool by Y
+  const b = buckets[hoveredBucket];
+  const plotH = canvas.height - TOP - 36;
+  const centerY = TOP + plotH / 2;
+  const maxTotal = Math.max(1, ...buckets.map(bb => {
+    let s = 0; tools.forEach(t => { s += bb.counts[t]; }); return s;
+  }));
+  const scale = (plotH * 0.8) / maxTotal;
+
+  let found = null;
+  let below = 0;
+  for (const tool of tools) {
+    const thisH = b.counts[tool];
+    const y0 = centerY - (below + thisH) * scale / 2;
+    const y1 = y0 + thisH * scale;
+    if (e.clientY >= y0 && e.clientY <= y1 && thisH > 0) {
+      found = tool;
+      break;
+    }
+    below += thisH;
+  }
+  hoveredTool = found;
+
+  // Tooltip
+  const tt = document.getElementById('tooltip');
+  if (b.events.length > 0) {
+    const toolBreakdown = tools
+      .filter(t => b.counts[t] > 0)
+      .map(t => `<div><span style="color:${colorMap[t]}">■</span> ${t}: <span class="tt-count">${b.counts[t]}</span></div>`)
+      .join('');
+
+    tt.innerHTML = `
+      <div class="tt-time">${b.t0.toLocaleString()} — ${b.t1.toLocaleString()}</div>
+      <div style="margin-top:6px">${toolBreakdown}</div>
+      <div class="tt-count" style="margin-top:6px">Total: ${b.events.length} ops</div>
+    `;
+    tt.style.display = 'block';
+    tt.style.left = Math.min(e.clientX + 16, window.innerWidth - 320) + 'px';
+    tt.style.top = Math.min(e.clientY - 10, window.innerHeight - 200) + 'px';
+  } else {
+    tt.style.display = 'none';
+  }
+
+  render();
+});
+
+canvas.addEventListener('mouseleave', () => {
+  hoveredBucket = -1;
+  hoveredTool = null;
+  document.getElementById('tooltip').style.display = 'none';
+  render();
+});
+
+// ── Legend ──
+function renderLegend() {
+  if (!currentData) return;
+  const { tools, colorMap, toolCounts } = currentData;
+  const el = document.getElementById('legend');
+  el.innerHTML = '<div class="leg-header"><span class="leg-title">Tools</span><span class="leg-drag-handle">⠿⠿⠿</span></div>' + tools.map(t =>
+    `<div class="leg-item" data-tool="${t}">
+      <div class="leg-swatch" style="background:${colorMap[t]}"></div>
+      <span class="leg-name">${t}</span>
+      <span class="leg-count">${toolCounts[t]}</span>
+    </div>`
+  ).join('');
+
+  el.querySelectorAll('.leg-item').forEach(item => {
+    item.addEventListener('mouseenter', () => { hoveredTool = item.dataset.tool; render(); });
+    item.addEventListener('mouseleave', () => { hoveredTool = null; render(); });
+  });
+}
+
+// ── Stats ──
+function updateStats() {
+  if (!currentData || !currentData.buckets.length) return;
+  const { buckets, tools } = currentData;
+  const total = buckets.reduce((s, b) => s + b.events.length, 0);
+  const dates = buckets.filter(b => b.events.length > 0).map(b => b.t0);
+  const minD = dates[0], maxD = dates[dates.length - 1];
+
+  // Busiest bucket
+  let bMax = buckets[0];
+  buckets.forEach(b => { if (b.events.length > bMax.events.length) bMax = b; });
+
+  document.getElementById('s-total').textContent = total;
+  document.getElementById('s-tools').textContent = tools.length;
+  document.getElementById('s-range').textContent = minD && maxD
+    ? `${minD.toLocaleDateString()} — ${maxD.toLocaleDateString()}`
+    : '—';
+  document.getElementById('s-busiest').textContent = bMax.events.length > 0
+    ? `${bMax.t0.toLocaleDateString()} (${bMax.events.length} ops)`
+    : '—';
+}
+
+// ── Controls ──
+function recompute() {
+  const bucketSec = parseInt(document.getElementById('bucket-size').value);
+  const minOps = parseInt(document.getElementById('min-ops').value) || 1;
+  const startStr = document.getElementById('date-start').value;
+  const endStr = document.getElementById('date-end').value;
+
+  let filtered = RAW_EVENTS.filter(e => e.ts);
+  if (startStr) {
+    const s = new Date(startStr);
+    filtered = filtered.filter(e => e.ts >= s);
+  }
+  if (endStr) {
+    const en = new Date(endStr + 'T23:59:59');
+    filtered = filtered.filter(e => e.ts <= en);
+  }
+
+  currentData = bucketEvents(filtered, bucketSec, minOps);
+  currentData.bucketSec = bucketSec;
+  renderLegend();
+  updateStats();
+  render();
+}
+
+document.getElementById('bucket-size').addEventListener('change', recompute);
+document.getElementById('min-ops').addEventListener('change', recompute);
+document.getElementById('date-start').addEventListener('change', recompute);
+document.getElementById('date-end').addEventListener('change', recompute);
+
+// ── Data loading ──
+function loadFromEmbedded(lines) {
+  RAW_EVENTS = lines.map(parseLogFilename).filter(Boolean);
+  // Set date range defaults
+  if (RAW_EVENTS.length) {
+    const dates = RAW_EVENTS.map(e => e.ts).sort((a,b) => a-b);
+    document.getElementById('date-start').value = dates[0].toISOString().slice(0,10);
+    document.getElementById('date-end').value = dates[dates.length-1].toISOString().slice(0,10);
+  }
+  recompute();
+}
+
+window.addEventListener('resize', resize);
+
+// ── Draggable legend ──
+(function() {
+  const legend = document.getElementById('legend');
+  let isDragging = false, offsetX = 0, offsetY = 0;
+
+  legend.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.leg-item')) return;
+    isDragging = true;
+    legend.classList.add('dragging');
+    const rect = legend.getBoundingClientRect();
+    offsetX = e.clientX - rect.left;
+    offsetY = e.clientY - rect.top;
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    legend.style.left = (e.clientX - offsetX) + 'px';
+    legend.style.top = (e.clientY - offsetY) + 'px';
+    legend.style.right = 'auto';
+  });
+
+  document.addEventListener('mouseup', () => {
+    isDragging = false;
+    legend.classList.remove('dragging');
+  });
+})();
+
+// ── EMBEDDED DATA (injected by harvester) ──
+const LOG_FILES = __LOG_DATA__;
+loadFromEmbedded(LOG_FILES);
+resize();
+</script>
+</body>
+</html>
