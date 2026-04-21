@@ -13,7 +13,16 @@
   }
   #ui h1 { font-size: 16px; color: #7aa2f7; font-weight: 400; }
   #ui label { font-size: 12px; color: #888; }
-  #ui select, #ui input { background: #1a1b26; color: #c0caf5; border: 1px solid #333; padding: 4px 8px; border-radius: 4px; font-family: inherit; font-size: 12px; }
+  #ui select, #ui input[type="date"], #ui input[type="number"] { background: #1a1b26; color: #c0caf5; border: 1px solid #333; padding: 4px 8px; border-radius: 4px; font-family: inherit; font-size: 12px; }
+  #domains { display: flex; gap: 12px; align-items: center; }
+  #domains .domain-toggle { cursor: pointer; color: #888; font-size: 12px; display: flex; align-items: center; gap: 4px; }
+  #domains .domain-toggle .arrow { color: #565f89; font-size: 10px; transition: transform 0.2s; display: inline-block; }
+  #domains .domain-toggle .arrow.open { transform: rotate(90deg); }
+  #domains .domain-checks { display: none; gap: 12px; align-items: center; }
+  #domains .domain-checks.open { display: flex; }
+  #domains .domain-checks label { display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 12px; }
+  #domains input[type="checkbox"] { accent-color: #7aa2f7; }
+  #domains .domain-count { color: #565f89; font-size: 10px; }
   #stats { position: fixed; bottom: 0; left: 0; right: 0; z-index: 10; background: rgba(10,10,26,0.9); border-top: 1px solid #333; padding: 8px 20px; font-size: 11px; display: flex; gap: 24px; }
   #stats .stat-label { color: #565f89; }
   #stats .stat-value { color: #7aa2f7; }
@@ -22,30 +31,52 @@
   #tooltip .tt-action { color: #bb9af7; }
   #tooltip .tt-time { color: #565f89; }
   #tooltip .tt-count { color: #9ece6a; }
-  #legend { position: fixed; top: 60px; right: 20px; z-index: 10; background: rgba(10,10,26,0.85); border: 1px solid #333; border-radius: 6px; padding: 10px 14px; font-size: 11px; min-width: 160px; min-height: 80px; max-height: 80vh; overflow-y: auto; overflow-x: hidden; cursor: grab; user-select: none; resize: both; }
-  #legend.dragging { cursor: grabbing; opacity: 0.9; box-shadow: 0 4px 20px rgba(122,162,247,0.3); }
-  #legend .leg-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid #333; padding-bottom: 6px; }
+  #legend { position: fixed; top: 60px; left: calc(100vw - 300px); z-index: 10; background: rgba(10,10,26,0.85); border: 1px solid #333; border-radius: 6px; padding: 10px 14px; font-size: 11px; min-width: 160px; min-height: 80px; max-height: 80vh; overflow-y: auto; overflow-x: hidden; user-select: none; resize: both; }
+  #legend .leg-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid #333; padding-bottom: 6px; cursor: grab; }
+  #legend .leg-header:active { cursor: grabbing; }
+  #legend.dragging .leg-header { cursor: grabbing; }
+  #legend.dragging { opacity: 0.9; box-shadow: 0 4px 20px rgba(122,162,247,0.3); }
   #legend .leg-title { color: #7aa2f7; font-size: 12px; font-weight: bold; }
-  #legend .leg-drag-handle { color: #565f89; font-size: 10px; letter-spacing: 2px; cursor: grab; }
+  #legend .leg-drag-handle { color: #565f89; font-size: 10px; letter-spacing: 2px; }
   #legend .leg-item { display: flex; align-items: center; gap: 8px; margin: 3px 0; cursor: pointer; }
   #legend .leg-item:hover { opacity: 0.7; }
+  #legend .leg-item.disabled { opacity: 0.25; }
   #legend .leg-swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
   #legend .leg-name { color: #c0caf5; }
   #legend .leg-count { color: #565f89; margin-left: auto; }
   canvas { display: block; }
+  #view-tabs { display: flex; gap: 2px; background: #1a1b26; border-radius: 4px; padding: 2px; }
+  #view-tabs button { background: transparent; color: #565f89; border: none; padding: 4px 12px; border-radius: 3px; font-family: inherit; font-size: 12px; cursor: pointer; transition: all 0.15s; }
+  #view-tabs button.active { background: #7aa2f7; color: #0a0a1a; }
+  #view-tabs button:hover:not(.active) { color: #c0caf5; }
 </style>
 </head>
 <body>
 
 <div id="ui">
   <h1>DIL Flow River</h1>
+  <div id="view-tabs">
+    <button class="active" data-view="river">River</button>
+    <button data-view="pie">Pie</button>
+  </div>
   <div>
     <label>Time Window:</label>
     <select id="bucket-size">
+      <option value="900">15 min</option>
+      <option value="1800">30 min</option>
       <option value="3600">1 hour</option>
+      <option value="7200">2 hours</option>
       <option value="14400">4 hours</option>
+      <option value="28800">8 hours</option>
+      <option value="43200">12 hours</option>
       <option value="86400" selected>1 day</option>
+      <option value="259200">3 days</option>
       <option value="604800">1 week</option>
+      <option value="1209600">2 weeks</option>
+      <option value="2592000">1 month</option>
+      <option value="7776000">3 months</option>
+      <option value="15552000">6 months</option>
+      <option value="31536000">1 year</option>
     </select>
   </div>
   <div>
@@ -54,8 +85,12 @@
     <input type="date" id="date-end">
   </div>
   <div>
-    <label>Min ops to show tool:</label>
+    <label>Min ops:</label>
     <input type="number" id="min-ops" value="3" min="1" max="100" style="width:50px">
+  </div>
+  <div id="domains">
+    <div class="domain-toggle" id="domain-toggle"><span class="arrow">&#9654;</span> Domains</div>
+    <div class="domain-checks" id="domain-checks"></div>
   </div>
 </div>
 
@@ -71,8 +106,12 @@
 <canvas id="canvas"></canvas>
 
 <script>
-// ── Log data will be injected here by the harvester script ──
+// ── State ──
 let RAW_EVENTS = [];
+let enabledDomains = new Set();
+let disabledTools = new Set();
+let currentView = 'river';
+let pieHoveredIndex = -1;
 
 // ── Color palette (Tokyo Night inspired) ──
 const PALETTE = [
@@ -89,40 +128,34 @@ function assignColors(tools) {
 }
 
 // ── Parse log filenames ──
-function parseLogFilename(path) {
-  const basename = path.split('/').pop().replace(/\.log$/, '');
-  // Standard: hostname.tool.action.YYYYMMDD_HHMMSS
-  // Or: tool.action.YYYYMMDD_HHMMSS
-  // Or: tool_YYYYMMDD-HHMMSS
+function parseLogFilename(entry) {
+  const filename = (typeof entry === 'object') ? entry.file : entry;
+  const domain = (typeof entry === 'object') ? (entry.domain || 'Unknown') : 'Unknown';
+  const basename = filename.split('/').pop().replace(/\.log$/, '');
   let m;
 
-  // hostname.tool.action.YYYYMMDD_HHMMSS
   m = basename.match(/^([^.]+)\.([^.]+)\.([^.]+)\.(\d{8}_\d{6})$/);
-  if (m) return { machine: m[1], tool: m[2], action: m[3], ts: parseTS(m[4]) };
+  if (m) return { machine: m[1], tool: m[2], action: m[3], ts: parseTS(m[4]), domain };
 
-  // tool.action.YYYYMMDD_HHMMSS
   m = basename.match(/^([^.]+)\.([^.]+)\.(\d{8}_\d{6})$/);
-  if (m) return { machine: 'unknown', tool: m[1], action: m[2], ts: parseTS(m[3]) };
+  if (m) return { machine: 'unknown', tool: m[1], action: m[2], ts: parseTS(m[3]), domain };
 
-  // tool_YYYYMMDD-HHMMSS
   m = basename.match(/^(.+?)_(\d{8})-(\d{6})$/);
-  if (m) return { machine: 'unknown', tool: m[1], action: 'run', ts: parseTS(m[2] + '_' + m[3]) };
+  if (m) return { machine: 'unknown', tool: m[1], action: 'run', ts: parseTS(m[2] + '_' + m[3]), domain };
 
-  // tool.action.YYYYMMDD_HHMMSS (with dots in tool name)
   m = basename.match(/(\d{8}_\d{6})$/);
   if (m) {
     const prefix = basename.replace(/\.?\d{8}_\d{6}$/, '');
     const parts = prefix.split('.');
     const action = parts.length > 1 ? parts.pop() : 'run';
     const tool = parts.join('.') || 'unknown';
-    return { machine: 'unknown', tool, action, ts: parseTS(m[1]) };
+    return { machine: 'unknown', tool, action, ts: parseTS(m[1]), domain };
   }
 
   return null;
 }
 
 function parseTS(s) {
-  // YYYYMMDD_HHMMSS -> Date
   const y = s.substr(0,4), mo = s.substr(4,2), d = s.substr(6,2);
   const h = s.substr(9,2), mi = s.substr(11,2), se = s.substr(13,2);
   return new Date(`${y}-${mo}-${d}T${h}:${mi}:${se}`);
@@ -130,18 +163,22 @@ function parseTS(s) {
 
 // ── Bucket events ──
 function bucketEvents(events, bucketSec, minOps) {
-  if (!events.length) return { buckets: [], tools: [], colorMap: {} };
+  if (!events.length) return { buckets: [], tools: [], colorMap: {}, toolCounts: {} };
 
   const toolCounts = {};
   events.forEach(e => { toolCounts[e.tool] = (toolCounts[e.tool]||0) + 1; });
 
   const tools = Object.entries(toolCounts)
-    .filter(([,c]) => c >= minOps)
+    .filter(([t,c]) => c >= minOps && !disabledTools.has(t))
     .sort((a,b) => b[1] - a[1])
     .map(([t]) => t);
 
+  const allToolCounts = { ...toolCounts };
+
   const toolSet = new Set(tools);
   const filtered = events.filter(e => toolSet.has(e.tool));
+
+  if (!filtered.length) return { buckets: [], tools, colorMap: assignColors(tools), toolCounts: allToolCounts };
 
   const minT = Math.min(...filtered.map(e => e.ts.getTime()));
   const maxT = Math.max(...filtered.map(e => e.ts.getTime()));
@@ -163,7 +200,7 @@ function bucketEvents(events, bucketSec, minOps) {
   });
 
   const colorMap = assignColors(tools);
-  return { buckets, tools, colorMap, toolCounts };
+  return { buckets, tools, colorMap, toolCounts: allToolCounts };
 }
 
 // ── Rendering ──
@@ -189,6 +226,8 @@ function render() {
     return;
   }
 
+  if (currentView === 'pie') { renderPie(); return; }
+
   const { buckets, tools, colorMap } = currentData;
   const W = canvas.width;
   const H = canvas.height;
@@ -202,7 +241,6 @@ function render() {
 
   ctx.clearRect(0, 0, W, H);
 
-  // Find max total per bucket for scaling
   const maxTotal = Math.max(1, ...buckets.map(b => {
     let s = 0; tools.forEach(t => { s += b.counts[t]; }); return s;
   }));
@@ -210,12 +248,9 @@ function render() {
   const ribbonMaxH = plotH * 0.8;
   const dx = plotW / Math.max(1, buckets.length - 1);
 
-  // Draw each tool as a stacked ribbon
-  // Build stacked paths from center outward
   tools.forEach((tool, ti) => {
     const points = [];
     buckets.forEach((b, bi) => {
-      // Calculate offset: sum of tools above this one
       let below = 0, thisH = 0;
       for (let j = 0; j <= ti; j++) {
         if (j < ti) below += b.counts[tools[j]];
@@ -227,19 +262,16 @@ function render() {
       points.push({ x: LEFT + bi * dx, y0, y1, count: thisH });
     });
 
-    // Draw filled ribbon with smooth curves
     const color = colorMap[tool];
     const isHovered = hoveredTool === tool;
     const alpha = hoveredTool ? (isHovered ? 0.9 : 0.15) : 0.7;
 
     ctx.beginPath();
-    // Top edge (left to right)
     ctx.moveTo(points[0].x, points[0].y0);
     for (let i = 1; i < points.length; i++) {
       const cx = (points[i-1].x + points[i].x) / 2;
       ctx.bezierCurveTo(cx, points[i-1].y0, cx, points[i].y0, points[i].x, points[i].y0);
     }
-    // Bottom edge (right to left)
     for (let i = points.length - 1; i >= 0; i--) {
       if (i === points.length - 1) {
         ctx.lineTo(points[i].x, points[i].y1);
@@ -250,7 +282,6 @@ function render() {
     }
     ctx.closePath();
 
-    // Gradient fill
     const grad = ctx.createLinearGradient(LEFT, 0, LEFT + plotW, 0);
     grad.addColorStop(0, color + Math.round(alpha * 255).toString(16).padStart(2,'0'));
     grad.addColorStop(0.5, color + Math.round(alpha * 200).toString(16).padStart(2,'0'));
@@ -258,7 +289,6 @@ function render() {
     ctx.fillStyle = grad;
     ctx.fill();
 
-    // Subtle edge glow
     if (isHovered) {
       ctx.strokeStyle = color;
       ctx.lineWidth = 1.5;
@@ -266,7 +296,7 @@ function render() {
     }
   });
 
-  // Time axis labels
+  // Time axis
   ctx.fillStyle = '#565f89';
   ctx.font = '10px monospace';
   ctx.textAlign = 'center';
@@ -274,10 +304,7 @@ function render() {
   buckets.forEach((b, bi) => {
     if (bi % labelEvery === 0 || bi === buckets.length - 1) {
       const x = LEFT + bi * dx;
-      const label = formatDate(b.t0, currentData.bucketSec);
-      ctx.fillText(label, x, H - BOTTOM + 16);
-
-      // Tick mark
+      ctx.fillText(formatDate(b.t0, currentData.bucketSec), x, H - BOTTOM + 16);
       ctx.beginPath();
       ctx.moveTo(x, TOP);
       ctx.lineTo(x, H - BOTTOM);
@@ -287,7 +314,6 @@ function render() {
     }
   });
 
-  // Hover column highlight
   if (hoveredBucket >= 0 && hoveredBucket < buckets.length) {
     const x = LEFT + hoveredBucket * dx;
     ctx.beginPath();
@@ -308,9 +334,132 @@ function formatDate(d, bucketSec) {
   return `${mo}/${da} ${h}:${m}`;
 }
 
-// ── Interaction ──
+// ── Pie chart renderer ──
+function renderPie() {
+  const { tools, colorMap, toolCounts } = currentData;
+  const W = canvas.width;
+  const H = canvas.height;
+  const TOP = 56;
+  const BOTTOM = 36;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const total = tools.reduce((s, t) => s + toolCounts[t], 0);
+  if (!total) return;
+
+  const cx = (W - 200) / 2;
+  const cy = TOP + (H - TOP - BOTTOM) / 2;
+  const outerR = Math.min((W - 200) / 2, (H - TOP - BOTTOM) / 2) * 0.75;
+  const innerR = outerR * 0.55;
+
+  let angle = -Math.PI / 2;
+
+  tools.forEach((tool, i) => {
+    const count = toolCounts[tool];
+    const slice = (count / total) * Math.PI * 2;
+    const isHovered = pieHoveredIndex === i || hoveredTool === tool;
+    const r = isHovered ? outerR + 8 : outerR;
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, angle, angle + slice);
+    ctx.arc(cx, cy, innerR, angle + slice, angle, true);
+    ctx.closePath();
+
+    const alpha = hoveredTool && !isHovered ? 0.2 : (isHovered ? 1.0 : 0.8);
+    ctx.fillStyle = colorMap[tool] + Math.round(alpha * 255).toString(16).padStart(2, '0');
+    ctx.fill();
+
+    if (isHovered) {
+      ctx.strokeStyle = '#c0caf5';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    // Label for slices > 3%
+    const pct = count / total;
+    if (pct > 0.03) {
+      const midAngle = angle + slice / 2;
+      const labelR = outerR + 24;
+      const lx = cx + Math.cos(midAngle) * labelR;
+      const ly = cy + Math.sin(midAngle) * labelR;
+
+      ctx.fillStyle = '#c0caf5';
+      ctx.font = '11px monospace';
+      ctx.textAlign = midAngle > Math.PI / 2 && midAngle < Math.PI * 1.5 ? 'right' : 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${tool} (${(pct * 100).toFixed(1)}%)`, lx, ly);
+    }
+
+    angle += slice;
+  });
+
+  // Center label
+  ctx.fillStyle = '#7aa2f7';
+  ctx.font = 'bold 24px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(total.toLocaleString(), cx, cy - 10);
+  ctx.fillStyle = '#565f89';
+  ctx.font = '12px monospace';
+  ctx.fillText('total ops', cx, cy + 14);
+}
+
+// ── Pie interaction ──
+function getPieSliceAt(x, y) {
+  if (!currentData) return -1;
+  const { tools, toolCounts } = currentData;
+  const W = canvas.width, H = canvas.height;
+  const cx = (W - 200) / 2;
+  const cy = 56 + (H - 56 - 36) / 2;
+  const outerR = Math.min((W - 200) / 2, (H - 56 - 36) / 2) * 0.75;
+  const innerR = outerR * 0.55;
+
+  const dx = x - cx, dy = y - cy;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist < innerR || dist > outerR + 10) return -1;
+
+  let mouseAngle = Math.atan2(dy, dx);
+  if (mouseAngle < -Math.PI / 2) mouseAngle += Math.PI * 2;
+  const total = tools.reduce((s, t) => s + toolCounts[t], 0);
+  let angle = -Math.PI / 2;
+
+  for (let i = 0; i < tools.length; i++) {
+    const slice = (toolCounts[tools[i]] / total) * Math.PI * 2;
+    let startNorm = angle, endNorm = angle + slice;
+    if (startNorm < -Math.PI / 2) startNorm += Math.PI * 2;
+    if (mouseAngle >= angle && mouseAngle < angle + slice) return i;
+    angle += slice;
+  }
+  return -1;
+}
+
+// ── Canvas interaction ──
 canvas.addEventListener('mousemove', (e) => {
-  if (!currentData || !currentData.buckets.length) return;
+  if (!currentData) return;
+
+  if (currentView === 'pie') {
+    const idx = getPieSliceAt(e.clientX, e.clientY);
+    pieHoveredIndex = idx;
+    hoveredTool = idx >= 0 ? currentData.tools[idx] : null;
+
+    const tt = document.getElementById('tooltip');
+    if (idx >= 0) {
+      const tool = currentData.tools[idx];
+      const count = currentData.toolCounts[tool];
+      const total = currentData.tools.reduce((s, t) => s + currentData.toolCounts[t], 0);
+      const pct = ((count / total) * 100).toFixed(1);
+      tt.innerHTML = `<div class="tt-tool">${tool}</div><div class="tt-count">${count} ops (${pct}%)</div>`;
+      tt.style.display = 'block';
+      tt.style.left = Math.min(e.clientX + 16, window.innerWidth - 320) + 'px';
+      tt.style.top = (e.clientY - 10) + 'px';
+    } else {
+      tt.style.display = 'none';
+    }
+    render();
+    return;
+  }
+
+  if (!currentData.buckets.length) return;
   const { buckets, tools, colorMap } = currentData;
   const LEFT = 20, RIGHT = 200, TOP = 56;
   const plotW = canvas.width - LEFT - RIGHT;
@@ -319,7 +468,6 @@ canvas.addEventListener('mousemove', (e) => {
   const bi = Math.round((e.clientX - LEFT) / dx);
   hoveredBucket = Math.max(0, Math.min(buckets.length - 1, bi));
 
-  // Determine hovered tool by Y
   const b = buckets[hoveredBucket];
   const plotH = canvas.height - TOP - 36;
   const centerY = TOP + plotH / 2;
@@ -342,7 +490,6 @@ canvas.addEventListener('mousemove', (e) => {
   }
   hoveredTool = found;
 
-  // Tooltip
   const tt = document.getElementById('tooltip');
   if (b.events.length > 0) {
     const toolBreakdown = tools
@@ -361,7 +508,6 @@ canvas.addEventListener('mousemove', (e) => {
   } else {
     tt.style.display = 'none';
   }
-
   render();
 });
 
@@ -372,22 +518,117 @@ canvas.addEventListener('mouseleave', () => {
   render();
 });
 
+// ── Domain checkboxes ──
+function buildDomainCheckboxes() {
+  const domainCounts = {};
+  RAW_EVENTS.forEach(e => {
+    domainCounts[e.domain] = (domainCounts[e.domain] || 0) + 1;
+  });
+
+  const container = document.getElementById('domain-checks');
+  container.innerHTML = '';
+
+  const sorted = Object.entries(domainCounts).sort((a,b) => b[1] - a[1]);
+  enabledDomains = new Set(sorted.map(([d]) => d));
+
+  sorted.forEach(([domain, count]) => {
+    const label = document.createElement('label');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = true;
+    cb.dataset.domain = domain;
+    cb.addEventListener('change', () => {
+      if (cb.checked) enabledDomains.add(domain);
+      else enabledDomains.delete(domain);
+      recompute();
+    });
+    const span = document.createElement('span');
+    span.textContent = domain;
+    span.style.color = '#c0caf5';
+    const countSpan = document.createElement('span');
+    countSpan.className = 'domain-count';
+    countSpan.textContent = `(${count})`;
+    label.appendChild(cb);
+    label.appendChild(span);
+    label.appendChild(countSpan);
+    container.appendChild(label);
+  });
+
+  // Accordion toggle
+  const toggle = document.getElementById('domain-toggle');
+  const arrow = toggle.querySelector('.arrow');
+  toggle.onclick = () => {
+    const isOpen = container.classList.toggle('open');
+    arrow.classList.toggle('open', isOpen);
+  };
+}
+
 // ── Legend ──
 function renderLegend() {
   if (!currentData) return;
   const { tools, colorMap, toolCounts } = currentData;
   const el = document.getElementById('legend');
-  el.innerHTML = '<div class="leg-header"><span class="leg-title">Tools</span><span class="leg-drag-handle">⠿⠿⠿</span></div>' + tools.map(t =>
-    `<div class="leg-item" data-tool="${t}">
-      <div class="leg-swatch" style="background:${colorMap[t]}"></div>
+
+  const allTools = Object.entries(toolCounts).sort((a,b) => b[1] - a[1]).map(([t]) => t);
+
+  el.innerHTML = '<div class="leg-header"><span class="leg-title">Tools</span><span class="leg-drag-handle">⠿⠿⠿</span></div>' + allTools.map(t => {
+    const isDisabled = disabledTools.has(t);
+    const color = colorMap[t] || '#565f89';
+    return `<div class="leg-item ${isDisabled ? 'disabled' : ''}" data-tool="${t}">
+      <div class="leg-swatch" style="background:${isDisabled ? '#333' : color}"></div>
       <span class="leg-name">${t}</span>
       <span class="leg-count">${toolCounts[t]}</span>
-    </div>`
-  ).join('');
+    </div>`;
+  }).join('');
 
   el.querySelectorAll('.leg-item').forEach(item => {
-    item.addEventListener('mouseenter', () => { hoveredTool = item.dataset.tool; render(); });
+    item.addEventListener('mouseenter', () => {
+      if (!disabledTools.has(item.dataset.tool)) {
+        hoveredTool = item.dataset.tool;
+        render();
+      }
+    });
     item.addEventListener('mouseleave', () => { hoveredTool = null; render(); });
+    item.addEventListener('click', () => {
+      const tool = item.dataset.tool;
+      if (disabledTools.has(tool)) disabledTools.delete(tool);
+      else disabledTools.add(tool);
+      recompute();
+    });
+  });
+
+  initLegendDrag();
+}
+
+// ── Legend drag (header only, not resize corner) ──
+function initLegendDrag() {
+  const legend = document.getElementById('legend');
+  const header = legend.querySelector('.leg-header');
+  if (!header) return;
+
+  let isDragging = false, offsetX = 0, offsetY = 0;
+
+  header.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    legend.classList.add('dragging');
+    const rect = legend.getBoundingClientRect();
+    offsetX = e.clientX - rect.left;
+    offsetY = e.clientY - rect.top;
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    legend.style.left = (e.clientX - offsetX) + 'px';
+    legend.style.top = (e.clientY - offsetY) + 'px';
+    legend.style.right = 'auto';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (isDragging) {
+      isDragging = false;
+      legend.classList.remove('dragging');
+    }
   });
 }
 
@@ -399,7 +640,6 @@ function updateStats() {
   const dates = buckets.filter(b => b.events.length > 0).map(b => b.t0);
   const minD = dates[0], maxD = dates[dates.length - 1];
 
-  // Busiest bucket
   let bMax = buckets[0];
   buckets.forEach(b => { if (b.events.length > bMax.events.length) bMax = b; });
 
@@ -420,7 +660,7 @@ function recompute() {
   const startStr = document.getElementById('date-start').value;
   const endStr = document.getElementById('date-end').value;
 
-  let filtered = RAW_EVENTS.filter(e => e.ts);
+  let filtered = RAW_EVENTS.filter(e => e.ts && enabledDomains.has(e.domain));
   if (startStr) {
     const s = new Date(startStr);
     filtered = filtered.filter(e => e.ts >= s);
@@ -438,51 +678,35 @@ function recompute() {
 }
 
 document.getElementById('bucket-size').addEventListener('change', recompute);
+
+// ── View tabs ──
+document.querySelectorAll('#view-tabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#view-tabs button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentView = btn.dataset.view;
+    pieHoveredIndex = -1;
+    hoveredTool = null;
+    render();
+  });
+});
 document.getElementById('min-ops').addEventListener('change', recompute);
 document.getElementById('date-start').addEventListener('change', recompute);
 document.getElementById('date-end').addEventListener('change', recompute);
 
 // ── Data loading ──
-function loadFromEmbedded(lines) {
-  RAW_EVENTS = lines.map(parseLogFilename).filter(Boolean);
-  // Set date range defaults
+function loadFromEmbedded(entries) {
+  RAW_EVENTS = entries.map(parseLogFilename).filter(Boolean);
   if (RAW_EVENTS.length) {
     const dates = RAW_EVENTS.map(e => e.ts).sort((a,b) => a-b);
     document.getElementById('date-start').value = dates[0].toISOString().slice(0,10);
     document.getElementById('date-end').value = dates[dates.length-1].toISOString().slice(0,10);
   }
+  buildDomainCheckboxes();
   recompute();
 }
 
 window.addEventListener('resize', resize);
-
-// ── Draggable legend ──
-(function() {
-  const legend = document.getElementById('legend');
-  let isDragging = false, offsetX = 0, offsetY = 0;
-
-  legend.addEventListener('mousedown', (e) => {
-    if (e.target.closest('.leg-item')) return;
-    isDragging = true;
-    legend.classList.add('dragging');
-    const rect = legend.getBoundingClientRect();
-    offsetX = e.clientX - rect.left;
-    offsetY = e.clientY - rect.top;
-    e.preventDefault();
-  });
-
-  document.addEventListener('mousemove', (e) => {
-    if (!isDragging) return;
-    legend.style.left = (e.clientX - offsetX) + 'px';
-    legend.style.top = (e.clientY - offsetY) + 'px';
-    legend.style.right = 'auto';
-  });
-
-  document.addEventListener('mouseup', () => {
-    isDragging = false;
-    legend.classList.remove('dragging');
-  });
-})();
 
 // ── EMBEDDED DATA (injected by harvester) ──
 const LOG_FILES = __LOG_DATA__;
