@@ -42,6 +42,12 @@ Then follow that file as highest-priority local guidance for this workspace.
 
 This ensures the agent always reads and follows this DIL guide on every session bootstrap.
 
+## Session Continuity (_hot.md)
+
+After reading this file, **immediately read `_shared/_hot.md`** if it exists. This file contains the ephemeral working state from the previous session — what was being worked on, what the next immediate action is, and what responses are pending. It bridges the gap between sessions that task files alone don't capture.
+
+At the end of each session, **overwrite `_shared/_hot.md`** with the current working state so the next session can resume seamlessly.
+
 ## Goal
 
 Provide durable, inspectable memory for agents/assistants across disparate machines and agents while keeping storage as plain Markdown files.
