@@ -31,6 +31,16 @@ MODEL=""
 INPUT_FILE=""
 SECTION=""
 CONTENT=""
+TIMESTAMP_VAL="$(date +%Y%m%d_%H%M%S)"
+
+# Logging — _hot.md is _shared-level (not domain-specific), so logs go to _shared/logs/
+LOG_DIR="$BASE/_shared/logs/hot_tool"
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/hot_tool.${TIMESTAMP_VAL}.log"
+
+hot_log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') | $*" >> "$LOG_FILE"
+}
 
 usage() {
     cat <<'EOF'
@@ -65,6 +75,7 @@ EOF
 }
 
 cmd_read() {
+    hot_log "read | $HOT_FILE"
     if [[ -f "$HOT_FILE" ]]; then
         cat "$HOT_FILE"
     else
@@ -74,6 +85,7 @@ cmd_read() {
 }
 
 cmd_status() {
+    hot_log "status | $HOT_FILE"
     if [[ ! -f "$HOT_FILE" ]]; then
         echo "NO_HOT | no _hot.md found"
         exit 1
@@ -117,6 +129,7 @@ session_model: ${MODEL:-unknown}
 
 $body
 HOTEOF
+    hot_log "write | $timestamp | agent=$AGENT | machine=$MACHINE | model=$MODEL"
     echo "OK | _hot.md updated | $timestamp | $AGENT | $MACHINE"
 }
 
@@ -146,6 +159,7 @@ cmd_append() {
     else
         echo -e "\n## $SECTION\n\n$CONTENT" >> "$HOT_FILE"
     fi
+    hot_log "append | section=$SECTION | $timestamp"
     echo "OK | appended to '$SECTION' | $timestamp"
 }
 
@@ -177,6 +191,7 @@ session_model: ${MODEL:-}
 | From | What | Ticket | Expected |
 |------|------|--------|----------|
 HOTEOF
+    hot_log "clear | $timestamp"
     echo "OK | _hot.md cleared | $timestamp"
 }
 
