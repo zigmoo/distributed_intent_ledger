@@ -6,6 +6,7 @@ Subcommands:
   create      Create a new memory note with schema-compliant frontmatter
   relocate    Move a memory note between scopes (local <-> shared)
   mind_meld   Export a memory to the DIL template repo, generalized and redacted
+  promote     Copy any files to the DIL template repo and commit (--redact for LLM pass)
 
 Exit codes: 0=success, 1=general error, 2=validation error
 """
@@ -541,6 +542,160 @@ def cmd_mind_meld(args: argparse.Namespace) -> int:
 
 
 # ---------------------------------------------------------------------------
+# promote subcommand
+# ---------------------------------------------------------------------------
+
+def resolve_target_path(source: Path, base_path: Path, template_repo: Path) -> Path:
+    """Map a source file to its target location in the template repo.
+
+    Uses the template repo's actual directory structure as the authority.
+    Matches source path segments to find the best landing spot.
+    """
+    # If inside the DIL _shared tree, compute relative path from _shared/
+    try:
+        shared_dir = base_path / "_shared"
+        rel = source.relative_to(shared_dir)
+        # Prefer top-level match over _shared/ to avoid duplication
+        candidate_top = template_repo / rel
+        candidate_shared = template_repo / "_shared" / rel
+        first_segment = rel.parts[0] if rel.parts else None
+        if first_segment and (template_repo / first_segment).is_dir():
+            return candidate_top
+        if candidate_shared.parent.is_dir():
+            return candidate_shared
+        return candidate_top
+    except ValueError:
+        pass
+
+    # If inside /az/talend/scripts/, map to scripts/
+    try:
+        scripts_root = Path("/az/talend/scripts")
+        rel = source.relative_to(scripts_root)
+        return template_repo / "scripts" / rel
+    except ValueError:
+        pass
+
+    # If inside a known scripts/lib pattern anywhere
+    parts = source.parts
+    for i, p in enumerate(parts):
+        if p == "scripts":
+            rel = Path(*parts[i:])
+            return template_repo / rel
+
+    # Fallback: just put it in the root
+    return template_repo / source.name
+
+
+def cmd_promote(args: argparse.Namespace) -> int:
+    base = resolve_base(str(Path(__file__).parent), args.base)
+    base_path = Path(base)
+
+    template_repo = Path(args.template_repo).resolve()
+    if not template_repo.is_dir():
+        print(f"Error: template repo not found: {template_repo}", file=sys.stderr)
+        return 2
+
+    sources = [Path(s).resolve() for s in args.sources]
+    for s in sources:
+        if not s.exists():
+            print(f"Error: source not found: {s}", file=sys.stderr)
+            return 2
+
+    # Build the file map: source -> target
+    file_map: list[tuple[Path, Path]] = []
+    for source in sources:
+        if source.is_file():
+            target = resolve_target_path(source, base_path, template_repo)
+            file_map.append((source, target))
+        elif source.is_dir():
+            for f in sorted(source.rglob("*")):
+                if f.is_file() and not f.name.startswith("."):
+                    target = resolve_target_path(f, base_path, template_repo)
+                    file_map.append((f, target))
+
+    if not file_map:
+        print("No files to promote.", file=sys.stderr)
+        return 2
+
+    # Show plan
+    print(f"Promote {len(file_map)} file(s) to {template_repo.name}:\n")
+    for src, tgt in file_map:
+        rel_tgt = tgt.relative_to(template_repo)
+        marker = "[redact] " if args.redact and src.suffix == ".md" else ""
+        print(f"  {marker}{src.name} -> {rel_tgt}")
+
+    if args.dry_run:
+        print("\n(dry run — not writing)")
+        return 0
+
+    # Confirm
+    if sys.stdin.isatty() and not args.yes:
+        response = input(f"\nProceed? [y/N] ").strip().lower()
+        if response not in ("y", "yes"):
+            print("Aborted.")
+            return 0
+
+    # Copy files
+    copied = []
+    for src, tgt in file_map:
+        tgt.parent.mkdir(parents=True, exist_ok=True)
+
+        if args.redact and src.suffix == ".md":
+            fm = parse_frontmatter(src)
+            if fm:
+                new_fm = templatize_frontmatter(fm)
+                body = extract_body(src)
+                model = args.model or DEFAULT_OLLAMA_MODEL
+                print(f"  Redacting {src.name} via {model}...")
+                generalized = llm_generalize(body, model)
+                if not generalized:
+                    print(f"  Warning: LLM redaction failed for {src.name}, using original body")
+                    generalized = body
+                tgt.write_text(f"{new_fm}\n\n{generalized}\n", encoding="utf-8")
+            else:
+                shutil.copy2(src, tgt)
+        else:
+            shutil.copy2(src, tgt)
+
+        # Preserve executable bit
+        if os.access(src, os.X_OK):
+            tgt.chmod(tgt.stat().st_mode | 0o111)
+
+        rel_tgt = tgt.relative_to(template_repo)
+        copied.append(str(rel_tgt))
+        print(f"  Copied: {rel_tgt}")
+
+    # Git commit if requested
+    if args.commit:
+        git_dir = str(template_repo)
+        try:
+            subprocess.run(["git", "-C", git_dir, "add"] + copied, check=True, capture_output=True)
+
+            msg = args.message or f"Promote {len(copied)} file(s) from active DIL"
+            subprocess.run(
+                ["git", "-C", git_dir, "commit", "-m", msg],
+                check=True, capture_output=True,
+            )
+            print(f"\nCommitted: {msg}")
+
+            if args.push:
+                result = subprocess.run(
+                    ["git", "-C", git_dir, "push"],
+                    capture_output=True, text=True, timeout=30,
+                )
+                if result.returncode == 0:
+                    print("Pushed to remote.")
+                else:
+                    print(f"Push failed: {result.stderr.strip()}", file=sys.stderr)
+        except subprocess.CalledProcessError as e:
+            print(f"Git error: {e.stderr.decode() if e.stderr else e}", file=sys.stderr)
+
+    log_operation(base, "promote", f"Promoted {len(copied)} files to {template_repo}")
+    print(f"\nPromote complete: {len(copied)} file(s)")
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -582,6 +737,20 @@ def build_parser() -> argparse.ArgumentParser:
     p_meld.add_argument("--base", default="", help="Base vault path override")
     p_meld.add_argument("--dry-run", action="store_true", help="Show proposed output without writing")
 
+    # -- promote --
+    p_promote = sub.add_parser("promote", help="Copy files to the DIL template repo and optionally commit/push")
+    p_promote.add_argument("sources", nargs="+", help="Files or directories to promote")
+    p_promote.add_argument("--template-repo", default=DEFAULT_TEMPLATE_REPO, help=f"Path to DIL template repo (default: {DEFAULT_TEMPLATE_REPO})")
+    p_promote.add_argument("--redact", action="store_true", help="Run LLM redaction on .md files (mind_meld behavior)")
+    p_promote.add_argument("--model", default="", help=f"Ollama model for redaction (default: {DEFAULT_OLLAMA_MODEL})")
+    p_promote.add_argument("--commit", action="store_true", help="Git commit after copying")
+    p_promote.add_argument("--push", action="store_true", help="Git push after commit (implies --commit)")
+    p_promote.add_argument("--message", "-m", default="", help="Commit message (auto-generated if omitted)")
+    p_promote.add_argument("--force", action="store_true", help="Overwrite existing files")
+    p_promote.add_argument("--yes", "-y", action="store_true", help="Skip confirmation prompt")
+    p_promote.add_argument("--base", default="", help="Base vault path override")
+    p_promote.add_argument("--dry-run", action="store_true", help="Show plan without executing")
+
     return parser
 
 
@@ -594,6 +763,10 @@ def main() -> int:
         return cmd_relocate(args)
     elif args.command == "mind_meld":
         return cmd_mind_meld(args)
+    elif args.command == "promote":
+        if args.push:
+            args.commit = True
+        return cmd_promote(args)
     return 1
 
 
