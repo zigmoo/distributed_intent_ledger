@@ -116,8 +116,17 @@ The generic repo can also carry reusable policy and project-template artifacts t
 
 - `docs/recommended-agent-workflow-discipline.md`
   - optional shared policy guidance for planning, verification, self-correction, and security hygiene
+- `docs/recommended-tools.md`
+  - optional curated tools that reduce ambiguity and improve low-inference collaboration in DIL workflows
 - `examples/project-claude-md.md`
   - starter project-level agent guidance file that can be adapted into `CLAUDE.md`
+
+## Recommended Tools
+
+Use [`docs/recommended-tools.md`](./docs/recommended-tools.md) for the canonical list.
+
+Initial recommendation:
+- `termDRAW`: terminal-native ASCII/Unicode diagramming for lower-ambiguity agent handoffs; output can be embedded directly in DIL task notes.
 
 ## Optional: Shared Memory Across Multiple Machines
 
@@ -151,6 +160,7 @@ This project is licensed under the Apache License 2.0. See `LICENSE` and `NOTICE
   - `spec-v1.md`: normative protocol contract (MUST/SHOULD/MAY)
   - `dil-overview.md`: concise human-readable overview of the full DIL system
   - `recommended-agent-workflow-discipline.md`: optional shared workflow-discipline policy
+  - `recommended-tools.md`: optional curated tools for low-inference DIL workflows
   - `machine-registry-contract.md`: machine inventory and runtime host contract
   - `agent-registry-contract.md`: agent capabilities, formats, models, and fallback contract
 - `runbooks/`: procedural runbooks
