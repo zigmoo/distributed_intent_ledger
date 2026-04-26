@@ -12,26 +12,26 @@ Environment labels:
 
 ## Tool Matrix
 
-| Tool | Primary DIL Use | Known To Run | How (install/use in DIL) |
-|---|---|---|---|
-| `ft` (Field Theory) | Bookmark sync/search archive backbone for `x_tool` workflows | Linux (confirmed), Windows (unknown) | Install globally (`npm i -g fieldtheory`), then use `_shared/scripts/x_tool sync/search/list/show` |
-| `sqlite3` | Indexed query engine for bookmark/search paths (`x_tool`) and diagnostics | Linux (confirmed), Windows (known) | Install system package, use via `_shared/scripts/x_tool` (direct SQL only for debugging) |
-| `himalaya` | Email engine behind `email_tool` (IMAP/SMTP/OAuth2/keyring) | Linux (confirmed), Windows (known) | Install with required features, then use `_shared/scripts/email_tool` for agent-safe send/reply/read flows |
-| `jq` | Deterministic JSON parsing/transform in DIL scripts and evidence extraction | Linux (confirmed), Windows (known) | System package; used heavily across `_shared/scripts/*.sh` |
-| `rg` | Default lexical recall/search primitive across tasks/memory/logs | Linux (confirmed), Windows (known) | System package; preferred search tool in DIL/SOPs |
-| `fd` | Fast file discovery in large DIL trees | Linux (confirmed), Windows (known) | System package; use for file/path lookup |
-| `fzf` | Interactive fuzzy selection for task IDs/paths/results | Linux (confirmed), Windows (known) | System package; use as shell-side selector in ops flows |
-| `bat` | Readable file/code preview with line numbers | Linux (confirmed), Windows (known) | System package; use for quick review evidence snippets |
-| `tmux` | Durable long-running sessions and resumable ops context | Linux (confirmed), Windows (known via WSL/MSYS2) | System package; use for persistent service/tool sessions |
-| `yazi` | High-speed TUI file manager for DIL/repo navigation | Linux (confirmed), Windows (known) | System package; interactive navigation aid |
-| `tig` | Fast git history/diff TUI during reviews and debugging | Linux (confirmed), Windows (known via MSYS2/Cygwin) | System package; interactive git inspection |
-| `btop` | Runtime/system-resource observation during heavy workflows | Linux (confirmed), Windows (known via `btop4win`) | System package (or `btop4win` on Windows) |
-| `caligula` | Terminal charting/visualization in diagnostics | Linux (confirmed), Windows (unknown) | Cargo install; use for quick visual analysis |
-| `sio` | Hardware/sensor/device inventory and monitoring evidence | Linux (confirmed), Windows (unknown) | Cargo install; use `sio --monitor` or `sio <subcommand> --format json` and attach task evidence |
-| `sigye` | Terminal image inspection for screenshot-driven debugging | Linux (confirmed), Windows (unknown) | Cargo install; use for local visual verification |
-| `oxker` | Docker/container TUI observability | Linux (confirmed), Windows (unknown) | Cargo install; use during container diagnostics |
-| `termDRAW` | ASCII/Unicode diagramming for low-ambiguity intent handoff | Linux (known), Windows (unknown) | Install `@termdraw/app`; save output and paste into task notes |
-| `omarchy` | Standardized host baseline for consistent DIL runtime behavior | Linux (known), Windows (no) | Use as machine baseline where applicable |
+| Tool | GitHub URL | Primary DIL Use | Known To Run | How (install/use in DIL) |
+|---|---|---|---|---|
+| `bat` | https://github.com/sharkdp/bat | Readable file/code preview with line numbers | Linux (confirmed), Windows (known) | System package; use for quick review evidence snippets |
+| `btop` | https://github.com/aristocratos/btop | Runtime/system-resource observation during heavy workflows | Linux (confirmed), Windows (known via `btop4win`) | System package (or `btop4win` on Windows) |
+| `caligula` | https://github.com/ifd3f/caligula | Terminal charting/visualization in diagnostics | Linux (confirmed), Windows (unknown) | Cargo install; use for quick visual analysis |
+| `fd` | https://github.com/sharkdp/fd | Fast file discovery in large DIL trees | Linux (confirmed), Windows (known) | System package; use for file/path lookup |
+| `ft` (Field Theory) | https://github.com/afar1/fieldtheory-cli | Bookmark sync/search archive backbone for `x_tool` workflows | Linux (confirmed), Windows (unknown) | Install globally (`npm i -g fieldtheory`), then use `_shared/scripts/x_tool sync/search/list/show` |
+| `fzf` | https://github.com/junegunn/fzf | Interactive fuzzy selection for task IDs/paths/results | Linux (confirmed), Windows (known) | System package; use as shell-side selector in ops flows |
+| `himalaya` | https://github.com/pimalaya/himalaya | Email client behind `email_tool` (IMAP/SMTP/OAuth2/keyring) | Linux (confirmed), Windows (known) | Install with required features, then use `_shared/scripts/email_tool` for agent-safe send/reply/read flows |
+| `jq` | https://github.com/jqlang/jq | Deterministic JSON parsing/transform in DIL scripts and evidence extraction | Linux (confirmed), Windows (known) | System package; used heavily across `_shared/scripts/*.sh` |
+| `omarchy` | https://github.com/basecamp/omarchy | Outstanding Arch-based Linux for beauty, speed, and ease of use use. | Linux (known), Windows (no) | Use as machine baseline where applicable |
+| `oxker` | https://github.com/mrjackwills/oxker | Docker/container TUI observability | Linux (confirmed), Windows (unknown) | Cargo install; use during container diagnostics |
+| `rg` | https://github.com/BurntSushi/ripgrep | Default lexical recall/search primitive across tasks/memory/logs | Linux (confirmed), Windows (known) | System package; preferred search tool in DIL/SOPs |
+| `sigye` | https://github.com/am2rican5/sigye | Clock in Korean; "After Dark" for the modern retro enthusiast. | Linux (confirmed), Windows (unknown) | Cargo install; use as terminal clock/Pomodoro utility |
+| `sio` | https://github.com/level1techs/siomon | Hardware/sensor/device inventory and monitoring evidence | Linux (confirmed), Windows (unknown) | Cargo install; use `sio --monitor` or `sio <subcommand> --format json` and attach task evidence |
+| `sqlite3` | https://github.com/sqlite/sqlite | Indexed query engine for bookmark/search paths (`x_tool`) and diagnostics | Linux (confirmed), Windows (known) | Install system package, use via `_shared/scripts/x_tool` (direct SQL only for debugging) |
+| `termDRAW` | https://github.com/benvinegar/termdraw | ASCII/Unicode diagramming for low-ambiguity intent handoff | Linux (known), Windows (unknown) | Install `@termdraw/app`; save output and paste into task notes |
+| `tig` | https://github.com/jonas/tig | Fast git history/diff TUI during reviews and debugging | Linux (confirmed), Windows (known via MSYS2/Cygwin) | System package; interactive git inspection |
+| `tmux` | https://github.com/tmux/tmux | Durable long-running sessions and resumable ops context | Linux (confirmed), Windows (known via WSL/MSYS2) | System package; use for persistent service/tool sessions |
+| `yazi` | https://github.com/sxyazi/yazi | High-speed TUI file manager for DIL/repo navigation | Linux (confirmed), Windows (known) | System package; interactive navigation aid |
 
 ## High-Impact Defaults
 
