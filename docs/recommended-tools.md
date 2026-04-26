@@ -3,6 +3,11 @@
 Canonical tool matrix for DIL workflows: what each tool is for, where it is
 known to run, and how we use it.
 
+Important: none of these tools are strictly required for DIL to be effective.
+DIL remains functional with plain shell + Markdown workflows. Some tools are
+high leverage for speed and consistency; `jq` is the closest thing to a common
+baseline dependency because many existing DIL scripts use it directly.
+
 Status date: `2026-04-26`.
 
 Environment labels:
