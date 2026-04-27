@@ -226,7 +226,18 @@ All scripts and agentic tools in the DIL Script Forge must follow the standards 
 - `_shared/policies/script-forge-standards-2026-04-27.md`
 
 Key rules (see the policy file for full details):
-- **DIL bin in PATH:** `_shared/scripts/bin/` must be in `$PATH`. Verify with `command -v task_tool`. If missing, add to `~/.bashrc`: `export PATH="$HOME/Documents/dil_agentic_memory_0001/_shared/scripts/bin:$PATH"`
+- **DIL bin in PATH (CRITICAL):** `_shared/scripts/bin/` must be in `$PATH`. Without this, no DIL tool works. Verify with `command -v task_tool`. If it returns nothing, add the PATH entry to the user's shell RC file:
+
+  | Shell | RC File | Line to add |
+  |---|---|---|
+  | bash | `~/.bashrc` | `export PATH="$HOME/Documents/dil_agentic_memory_0001/_shared/scripts/bin:$PATH"` |
+  | zsh | `~/.zshrc` | `export PATH="$HOME/Documents/dil_agentic_memory_0001/_shared/scripts/bin:$PATH"` |
+  | fish | `~/.config/fish/config.fish` | `fish_add_path $HOME/Documents/dil_agentic_memory_0001/_shared/scripts/bin` |
+  | ksh | `~/.kshrc` or `~/.profile` | `export PATH="$HOME/Documents/dil_agentic_memory_0001/_shared/scripts/bin:$PATH"` |
+  | sh/dash | `~/.profile` | `PATH="$HOME/Documents/dil_agentic_memory_0001/_shared/scripts/bin:$PATH"` |
+  | csh/tcsh | `~/.cshrc` | `setenv PATH $HOME/Documents/dil_agentic_memory_0001/_shared/scripts/bin:$PATH` |
+
+  After adding, reload the shell (`source ~/.bashrc` or restart terminal) and verify: `command -v task_tool` should return a path. If it doesn't, the PATH is wrong — debug before proceeding.
 - **Extensionless symlink rule:** The command in `$PATH` is ALWAYS the extensionless stem name as a symbolic link. Never a script with an extension.
 - **Bash/Python pair pattern:** Substantial tools use a Bash wrapper (bootstrapping) + Python implementation (logic).
 - **Named shims:** Subcommands get one-line shim scripts with their own extensionless symlinks for command registry speed.
