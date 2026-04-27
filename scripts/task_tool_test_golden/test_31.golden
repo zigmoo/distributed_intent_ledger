@@ -1,0 +1,3 @@
+WARNING: Project registry not found: <TMP>/dil/_shared/_meta/project_registry.md
+ERROR: Invalid status transition in log for 'DIL-9001': todo->done
+Validation failed: 1 error(s), 1 warning(s)

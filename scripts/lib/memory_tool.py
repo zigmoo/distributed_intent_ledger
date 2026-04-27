@@ -27,6 +27,11 @@ try:
 except ImportError:
     resolve_dil_base = None
 
+try:
+    from sf_log import SFLogger
+except ImportError:
+    SFLogger = None
+
 SCRIPT_NAME = "memory_tool"
 
 VALID_TYPES = {
@@ -148,15 +153,29 @@ def append_to_file(path: Path, line: str) -> None:
             f.write(line + "\n")
 
 
+def _make_logger(base: str, action: str) -> "SFLogger | None":
+    if SFLogger is None:
+        return None
+    return SFLogger(SCRIPT_NAME, action, base)
+
+
 def log_operation(base: str, action: str, message: str) -> None:
-    log_dir = Path(base) / "_shared" / "logs" / SCRIPT_NAME
-    log_dir.mkdir(parents=True, exist_ok=True)
-    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    hostname = subprocess.run(
-        ["hostname", "-s"], capture_output=True, text=True, check=True
-    ).stdout.strip().lower()
-    log_file = log_dir / f"{hostname}.{SCRIPT_NAME}.{action}.{ts}.log"
-    log_file.write_text(message, encoding="utf-8")
+    log = _make_logger(base, action)
+    if log:
+        log.info(message)
+        log.close()
+    else:
+        log_dir = Path(base) / "_shared" / "logs" / SCRIPT_NAME
+        log_dir.mkdir(parents=True, exist_ok=True)
+        ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        try:
+            hostname = subprocess.run(
+                ["hostname", "-s"], capture_output=True, text=True, check=True
+            ).stdout.strip().lower()
+        except Exception:
+            hostname = "unknown"
+        log_file = log_dir / f"{hostname}.{SCRIPT_NAME}.{action}.{ts}.log"
+        log_file.write_text(message, encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -250,7 +269,22 @@ due:
         f"| {now_timestamp()} | {assistant} | {SCRIPT_NAME} | {rel_path} | create | create memory via {SCRIPT_NAME} |",
     )
 
-    log_operation(base, "create", f"Created {file_path}")
+    log = _make_logger(base, "create")
+    if log:
+        log.section("Memory Created")
+        log.info(f"file: {file_path}")
+        log.info(f"title: {args.title}")
+        log.info(f"type: {args.type}")
+        log.info(f"category: {category}")
+        log.info(f"scope: {args.scope}")
+        log.info(f"machine: {machine}")
+        log.info(f"assistant: {assistant}")
+        log.info(f"index updated: {index_file}")
+        log.info(f"changelog updated: {changelog}")
+        log.info(f"body source: {'--content-file' if args.content_file else 'stdin' if body else 'empty'}")
+        log.info(f"body length: {len(body)} chars")
+        log.close()
+
     print(f"Memory created: {file_path}")
     return 0
 
@@ -356,7 +390,28 @@ def cmd_relocate(args: argparse.Namespace) -> int:
         f"| {now_timestamp()} | {assistant} | {SCRIPT_NAME} | {rel_target} | relocate | relocated from {rel_source} |",
     )
 
-    log_operation(base, "relocate", f"Relocated {rel_source} -> {rel_target}")
+    log = _make_logger(base, "relocate")
+    if log:
+        log.section("Source")
+        log.info(f"file: {source}")
+        log.info(f"relative: {rel_source}")
+        log.info(f"category: {category}")
+
+        log.section("Target")
+        log.info(f"scope: {args.target_scope}")
+        log.info(f"file: {target}")
+        log.info(f"relative: {rel_target}")
+        log.info(f"machine: {new_machine}")
+        log.info(f"assistant: {new_assistant}")
+
+        log.section("Result")
+        log.info(f"Moved {rel_source} -> {rel_target}")
+        log.info(f"Frontmatter patched: machine={new_machine}, assistant={new_assistant}, owner={new_owner}")
+        log.info(f"Source index cleaned")
+        log.info(f"Target index updated: {target_index}")
+        log.info(f"Changelog updated")
+        log.close()
+
     print(f"Relocated: {rel_source} -> {rel_target}")
     return 0
 
@@ -459,43 +514,89 @@ due:
 
 def cmd_mind_meld(args: argparse.Namespace) -> int:
     base = resolve_base(str(Path(__file__).parent), args.base)
+    log = _make_logger(base, "mind_meld")
 
     source = Path(args.source).resolve()
     if not source.is_file():
+        if log:
+            log.error(f"Source file not found: {source}")
+            log.close()
         print(f"Error: source file not found: {source}", file=sys.stderr)
         return 2
 
     fm = parse_frontmatter(source)
     if not fm:
+        if log:
+            log.error(f"Could not parse frontmatter from {source}")
+            log.close()
         print(f"Error: could not parse frontmatter from {source}", file=sys.stderr)
         return 2
 
     template_repo = Path(args.template_repo).resolve()
     if not (template_repo / "_shared").is_dir():
+        if log:
+            log.error(f"Template repo not found or missing _shared/: {template_repo}")
+            log.close()
         print(f"Error: template repo not found or missing _shared/: {template_repo}", file=sys.stderr)
         return 2
 
+    title = fm.get("title", "").strip('"').strip("'")
     category = fm.get("category", "general")
     category = CATEGORY_NORMALIZE.get(category, category)
+    filename = source.name
+    target_dir = template_repo / "_shared" / category
+    target = target_dir / filename
+
+    if log:
+        log.section("Source")
+        log.info(f"file: {source}")
+        log.info(f"title: {title}")
+        log.info(f"category: {category}")
+        log.info(f"original frontmatter keys: {', '.join(sorted(fm.keys()))}")
+        log.info(f"body length: {len(extract_body(source))} chars")
+
+        log.section("Target")
+        log.info(f"template_repo: {template_repo}")
+        log.info(f"target_dir: {target_dir}")
+        log.info(f"target_file: {target}")
+        log.info(f"target_exists: {target.exists()}")
 
     # Step 1: Templatize frontmatter
     new_frontmatter = templatize_frontmatter(fm)
+    if log:
+        log.section("Frontmatter Templatization")
+        log.info("Replaced machine, assistant, dates with placeholders")
+        log.info("Stripped PII-bearing tags (clawvault, dil-active)")
+        log.info(f"Category normalized: {fm.get('category', '?')} -> {category}")
 
     # Step 2: Generalize body via LLM (or skip)
     body = extract_body(source)
     if args.skip_llm:
         generalized_body = body
+        if log:
+            log.section("LLM Redaction")
+            log.info("SKIPPED — --skip-llm flag set, using original body unchanged")
         print("(Skipping LLM redaction pass — using original body)")
     else:
         model = args.model or DEFAULT_OLLAMA_MODEL
+        if log:
+            log.section("LLM Redaction")
+            log.info(f"model: {model}")
+            log.info(f"input body length: {len(body)} chars")
+            log.info("Sending body to ollama for PII/business-info generalization...")
         print(f"Running LLM generalization pass ({model})...")
         generalized_body = llm_generalize(body, model)
         if not generalized_body:
+            if log:
+                log.error("LLM generalization returned empty — ollama may have failed or timed out")
+                log.close()
             print("LLM pass failed. Use --skip-llm to bypass.", file=sys.stderr)
             return 1
+        if log:
+            log.info(f"output body length: {len(generalized_body)} chars")
+            log.info(f"body changed: {body != generalized_body}")
 
     # Step 3: Assemble the output
-    title = fm.get("title", "").strip('"').strip("'")
     output = f"{new_frontmatter}\n\n{generalized_body}\n"
 
     # Step 4: Show for approval
@@ -504,28 +605,38 @@ def cmd_mind_meld(args: argparse.Namespace) -> int:
     print("=" * 60)
     print(output)
     print("=" * 60)
-
-    target_dir = template_repo / "_shared" / category
-    filename = source.name
-    target = target_dir / filename
     print(f"\nTarget: {target}")
 
     if args.dry_run:
+        if log:
+            log.section("Result")
+            log.info("DRY RUN — no files written")
+            log.close()
         print("(dry run — not writing)")
         return 0
 
     # Step 5: Ask for approval
+    approved = False
     if sys.stdin.isatty():
         response = input("\nWrite this file? [y/N] ").strip().lower()
         if response not in ("y", "yes"):
+            if log:
+                log.section("Result")
+                log.info("User declined — aborted, no files written")
+                log.close()
             print("Aborted.")
             return 0
+        approved = True
     else:
         print("(non-interactive — writing automatically)")
+        approved = True
 
     # Step 6: Write
     target_dir.mkdir(parents=True, exist_ok=True)
     if target.exists() and not args.force:
+        if log:
+            log.error(f"Target already exists and --force not set: {target}")
+            log.close()
         print(f"Error: target already exists: {target}  (use --force to overwrite)", file=sys.stderr)
         return 2
 
@@ -536,7 +647,18 @@ def cmd_mind_meld(args: argparse.Namespace) -> int:
     rel_target = f"_shared/{category}/{filename}"
     append_to_file(template_index, f"| {rel_target} | {title} |")
 
-    log_operation(base, "mind_meld", f"Melded {source} -> {target}")
+    if log:
+        log.section("Result")
+        log.info(f"Written: {target}")
+        log.info(f"Output size: {len(output)} chars")
+        log.info(f"Vault index updated: {template_index}")
+        log.info(f"Approval: {'interactive' if sys.stdin.isatty() else 'automatic'}")
+        log.info(f"Force overwrite: {args.force}")
+        log.info(f"LLM redacted: {not args.skip_llm}")
+        if not args.skip_llm:
+            log.info(f"LLM model: {args.model or DEFAULT_OLLAMA_MODEL}")
+        log.close()
+
     print(f"Mind meld complete: {target}")
     return 0
 
@@ -690,7 +812,23 @@ def cmd_promote(args: argparse.Namespace) -> int:
         except subprocess.CalledProcessError as e:
             print(f"Git error: {e.stderr.decode() if e.stderr else e}", file=sys.stderr)
 
-    log_operation(base, "promote", f"Promoted {len(copied)} files to {template_repo}")
+    log = _make_logger(base, "promote")
+    if log:
+        log.section("Promote Summary")
+        log.info(f"template_repo: {template_repo}")
+        log.info(f"files promoted: {len(copied)}")
+        log.info(f"redact mode: {args.redact}")
+        if args.redact:
+            log.info(f"llm model: {args.model or DEFAULT_OLLAMA_MODEL}")
+        for rel in copied:
+            log.info(f"  -> {rel}")
+        if args.commit:
+            log.info(f"git commit: {args.message or f'Promote {len(copied)} file(s) from active DIL'}")
+            log.info(f"git push: {args.push}")
+        else:
+            log.info("git commit: skipped (--commit not set)")
+        log.close()
+
     print(f"\nPromote complete: {len(copied)} file(s)")
     return 0
 

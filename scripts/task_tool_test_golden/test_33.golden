@@ -1,0 +1,4 @@
+WARNING: Project registry not found: <TMP>/dil/_shared/_meta/project_registry.md
+ERROR: <TMP>/dil/_shared/domains/personal/tasks/active/DIL-9001.md has malformed or missing frontmatter (no valid --- boundaries); skipping file
+ERROR: Counter mismatch in <TMP>/dil/_shared/_meta/task_id_counter.md: next_id=9002 expected=1100
+Validation failed: 2 error(s), 1 warning(s)

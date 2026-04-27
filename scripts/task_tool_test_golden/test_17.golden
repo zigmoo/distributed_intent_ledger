@@ -1,0 +1,11 @@
+[DRY RUN] ARCHIVE <TMP>/dil/_shared/domains/personal/tasks/active/DIL-9002.md -> <TMP>/dil/_shared/domains/personal/tasks/archived/2025/DIL-9002.md (status=done, updated=DATE, age=21772800s)
+
+=== Archive summary ===
+Archived: 1
+Skipped (missing date): 0
+Errors: 0
+
+[DRY RUN] No files were moved.
+=== STILL IN ACTIVE ===
+DIL-9001.md
+DIL-9002.md
