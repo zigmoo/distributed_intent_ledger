@@ -34,7 +34,7 @@ Scripts in `_shared/scripts/`. Available everywhere, no domain restriction.
 
 | trigger | command | description |
 |---|---|---|
-| morning brief, daily brief, briefing | `_shared/scripts/morning_brief.sh` | Generate daily task briefing, prepend to `_shared/reminders.md` |
+| morning brief, daily brief, briefing | `morning_brief` | Generate daily task briefing, prepend to `_shared/reminders.md` |
 | create jira task, new jira ticket, jira + dil task | `_shared/scripts/create_jira_task.sh --summary "<title>" --project "<slug>" --epic <EPIC> [opts]` | Create Jira ticket AND mirroring DIL task in one shot. **Preferred for all work-domain tasks.** |
 | create task, new task (DIL only) | `create_task --domain <domain> --title "<title>" --project "<project>"` | Create a DIL-only task (no Jira). Use for personal domain or when Jira ticket already exists (pass `--task-id`). |
 | create task (json) | `create_task json <manifest.json>` | Create task from JSON manifest |
