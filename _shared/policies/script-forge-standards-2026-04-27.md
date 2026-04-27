@@ -336,3 +336,37 @@ LOG_FILE: /path/to/log
 **Provenance:** This pattern originates from `ScriptUtils.configure_logger()` in `/az/talend/scripts/python/libs/bin/utils/ScriptUtils.py`, adapted for DIL Script Forge with stdlib-only constraint (no `loguru` dependency). The `createNewScript` J2 templates in `/az/talend/scripts/` bake this pattern into every new script at creation time — DIL's `lib/sf_log.sh` and `lib/sf_log.py` serve the same purpose for DIL-resident tools.
 
 **Retrofit:** Existing tools should be migrated to use the shared library as they are touched. New tools created via `createNewScript` or manually MUST use it from the start.
+
+## 13. Symlink-Safe SCRIPT_DIR Resolution (Non-Negotiable)
+
+Every bash script MUST resolve `SCRIPT_DIR` through symlinks using `readlink -f`. Without this, scripts called via `bin/` symlinks resolve to the `bin/` directory instead of their actual location, breaking all relative path references to `lib/`, sibling scripts, and Python files.
+
+**Correct:**
+```bash
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+```
+
+**Wrong (breaks when called via symlink):**
+```bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+```
+
+This is the **first line of defense** for the extensionless symlink system (Standard #1). If `SCRIPT_DIR` resolves wrong, every `source "$SCRIPT_DIR/lib/..."` and `exec python3 "$SCRIPT_DIR/tool.py"` fails. This was discovered and fixed across 17 tools during the DIL-1489 drawer migration.
+
+## 14. Tool Directory Layout (Drawer-for-Every-Tool)
+
+Every tool gets its own directory within `_shared/scripts/`. No flat files in the scripts root except `findLatestPy.sh`, `identify_agent.sh`, and the `task_tool.sh`/`task_tool.py` pair (which predates this standard).
+
+```
+_shared/scripts/
+  tool_name/
+    tool_name.bash          ← bash wrapper (entry point)
+    tool_name.py            ← Python logic (if applicable)
+    tool_name.md            ← documentation (if applicable)
+    tool_name_test_script.bash  ← test suite (Standard #10)
+    tool_name_test_golden/      ← golden baselines (Standard #10)
+  bin/
+    tool_name               ← extensionless symlink → ../tool_name/tool_name.bash
+```
+
+**Why:** The directory IS the tool's namespace. When a tool grows (tests, config, templates, golden files), the directory absorbs growth without restructuring. `ls scripts/` shows tool names, not a flat pile of files.

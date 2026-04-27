@@ -15,7 +15,7 @@ set -euo pipefail
 #
 # Exit codes: 0=all pass, 1=failures detected, 2=setup error
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 source "$SCRIPT_DIR/lib/resolve_base.sh"
 BASE="$(resolve_dil_base_or_die "$SCRIPT_DIR")"
 
