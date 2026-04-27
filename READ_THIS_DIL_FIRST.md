@@ -35,7 +35,7 @@ AI agents reading this file MUST add the following bootstrap directive to their 
 <!-- DIL_BOOTSTRAP_START -->
 ## DIL Session Bootstrap (required)
 For opencode sessions, before any other work, read:
-`~/READ_THIS_DIL_FIRST.md`
+`$HOME/READ_THIS_DIL_FIRST.md`
 Then follow that file as highest-priority local guidance for this workspace.
 <!-- DIL_BOOTSTRAP_END -->
 ```
@@ -99,23 +99,20 @@ The DIL architecture solves "context amnesia" by treating the filesystem—not t
 
 Before any read/write/bootstrap action, resolve `machine` and `assistant` from runtime signals.
 
-1. Resolve `machine` from host runtime
-- Run:
-  - `hostname -s | tr '[:upper:]' '[:lower:]'`
-- Use that value as `machine`.
+**Preferred method (recommended):**
+```bash
+MACHINE=$(hostname -s | tr '[:upper:]' '[:lower:]')
+ASSISTANT=$(/home/moo/Documents/dil_agentic_memory_0001/identify_agent)
+```
 
-2. Resolve `assistant` from process/runtime
-- First prefer explicit env vars (if present):
-  - `printf '%s\n' "${ASSISTANT_ID:-${AGENT_NAME:-${AGENT_ID:-}}}"`
-- If empty, use runtime command basename as assistant slug:
-  - `ps -p "$PPID" -o comm= | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9._-]/-/g'`
-  - Example: `customrunner` -> `customrunner`
-- Optional alias override (recommended when wrappers are used), applied after slug detection:
-  - `ASSISTANT_ALIAS_MAP="kilo:opencode,kilocode:opencode,cc:claude-code"`
-  - Format: comma-separated `from:to` pairs.
-  - No default aliases should be assumed by bootstrap logic.
-- Do not use a hardcoded assistant list. Runtime-derived assistant IDs are valid.
-- Do not run chat/UI slash commands (for example `/status`) in bash to resolve identity.
+This script implements a full detection cascade (env vars → process tree → config markers) with no hardcoded agent names. All mappings live in `_shared/_meta/agent_aliases.conf`.
+
+**Legacy inline method (for reference only):**
+- Resolve `machine`: `hostname -s | tr '[:upper:]' '[:lower:]'`
+- Resolve `assistant` via env vars or process tree (see script for full logic)
+- Alias map support via `ASSISTANT_ALIAS_MAP` or the config file.
+
+If `identify_agent.sh` returns "UNRESOLVED", stop and request explicit `ASSISTANT_ID` from the user.
 
 3. Validate resolved scope exists (or create only your own scope bootstrap files)
 - `BASE="/home/moo/Documents/dil_agentic_memory_0001"`
@@ -220,6 +217,37 @@ When the user issues any of the following commands, assistants MUST persist the 
    - When user later asks to recall ("What did I ask you to remember about X?"), retrieve from ClawVault first
    - Follow standard retrieval order: local scope → machine scope → shared scope
 
+## Command Registry (Required, Zero-Inference)
+
+Before doing any work, check `_shared/_meta/command_registry.md` for an existing script/tool that matches the user's intent. **Do NOT manually replicate what a script does — run the script.** The registry maps trigger phrases to commands across all domains (DIL, work, personal).
+
+Key triggers every agent must know without looking up:
+- **"morning brief"** → `morning_brief` (do NOT manually gather task data)
+- **"create jira task"** → `create_jira_task` — creates Jira ticket AND mirroring DIL task in one shot. **Preferred for all work-domain tasks.**
+- **"create task"** → `create_task` (DIL-only, or when Jira ticket already exists via `--task-id`)
+- **Jira operations** → `jira_tool` at `/az/talend/scripts/bin/jira_tool` (do NOT tell user to update Jira manually)
+
+For the full list: `_shared/_meta/command_registry.md`
+
+## Knowledge Ingestion Decision Rule (Required)
+
+Before storing knowledge content, read:
+- `_shared/runbooks/knowledge-ingestion-runbook.md`
+
+Mandatory split:
+- Use `ingest_source` for externally sourced assets such as URLs, downloaded files, imported documents, repos, media, code, and datasets.
+- Use `create_memory` for authored DIL notes such as preferences, lessons, observations, decisions, and commitments.
+- Do not use `create_memory.sh` to stand in for ingestion of an external asset.
+
+## Research Artifact Convention (Required)
+
+For experiments, benchmarks, execution notes, and conclusions that support research:
+- store artifacts in `_shared/research/benchmarking/`, `_shared/research/execution-notes/`, or `_shared/research/conclusions/`
+- include the related DIL task id in the filename
+- include a full UTC timestamp in the filename so same-day revisions remain distinct
+- keep the execution path, raw observations, and conclusion in separate but linked artifacts when practical
+- prefer new timestamped revisions over overwriting materially changed conclusions
+
 ## Script Forge Standards (Mandatory)
 
 All scripts and agentic tools in the DIL Script Forge must follow the standards defined in:
@@ -248,12 +276,12 @@ Key rules (see the policy file for full details):
 
 Agents must use the provided automation scripts for creating content to ensure the integrity of the **Distributed Intent Ledger (DIL)**. These scripts handle schema compliance, indexing, and logging automatically.
 
-1. **Creating Memory Notes**: `_shared/scripts/create_memory.sh`
+1. **Creating Memory Notes**: `create_memory`
    - Usage: `create_memory.sh --type <type> --title "<title>" ...`
    - Handles: Frontmatter generation, ID slugs, appending to local vault index, change logging.
    - **Do not manually create memory files** unless the script is unavailable or failing.
 
-2. **Creating Tasks**: `_shared/scripts/create_task.sh`
+2. **Creating Tasks**: `create_task`
    - CLI usage: `create_task.sh --domain personal --title "<title>" --project "<project>" [options]`
    - JSON sidecar: `create_task.sh json <manifest.json>` — reads fields from JSON, archives manifest after execution.
    - Handles: domain resolution via registry, ID allocation (multi-prefix counter), task file creation in `active/`, shared index updates, change logging, structured logging, Elucubrate cache refresh.
@@ -262,12 +290,12 @@ Agents must use the provided automation scripts for creating content to ensure t
    - Environment-aware: detects `ACTOR`/`MODEL` from env vars (`ACTOR`, `ASSISTANT_ID`, `AGENT_NAME`, `AGENT_MODEL`) or process tree.
    - **Do not manually allocate task IDs** to avoid collisions.
 
-3. **Archiving Tasks**: `_shared/scripts/archive_tasks.sh`
+3. **Archiving Tasks**: `archive_tasks`
    - Usage: `archive_tasks.sh [--dry-run]`
    - Moves terminal tasks past their domain's `archive_after_days` from `active/` to `archived/{year}/`.
    - Regenerates archive index files. Idempotent, safe for cron.
 
-4. **Listing Archived Tasks**: `_shared/scripts/list_archived.sh`
+4. **Listing Archived Tasks**: `list_archived`
    - Usage: `list_archived.sh [--domain DOMAIN] [--year YEAR] [--grep PATTERN] [--status STATUS] [--json]`
    - Searches and filters archived tasks across all domains.
 
@@ -278,18 +306,6 @@ Agents must use the provided automation scripts for creating content to ensure t
      3) legacy fallback: `$HOME/Documents/dil_agentic_memory_0001`
    - If unresolved, fail with a clear error that asks for `BASE_DIL`.
    - Do **not** hardcode user-specific absolute defaults (for example `/home/moo/...`) in script path resolution.
-
-## Knowledge Ingestion Decision Rule (Required)
-
-Before storing knowledge content, read:
-- `_shared/runbooks/knowledge-ingestion-runbook.md`
-
-Mandatory split:
-- Use `_shared/scripts/ingest_source.sh` for externally sourced assets such as URLs, downloaded files, imported documents, repos, media, code, and datasets.
-- Use `_shared/scripts/create_memory.sh` for authored DIL notes such as preferences, lessons, observations, decisions, and commitments.
-- Do not use `create_memory.sh` to stand in for ingestion of an external asset.
-
-Full architecture spec: `docs/ingestion-pipeline-spec.md`
 
 ## Index Policy
 
@@ -307,12 +323,17 @@ Full architecture spec: `docs/ingestion-pipeline-spec.md`
 ## Bootstrap Checklist for an Assistant
 
 1. Resolve `MACHINE` and `ASSISTANT` using the Runtime Identity Resolution section.
-2. Read `_shared/_meta/schema.md`
-3. Read `_shared/_meta/vault_index.md`
-4. Read `_shared/preferences/*`, `_shared/rules/*`, `_shared/policies/*` (treat as global runtime policy; if a folder is missing, continue)
-5. Read `<machine>/<assistant>/_meta/vault_index.md`
-6. Read any task-specific anchor notes (for example persistence tests)
-7. Confirm retrieval order and marker/fact recall before continuing
+2. **Check DIL version** — read `_shared/signals/dil_version.json`. Compare `version` to your last-seen version. If newer or if `reload_required` is true, proceed with a full reload of specs/preferences/policies. Cache the new version number after bootstrap completes.
+3. Read `_shared/_meta/schema.md`
+4. Read `_shared/_meta/vault_index.md`
+5. Read `_shared/_meta/project_registry.md` (project aliases, anchor tasks, key paths — used for task discovery)
+6. Read `_shared/runbooks/*` (procedural runbooks for task discovery and lifecycle — if folder is missing, continue)
+7. Read `_shared/preferences/*`, `_shared/rules/*`, `_shared/policies/*`, `_shared/lessons/*` (treat as global runtime policy and design principles; if a folder is missing, continue)
+8. Read `<machine>/<assistant>/_meta/vault_index.md`
+9. Read any task-specific anchor notes (for example persistence tests)
+10. **Register session** — run `_shared/scripts/signal_tool register --agent-name <ASSISTANT> --machine <MACHINE> --session-id <session_id_if_known>`. This appends a row to `_shared/signals/agent_session_machine_registry.csv` with `status: active`. Use the named agent identity (e.g., `pedro`, `codex`, `opencode`), not the harness name (e.g., `claude-code`). The tool auto-assigns the next available instance number (001, 002, etc.).
+11. **Check inter-agent signals** — run `_shared/scripts/signal_tool check` for pending signals addressed to this agent. Process any pending signals before continuing.
+12. Confirm retrieval order and marker/fact recall before continuing
 
 ## Current Anchors
 
@@ -342,8 +363,8 @@ When any assistant/agent (OpenClaw, Codex, OpenCode, Claude Code) writes memory 
 4. Deterministic retrieval behavior
 - Use retrieval order defined in this file.
 - Do not skip local scope unless explicitly requested.
-5. Global policy load
-- On startup, load and follow `_shared/preferences/*`, `_shared/rules/*`, `_shared/policies/*` (if present), in addition to any local scope policies.
+5. Global policy and design principles load
+- On startup, load and follow `_shared/preferences/*`, `_shared/rules/*`, `_shared/policies/*`, `_shared/lessons/*` (if present), in addition to any local scope policies.
 
 6. Proof of execution (anti-parrot rule)
 - After write operations, always return:
@@ -435,8 +456,8 @@ Domains are operational boundaries with distinct task directories, log paths, da
 
 2. Registered domains
 - `personal` — user-owned personal tasks, `DIL-` prefix, auto-allocated IDs.
-- `work` — employer-owned work tasks, externally-assigned IDs (e.g., Jira). Logs/data may use absolute paths outside the vault if employer infrastructure requires it.
-- Additional project-specific domains (e.g., a side project or separate infrastructure) can use auto-allocated IDs with their own prefix.
+- `work` — employer-owned work tasks, `DMDI-` prefix, externally-assigned IDs (Jira). Logs/data at `/az/talend/` (employer-owned, external to DIL).
+- `triv` — Three Rivers Duck Club infrastructure, `TRIV-` prefix, auto-allocated IDs.
 - Additional domains can be added by inserting an entry in `domain_registry.json`.
 
 3. Directory structure
@@ -447,7 +468,7 @@ Domains are operational boundaries with distinct task directories, log paths, da
 
 4. Path resolution
 - Relative paths in the registry resolve against `$BASE_DIL`.
-- Absolute paths (e.g., `/org_name/team_name/logs`) are used as-is.
+- Absolute paths (e.g., `/az/talend/logs`) are used as-is.
 - The `path_type` field (`relative`, `absolute`, `mixed`) signals to scripts how to resolve.
 
 5. Adding a new domain
@@ -460,15 +481,21 @@ Domains are operational boundaries with distinct task directories, log paths, da
 1. Log path
 - Operational logs are domain-resolved: `$LOG_DIR/{script_name}/{script_name}.{action}.{YYYYMMDD_HHMMSS}.log`
 - `$LOG_DIR` comes from `resolve_domain` in `domains.sh`.
-- For external domains (e.g., work), logs go to the domain's absolute `log_dir` if configured.
+- For external domains (e.g., work), logs go to the domain's absolute `log_dir` (e.g., `/az/talend/logs`).
+- For shared utility wrappers that are not domain-owned, logs live under:
+  - `dil_agentic_memory_0001/_shared/logs/{script_name}/`
 
 2. Log file naming convention
 - `{script_name}.{action}.{YYYYMMDD_HHMMSS}.log` — example: `create_task.create.20260312_143000.log`
+- Shared utility wrappers must include the short hostname prefix:
+  - `{hostname_short}.{script_name}.{action}.{YYYYMMDD_HHMMSS}.log`
+- `hostname_short` must come from:
+  - `hostname -s | tr '[:upper:]' '[:lower:]'`
 
 3. JSON sidecar manifest archival
 - Scripts with JSON sidecar mode archive consumed manifests to `$DATA_DIR/{script_name}/{script_name}.{action}.{YYYYMMDD_HHMMSS}.json`.
 
-4. Log pruning: trailing_window strategy
+5. Log pruning: trailing_window strategy
 - Pruning anchors on the **newest** log file in the domain's log tree, not on `now()`.
 - Files older than `window_days` before that newest file are pruned.
 - This prevents total history wipe in infrequently-activated domains.
@@ -543,11 +570,11 @@ These rules define task tracking for all assistants across all machines.
 - Terminal tasks (done, cancelled, retired) older than the domain's `archive.after_days` are moved from `active/` to `archived/{year}/`.
 - Year is based on the task's `updated` date (proxy for terminal date).
 - Archival uses trailing_window: the window anchors on the newest file in active/, not on today.
-- Run `_shared/scripts/archive_tasks.sh` to archive (idempotent, safe for cron).
+- Run `archive_tasks` to archive (idempotent, safe for cron).
 - Each `archived/{year}/` contains an `index.md` with a table of archived tasks.
 - Archived tasks remain as plain `.md` files (no compression) to preserve Obsidian links, search, and sync.
 - Obsidian excludes `**/archived/**` from indexing via `userIgnoreFilters` for performance.
-- Use `_shared/scripts/list_archived.sh` to search/filter archives from CLI.
+- Use `list_archived` to search/filter archives from CLI.
 
 9. Obsidian interoperability
 - Use wiki-links for related entities/tasks (example: `[[DMDI-11330]]`, `[[DIL-1101]]`).
@@ -563,9 +590,9 @@ These rules define task tracking for all assistants across all machines.
 
 11. Clickable ticket ID rule (required)
 - When displaying a ticket/task ID that belongs to a domain with a configured `ticket_systems` entry in `domain_registry.json`, wrap it in a clickable Markdown link using the `browse_url_template`.
-- Example: if domain `work` has a Jira ticket system with `browse_url_template` = `https://jira.example.com/browse/{ticket_id}`, then `PROJ-123` must be rendered as `[PROJ-123](https://jira.example.com/browse/PROJ-123)`.
-- Match the ticket prefix against the `prefixes` array in each domain's `ticket_systems` to find the correct `browse_url_template`. Replace `{ticket_id}` with the full ticket ID.
-- Domains with empty `ticket_systems` (e.g., `personal`) have no external URL — display the ID as plain text.
+- Example: `DMDI-12007` must be rendered as `[DMDI-12007](https://jira.autozone.com/browse/DMDI-12007)` so the user can Ctrl+click to open it in a browser.
+- Match the ticket prefix against the `prefixes` array in each domain's `ticket_systems` to find the correct `browse_url_template`. Replace `{ticket_id}` with the full ticket ID (e.g., `DMDI-12007`).
+- Domains with empty `ticket_systems` (e.g., `personal`, `triv`) have no external URL — display the ID as plain text.
 - This rule applies to all agent output: chat replies, execution notes, briefings, and any generated documentation.
 
 12. Validation gate (required before task-system replies that mutate tasks)
@@ -610,19 +637,6 @@ These defaults reduce drift between chat, shell history, and canonical tasks.
 - If user requested an outcome, safe/non-destructive in-scope steps are implicitly approved.
 - Pause only for high-risk deviations, missing credentials, or out-of-scope actions.
 
-## Command Registry (Required, Zero-Inference)
-
-Before doing any work, check `_shared/_meta/command_registry.md` for an existing script/tool that matches the user's intent. **Do NOT manually replicate what a script does — run the script.** The registry maps trigger phrases to commands across all domains (DIL, work, personal).
-
-Key triggers every agent must know without looking up:
-- **"morning brief"** → `_shared/scripts/morning_brief.sh` (do NOT manually gather task data)
-- **"create jira task"** → `_shared/scripts/create_jira_task.sh` — creates Jira ticket AND mirroring DIL task in one shot. **Preferred for all work-domain tasks.**
-- **"create task"** → `_shared/scripts/create_task.sh` (DIL-only, or when Jira ticket already exists via `--task-id`)
-- **Jira operations** → `jira_tool` (your Jira CLI tool) (do NOT tell user to update Jira manually)
-
-For the full list: `_shared/_meta/command_registry.md`
-
-
 ## Task Discovery Runbook (Required)
 
 When a user asks to "list tasks" or "show tasks" for a project, follow these steps exactly. Do not search the filesystem for literal strings or guess — use the lookup chain.
@@ -661,7 +675,6 @@ TASK_DIR_TRIV="$BASE/_shared/domains/triv/tasks/active"        # TRIV-
 
 **Key principle**: The DIL task files are always the primary source. Remote systems (Jira, ClickUp, etc.) are mirrors — query them for supplementary data, not as the starting point.
 
-
 ## Task Lifecycle Runbook (Required)
 
 When a user asks to create a task (and optionally work it through to completion), follow these steps exactly. This is the creation/completion counterpart to the Task Discovery Runbook.
@@ -691,7 +704,7 @@ For personal/triv domain tasks, skip this step — IDs are auto-allocated by `cr
 ### Step 2: Create DIL task file
 
 ```bash
-_shared/scripts/create_task.sh \
+create_task \
   --domain <domain> \
   --task-id <ID>           # required for external-ID domains (work); omit for auto-ID domains \
   --title "<title>" \
@@ -767,36 +780,9 @@ When posting to Jira via `jira_tool comment`, use Jira wiki markup (not Markdown
 - Link: `[text|url]`
 - Use `md2jira` to convert Markdown to Jira markup if needed.
 
-
-## Work Logging Tenet (Required)
-
-> "If it doesn't get noted, it didn't happen."
-
-All work must be logged to a task note, traced back to the source note. For mirrored systems (Jira, Teamwork, etc.), the remote/origin site is the source-of-truth — post there first, then sync to the DIL .md file. If no task exists, create one before starting. Ad-hoc work that produces outcomes must still be logged retroactively. Policy file: `_shared/policies/work-logging-tenet-2026-03-13.md`
-
-
-## Tool Telemetry Auto-Disable Rules (Required)
-
-Agents must proactively disable telemetry/phone-home on known tools before invoking them. This section is the canonical registry of tools with known telemetry.
-
-### Lightpanda Browser (and forks)
-
-- **Detection:** `command -v lightpanda` or check for fork binaries
-- **Telemetry endpoint:** `https://telemetry.lightpanda.io` (PostHog-backed)
-- **Disable env var:** `LIGHTPANDA_DISABLE_TELEMETRY=true`
-- **Invocation pattern:** Always prefix commands: `LIGHTPANDA_DISABLE_TELEMETRY=true lightpanda ...`
-- **Residual cleanup:** Remove `~/.local/share/lightpanda/iid` if present (persistent install UUID)
-- **System-wide disable (if sudo available):**
-  - `/etc/profile.d/lightpanda-no-telemetry.sh` → `export LIGHTPANDA_DISABLE_TELEMETRY=true`
-  - `/etc/environment` → `LIGHTPANDA_DISABLE_TELEMETRY=true`
-- **Per-user disable:** Ensure `export LIGHTPANDA_DISABLE_TELEMETRY=true` in `~/.bashrc`
-- **Verified working:** v0.2.5, 2026-03-13. Source code audit confirms two-layer disable (init skip + record() early return).
-- **Policy file:** `_shared/policies/lightpanda-telemetry-auto-disable-2026-03-13.md`
-- **Jira:** [[DMDI-11813]]
-
 ## How to get useful work from lesser models
 
-When using smaller/local models (including many Ollama-hosted models), prefer scripted, typed execution over free-form autonomous behavior.
+When using smaller/local models (including many Ollama-hosted models), prefer scripted, typed execution over free-form autonomous behavior. Use zero-inference lookup artifacts (like `_shared/_meta/project_registry.md` aliases and the Task Discovery Runbook) instead of requiring models to chain inferences across multiple memory files.
 
 1. Constrain tasks into typed schemas
 - Use strict required fields, enums, and minimal optional fields.
@@ -939,6 +925,15 @@ due:
 
 - machine: <machine>
 - assistant scopes: openclaw,codex,opencode,claude-code
+
+## Optional Sync Health
+
+- sync_backend:
+- last_seen_at:
+- last_dil_write_at:
+- last_nonlocal_dil_write_seen_at:
+- sync_status:
+- sync_status_reason:
 ```
 
 ### 2) Forbidden Placeholder Values
@@ -1100,3 +1095,28 @@ Elucubrate must continuously expose developer-visible preflight status for:
 - Treat Elucubrate as a self-contained app that can be stood up quickly on new machines.
 - Keep machine-specific assumptions out of code; drive behavior via env/config and contract files.
 - Prefer reversible, auditable changes with explicit bootstrap and preflight scripts.
+
+## Work Logging Tenet (Required)
+
+> "If it doesn't get noted, it didn't happen."
+
+All work must be logged to a task note, traced back to the source note. For mirrored systems (Jira, Teamwork, etc.), the remote/origin site is the source-of-truth — post there first, then sync to the DIL .md file. If no task exists, create one before starting. Ad-hoc work that produces outcomes must still be logged retroactively. Policy file: `_shared/policies/work-logging-tenet-2026-03-13.md`
+
+## Tool Telemetry Auto-Disable Rules (Required)
+
+Agents must proactively disable telemetry/phone-home on known tools before invoking them. This section is the canonical registry of tools with known telemetry.
+
+### Lightpanda Browser (and forks)
+
+- **Detection:** `command -v lightpanda` or check for fork binaries
+- **Telemetry endpoint:** `https://telemetry.lightpanda.io` (PostHog-backed)
+- **Disable env var:** `LIGHTPANDA_DISABLE_TELEMETRY=true`
+- **Invocation pattern:** Always prefix commands: `LIGHTPANDA_DISABLE_TELEMETRY=true lightpanda ...`
+- **Residual cleanup:** Remove `~/.local/share/lightpanda/iid` if present (persistent install UUID)
+- **System-wide disable (if sudo available):**
+  - `/etc/profile.d/lightpanda-no-telemetry.sh` → `export LIGHTPANDA_DISABLE_TELEMETRY=true`
+  - `/etc/environment` → `LIGHTPANDA_DISABLE_TELEMETRY=true`
+- **Per-user disable:** Ensure `export LIGHTPANDA_DISABLE_TELEMETRY=true` in `~/.bashrc`
+- **Verified working:** v0.2.5, 2026-03-13. Source code audit confirms two-layer disable (init skip + record() early return).
+- **Policy file:** `_shared/policies/lightpanda-telemetry-auto-disable-2026-03-13.md`
+- **Jira:** [[DMDI-11813]]
