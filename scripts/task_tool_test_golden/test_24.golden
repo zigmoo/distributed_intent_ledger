@@ -1,0 +1,5 @@
+WARNING: Project registry not found: <TMP>/dil/_shared/_meta/project_registry.md
+ERROR: <TMP>/dil/_shared/domains/work/tasks/active/DIL-9001.md domain 'personal' does not match directory domain 'work'
+ERROR: <TMP>/dil/_shared/_meta/task_index.md missing exact row for DIL-9001
+ERROR: <TMP>/dil/_shared/_meta/task_index.md should contain exactly one row for DIL-9001 (found 0)
+Validation failed: 3 error(s), 1 warning(s)

@@ -42,12 +42,6 @@ Then follow that file as highest-priority local guidance for this workspace.
 
 This ensures the agent always reads and follows this DIL guide on every session bootstrap.
 
-## Session Continuity (_hot.md)
-
-After reading this file, **immediately read `_shared/_hot.md`** if it exists. This file contains the ephemeral working state from the previous session — what was being worked on, what the next immediate action is, and what responses are pending. It bridges the gap between sessions that task files alone don't capture.
-
-At the end of each session, **overwrite `_shared/_hot.md`** with the current working state so the next session can resume seamlessly.
-
 ## Goal
 
 Provide durable, inspectable memory for agents/assistants across disparate machines and agents while keeping storage as plain Markdown files.
@@ -75,7 +69,6 @@ The DIL architecture solves "context amnesia" by treating the filesystem—not t
 4.  **Canonical Task Backbone**: The `DIL-xxxx` task system decouples the *intent* (the task) from the *actor* (the specific agent/machine), enabling seamless handoffs across the distributed mesh without context loss.
 5.  **Resilient Decentralization (No SPOF)**: DIL explicitly rejects centralized API gates in favor of robust local-first logic (CSMA/CD locking and first-available ID detection), ensuring the system remains functional even in "DIL" (Disconnected, Intermittent, Limited) network scenarios.
 6.  **Pragmatism for Mixed Models**: Explicit guidance for smaller/local models—preferring strict schemas and idempotent scripts over open-ended planning—ensures reliability in a multi-model environment.
-7.  **Minimize inference, maximize determinism**: Treat models/agents as unreliable by default. Prefer explicit commands, durable artifacts, typed schemas, and validated handoffs so workflows remain robust even when context is partial or sessions are reset.
 
 ## Core Principles
 
@@ -219,19 +212,6 @@ When the user issues any of the following commands, assistants MUST persist the 
 4. **Retrieval validation**
    - When user later asks to recall ("What did I ask you to remember about X?"), retrieve from ClawVault first
    - Follow standard retrieval order: local scope → machine scope → shared scope
-
-## Script Forge Standards (Mandatory)
-
-All scripts and agentic tools in the DIL Script Forge must follow the standards defined in:
-- `_shared/policies/script-forge-standards-2026-04-27.md`
-
-Key rules (see the policy file for full details):
-- **DIL bin in PATH:** `_shared/scripts/bin/` must be in `$PATH`. Verify with `command -v task_tool`. If missing, add to `~/.bashrc`: `export PATH="$HOME/Documents/dil_agentic_memory_0001/_shared/scripts/bin:$PATH"`
-- **Extensionless symlink rule:** The command in `$PATH` is ALWAYS the extensionless stem name as a symbolic link. Never a script with an extension.
-- **Bash/Python pair pattern:** Substantial tools use a Bash wrapper (bootstrapping) + Python implementation (logic).
-- **Named shims:** Subcommands get one-line shim scripts with their own extensionless symlinks for command registry speed.
-- **Path independence:** Scripts resolve base paths from their own location, never hardcoded absolute paths.
-- **Always invoke by symlink name:** `task_tool search`, never `bash _shared/scripts/task_tool.sh search`.
 
 ## Standard Tooling (Mandatory)
 

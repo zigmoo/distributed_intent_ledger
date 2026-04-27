@@ -1,0 +1,3 @@
+WARNING: Project registry not found: <TMP>/dil/_shared/_meta/project_registry.md
+ERROR: Task DIL-9001 references missing parent_task_id DIL-9999
+Validation failed: 1 error(s), 1 warning(s)
