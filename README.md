@@ -6,7 +6,7 @@
 
 Want to share memories across all conversations and agents?<br>
 Claude + [OpenCode](https://grokipedia.com/page/OpenCode) + Codex + Gemini + [OpenClaw](https://grokipedia.com/page/Clawdbot)?<br>
-Just add DIL.
+Just add DIL:
 
 ```
 claude, please clone and follow https://github.com/zigmoo/distributed_intent_ledger
