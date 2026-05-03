@@ -1,0 +1,5 @@
+usage: duckdb_sql.py [-h] -d DATA -s SQL [-g] [-H] [-S] [-j] [-f] [-F]
+                     [--sep SEP] [-v]
+
+Execute SQL queries against CSV/JSONL files using DuckDB
+
