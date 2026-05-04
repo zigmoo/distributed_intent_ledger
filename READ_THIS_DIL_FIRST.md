@@ -248,10 +248,19 @@ For experiments, benchmarks, execution notes, and conclusions that support resea
 - keep the execution path, raw observations, and conclusion in separate but linked artifacts when practical
 - prefer new timestamped revisions over overwriting materially changed conclusions
 
-## Script Forge Standards (Mandatory)
+## Tool Forge Standards (Mandatory)
 
-All scripts and agentic tools in the DIL Script Forge must follow the standards defined in:
+All tools in the DIL Tool Forge (formerly Script Forge) must follow the standards defined in:
 - `_shared/policies/script-forge-standards-2026-04-27.md`
+
+Each tool lives in a **drawer** — a self-contained directory under `_shared/scripts/<tool_name>/` containing:
+- `<tool_name>.bash` — Bash wrapper (bootstrapping, PATH resolution, arg passthrough)
+- `<tool_name>.py` — Python implementation (logic, subcommands)
+- `<tool_name>_test_script.bash` — integration tests with golden file comparison
+- `<tool_name>_test_golden/` — expected output files for test validation
+- Optional: `<tool_name>.ps1` — PowerShell wrapper for Windows/cross-platform
+
+To create a new tool drawer: `createTool --name <tool_name>` — scaffolds the full drawer structure with templates.
 
 Key rules (see the policy file for full details):
 - **DIL bin in PATH:** `_shared/scripts/bin/` must be in `$PATH`. Verify with `command -v task_tool`. If missing, add to `~/.bashrc`: `export PATH="$HOME/Documents/dil_agentic_memory_0001/_shared/scripts/bin:$PATH"`
@@ -260,6 +269,7 @@ Key rules (see the policy file for full details):
 - **Named shims:** Subcommands get one-line shim scripts with their own extensionless symlinks for command registry speed.
 - **Path independence:** Scripts resolve base paths from their own location, never hardcoded absolute paths.
 - **Always invoke by symlink name:** `task_tool search`, never `bash _shared/scripts/task_tool/task_tool.bash search`.
+- **Drawer descendant logic:** Tools discover their DIL base by walking up from their own directory. No hardcoded paths.
 
 ## Standard Tooling (Mandatory)
 

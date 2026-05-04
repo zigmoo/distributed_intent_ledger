@@ -1,12 +1,12 @@
 ---
-title: "Script Forge Standards"
+title: "Tool Forge Standards (formerly Script Forge)"
 date: 2026-04-27
 machine: shared
 assistant: shared
 category: policy
 memoryType: policy
 priority: critical
-tags: [script-forge, tooling, standards, agentic-tools, symlinks, path, conventions]
+tags: [tool-forge, script-forge, tooling, standards, agentic-tools, symlinks, path, conventions]
 updated: 2026-04-28
 source: internal
 domain: operations
@@ -16,9 +16,9 @@ owner: shared
 due:
 ---
 
-# Script Forge Standards
+# Tool Forge Standards
 
-These standards govern all scripts and agentic tools created within the DIL Script Forge (`_shared/scripts/`) and any Script Forge-compatible repository (e.g., `/org/platform/scripts/`).
+These standards govern all tools created within the DIL Tool Forge (`_shared/scripts/`) and any Tool Forge-compatible repository (e.g., `/org/platform/scripts/`). Formerly known as "Script Forge" — both names may appear in historical references.
 
 ## 1. Extensionless Symlink Rule (Non-Negotiable)
 
@@ -68,11 +68,11 @@ tool_name.py   — Python implementation (business logic, structured I/O)
 - Logging to domain-specific timestamped log files
 
 **Python dependency rule (Non-Negotiable):**
-- Script Forge Python MUST be vanilla stdlib Python by default.
-- Do not add pip dependencies to Script Forge tools, helpers, tests, renderers, or templates unless the user has explicitly set the architecture/design for that tool or standard and named the dependency as part of that design.
+- Tool Forge Python MUST be vanilla stdlib Python by default.
+- Do not add pip dependencies to Tool Forge tools, helpers, tests, renderers, or templates unless the user has explicitly set the architecture/design for that tool or standard and named the dependency as part of that design.
 - The default rule exists to prevent agents from casually importing dependency stacks. It is not meant to override a user-approved architecture decision.
 - Any dependency exception MUST be documented in the tool drawer README or standard that authorizes it, including dependency name, purpose, scope, and fallback/installation expectation.
-- Script Forge tools MUST use the existing `duckdb_sql` command for DuckDB work.
+- Tool Forge tools MUST use the existing `duckdb_sql` command for DuckDB work.
 - Direct Python `duckdb` imports are only allowed inside the `duckdb_sql` implementation itself, unless a task explicitly documents why `duckdb_sql` cannot support the needed operation and adds that missing capability back to `duckdb_sql` when practical.
 - For agentic use, prefer `duckdb_sql -g` to suppress grid formatting. Grids waste tokens; use plain, JSON, single-value, or delimiter-controlled output unless a human explicitly needs a pretty table.
 - J2/Jinja-style templates should be rendered by a DIL-owned stdlib renderer or a committed local implementation by default. External `jinja2` is allowed only when the user-approved architecture explicitly calls for it and the dependency exception is documented.
@@ -288,7 +288,7 @@ data.md                     ← rendered output (never hand-edited, never parsed
 - Configuration files with complex nesting (use JSON/YAML)
 - Files with fewer than ~10 rows where the overhead isn't justified
 
-**Dependencies:** Script Forge tools use the existing `duckdb_sql` command for SQL over CSV. Do not import the Python `duckdb` module directly outside the `duckdb_sql` implementation itself unless a task explicitly documents the gap and the missing capability is added back to `duckdb_sql` when practical. For agent-facing output, use `duckdb_sql -g` by default to avoid token-heavy grid formatting; prefer `-j`, `-S`, `-H`, or `--sep` when those modes fit the consumer. Template rendering should use DIL-owned stdlib Python logic by default. External `jinja2` is allowed only as a documented dependency exception when the user-approved architecture explicitly calls for it.
+**Dependencies:** Tool Forge tools use the existing `duckdb_sql` command for SQL over CSV. Do not import the Python `duckdb` module directly outside the `duckdb_sql` implementation itself unless a task explicitly documents the gap and the missing capability is added back to `duckdb_sql` when practical. For agent-facing output, use `duckdb_sql -g` by default to avoid token-heavy grid formatting; prefer `-j`, `-S`, `-H`, or `--sep` when those modes fit the consumer. Template rendering should use DIL-owned stdlib Python logic by default. External `jinja2` is allowed only as a documented dependency exception when the user-approved architecture explicitly calls for it.
 
 **Candidates in current DIL:**
 - `task_index.md` (DIL-1491 — first implementation)
@@ -299,7 +299,7 @@ data.md                     ← rendered output (never hand-edited, never parsed
 
 ## 12. Shared Logging Library
 
-All Script Forge tools MUST use the shared logging library instead of inline `echo`/`date` calls. This ensures uniform log format across bash and Python tools, enabling `log_river` harvest and cross-tool diagnostics.
+All Tool Forge tools MUST use the shared logging library instead of inline `echo`/`date` calls. This ensures uniform log format across bash and Python tools, enabling `log_river` harvest and cross-tool diagnostics.
 
 **Storybook logging:** Logs should read like a Richard Scarry picture book — not simple, but *clearly descriptive* with rich detail that's easy to follow. A reader opening the log cold should immediately understand: what happened, in what order, with what inputs, and what the outcome was. Every section tells a chapter of the story. The reader should never have to ask "so what exactly got done here?"
 
@@ -375,7 +375,7 @@ This is the **first line of defense** for the extensionless symlink system (Stan
 
 ## 14. Every Tool Deserves Its Own Drawer
 
-Every tool gets its own directory within `_shared/scripts/`. No flat files in the scripts root except small legacy standalone utilities explicitly documented by the Script Forge migration plan.
+Every tool gets its own directory within `_shared/scripts/`. No flat files in the scripts root except small legacy standalone utilities explicitly documented by the Tool Forge migration plan.
 
 ```
 _shared/scripts/
@@ -406,7 +406,7 @@ Report-producing tools MUST separate data retrieval from human presentation.
 _shared/scripts/<tool>/j2_templates/
 ```
 
-Equivalent Script Forge-compatible repositories follow the same drawer-local pattern, for example:
+Equivalent Tool Forge-compatible repositories follow the same drawer-local pattern, for example:
 
 ```text
 /org/platform/scripts/bash/<tool>/j2_templates/
@@ -450,7 +450,7 @@ Ask one question: *"Does every row have the same columns with no nesting?"*
 - No → JSONL
 - "Mostly yes, but one or two fields might be nested" → CSV with the nested fields as single text columns (JSON-encoded strings). Only escalate to JSONL if multiple fields need nesting or the nested structure is the primary query target.
 
-**Applies to:** audit ledgers, run logs, attempt logs, sync records, and any append-only operational data produced by Script Forge tools. This standard complements Standard #11 — when CSV is chosen, the full CSV + DuckDB + J2 pipeline applies.
+**Applies to:** audit ledgers, run logs, attempt logs, sync records, and any append-only operational data produced by Tool Forge tools. This standard complements Standard #11 — when CSV is chosen, the full CSV + DuckDB + J2 pipeline applies.
 
 ## 16. Marker-Based Path Resolution (Non-Negotiable)
 
@@ -495,7 +495,7 @@ Choosing marker-based resolution over hardcoded levels is a moral choice: it pri
 
 **Marker selection:** Use the most specific structural marker available. For DIL repositories, `_shared/_meta` is the canonical root marker. For other repositories, choose a directory or file that exists only at the root and is unlikely to be duplicated at other levels.
 
-**Applies to:** all base path resolution in Script Forge tools — bash wrappers, Python implementations, shared libraries, and test scripts. No exceptions.
+**Applies to:** all base path resolution in Tool Forge tools — bash wrappers, Python implementations, shared libraries, and test scripts. No exceptions.
 
 ## Naming Transition Note (2026-05-01)
 
