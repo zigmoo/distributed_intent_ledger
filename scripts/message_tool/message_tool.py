@@ -677,6 +677,32 @@ def cmd_resend(args):
         print(rendered)
 
 
+def cmd_emit(args):
+    """Emit a message body to stdout for console-report delivery."""
+    base_dil = resolve_base_dil()
+    drafts = drafts_dir(base_dil)
+
+    path = args.draft or find_latest_draft(drafts)
+    if not path or not os.path.isfile(path):
+        if args.draft:
+            path = find_draft_by_id(drafts, args.draft)
+        if not path:
+            print("No message found.", file=sys.stderr)
+            sys.exit(1)
+
+    meta, body = parse_draft(path)
+
+    if args.json:
+        print(json.dumps({"path": path, "meta": meta, "body": body}, indent=2))
+    else:
+        print(body)
+
+    if not args.no_mark:
+        meta["status"] = "sent"
+        meta["sent"] = now_utc()
+        write_draft(path, meta, body)
+
+
 def cmd_list(args):
     base_dil = resolve_base_dil()
     drafts = drafts_dir(base_dil)
@@ -787,6 +813,10 @@ def main():
     p_show = sub.add_parser("show", help="Show a draft message")
     p_show.add_argument("draft", nargs="?", default="", help="Draft file path or ID (default: latest)")
 
+    p_emit = sub.add_parser("emit", help="Emit message body to stdout (for console-report channel)")
+    p_emit.add_argument("draft", nargs="?", default="", help="Message file path or ID (default: latest)")
+    p_emit.add_argument("--no-mark", action="store_true", help="Don't update status to sent")
+
     p_cdp = sub.add_parser("cdp-sequence", help="Output CDP command sequence for Teams dispatch")
     p_cdp.add_argument("draft", nargs="?", default="", help="Draft file path or ID (default: latest)")
 
@@ -834,6 +864,7 @@ def main():
         "resend": cmd_resend,
         "list": cmd_list,
         "show": cmd_show,
+        "emit": cmd_emit,
         "cdp-sequence": cmd_cdp_sequence,
         "x-cdp-sequence": cmd_x_cdp_sequence,
     }

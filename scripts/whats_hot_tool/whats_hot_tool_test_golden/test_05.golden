@@ -1,0 +1,28 @@
+OK | write | TIMESTAMP-05:00 | opencode@framemoowork | entries:2
+--- STATUS ---
+OK | status | entries:2 | updated:TIMESTAMP-05:00 | latest:opencode@framemoowork@TIMESTAMP-05:00
+--- N=1 (legacy) ---
+# Legacy Content
+
+Original content here.
+--- FILE ---
+---
+title: Session Hot State
+updated: TIMESTAMP-05:00
+---
+
+
+<!-- === HOT_ENTRY: TIMESTAMP-05:00 | opencode@framemoowork | kimi-k2.6 === -->
+
+## New Entry
+
+# New Entry
+
+New content.
+
+<!-- === HOT_ENTRY: legacy | unknown@framemoowork | legacy === -->
+
+# Legacy Content
+
+Original content here.
+

@@ -1,0 +1,18 @@
+usage: whats_hot_tool [-h] [--base BASE] [--dry-run] [--hot-path HOT_PATH]
+                      {write,read,status} ...
+
+Deterministic _hot.md prepend-only manager with sentinel separation and
+indexed retrieval
+
+positional arguments:
+  {write,read,status}
+    write              prepend a new hot entry
+    read               retrieve one or more hot entries
+    status             show _hot.md summary
+
+options:
+  -h, --help           show this help message and exit
+  --base BASE          DIL base path (default: auto-resolve)
+  --dry-run            preview without side effects
+  --hot-path HOT_PATH  override path to _hot.md (default:
+                       {base}/_shared/_hot.md)

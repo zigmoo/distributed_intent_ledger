@@ -1,0 +1,21 @@
+--- DRY RUN ---
+---
+title: Session Hot State
+updated: TIMESTAMP-05:00
+---
+
+
+<!-- === HOT_ENTRY: TIMESTAMP-05:00 | opencode@framemoowork | kimi-k2.6 === -->
+
+## Dry Run
+
+# Dry Run Entry
+
+Should not write.
+
+
+--- END DRY RUN ---
+OK | write | TIMESTAMP-05:00 | opencode@framemoowork | dry_run
+--- FILE AFTER DRY RUN ---
+cat: <TMP>/hot_06.md: No such file or directory
+(file does not exist)
