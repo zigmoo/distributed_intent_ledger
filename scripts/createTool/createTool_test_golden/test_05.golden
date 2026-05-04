@@ -1,0 +1,13 @@
+OK | scaffold_test | <TMP>/dil/_shared/scripts/scaffold_test
+  created: <TMP>/dil/_shared/scripts/scaffold_test/scaffold_test.bash
+  created: <TMP>/dil/_shared/scripts/scaffold_test/scaffold_test_test_script.bash
+  created: <TMP>/dil/_shared/scripts/scaffold_test/j2_templates/README.md
+  symlink: <TMP>/dil/_shared/scripts/bin/scaffold_test
+  golden: <TMP>/dil/_shared/scripts/scaffold_test/scaffold_test_test_golden
+  j2 templates: <TMP>/dil/_shared/scripts/scaffold_test/j2_templates
+
+Next steps:
+  scaffold_test --help
+  bash <TMP>/dil/_shared/scripts/scaffold_test/scaffold_test_test_script.bash --rebuild
+=== PYTHON FILE EXISTS ===
+NO

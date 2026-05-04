@@ -7,7 +7,7 @@ category: policy
 memoryType: policy
 priority: critical
 tags: [script-forge, tooling, standards, agentic-tools, symlinks, path, conventions]
-updated: 2026-04-27
+updated: 2026-04-28
 source: internal
 domain: operations
 project: dil
@@ -32,14 +32,14 @@ The command registered in `$PATH` is ALWAYS the extensionless stem name as a sym
 **Correct:**
 ```
 bin/jira_tool  →  ../jira_tool.sh        (symlink, no extension)
-bin/task_tool  →  ../task_tool.sh        (symlink, no extension)
+bin/task_tool  →  ../task_tool/task_tool.bash  (symlink, no extension)
 bin/x_tool     →  ../x_tool              (symlink, no extension)
 ```
 
 **Wrong:**
 ```
 bin/jira_tool.sh  →  ../jira_tool.sh     (WRONG: extension in symlink)
-bin/task_tool.py  →  ../task_tool.py      (WRONG: extension, and pointing to Python directly)
+bin/task_tool.py  →  ../task_tool/task_tool.py  (WRONG: extension, and pointing to Python directly)
 ```
 
 **Why:** Agents and humans call tools by name, not by implementation language. `jira_tool comment WORK-12523 "text"` — the caller doesn't know or care that it's Bash wrapping Python. Extensions leak implementation details into the interface. If we port a tool from Bash to Python to Rust, the symlink name never changes. The contract is the name, not the file extension.
@@ -66,6 +66,16 @@ tool_name.py   — Python implementation (business logic, structured I/O)
 - Structured output (pipe-delimited, JSON, or machine-parseable text)
 - Deterministic exit codes
 - Logging to domain-specific timestamped log files
+
+**Python dependency rule (Non-Negotiable):**
+- Script Forge Python MUST be vanilla stdlib Python by default.
+- Do not add pip dependencies to Script Forge tools, helpers, tests, renderers, or templates unless the user has explicitly set the architecture/design for that tool or standard and named the dependency as part of that design.
+- The default rule exists to prevent agents from casually importing dependency stacks. It is not meant to override a user-approved architecture decision.
+- Any dependency exception MUST be documented in the tool drawer README or standard that authorizes it, including dependency name, purpose, scope, and fallback/installation expectation.
+- Script Forge tools MUST use the existing `duckdb_sql` command for DuckDB work.
+- Direct Python `duckdb` imports are only allowed inside the `duckdb_sql` implementation itself, unless a task explicitly documents why `duckdb_sql` cannot support the needed operation and adds that missing capability back to `duckdb_sql` when practical.
+- For agentic use, prefer `duckdb_sql -g` to suppress grid formatting. Grids waste tokens; use plain, JSON, single-value, or delimiter-controlled output unless a human explicitly needs a pretty table.
+- J2/Jinja-style templates should be rendered by a DIL-owned stdlib renderer or a committed local implementation by default. External `jinja2` is allowed only when the user-approved architecture explicitly calls for it and the dependency exception is documented.
 
 **Small tools** that don't need Python's capabilities may remain pure Bash. The pair pattern is for substantial tools, not one-liners.
 
@@ -128,9 +138,9 @@ Tools support multiple invocation modes as appropriate:
 
 The forge decides which modes are appropriate at design time.
 
-## 8. Script Creator (createNewScript)
+## 8. Tool Creator (createTool)
 
-New tools MUST be scaffolded using the script creator, which generates both files (Bash wrapper + Python implementation) with all standards pre-wired:
+New DIL Tool Forge tools MUST be scaffolded using `createTool`, the DIL-native tool creator, which generates both files (Bash wrapper + Python implementation) with all standards pre-wired:
 
 - Extensionless symlink in `bin/`
 - Logging boilerplate
@@ -138,8 +148,17 @@ New tools MUST be scaffolded using the script creator, which generates both file
 - Venv bootstrapping in the wrapper
 - Argparse skeleton in the Python script
 - Test script stub
+- Tool-owned `j2_templates/README.md` for presentation templates and report surfaces
 
-Learnings and new patterns are folded back into the creator's templates so every future tool inherits them automatically.
+Learnings and new patterns are folded back into the `createTool` templates so every future tool inherits them automatically.
+
+`createTool` uses the same drawer-local J2 convention as generated tools. Its script-rendering sources live inside the tool drawer:
+
+```text
+_shared/scripts/createTool/j2_templates/*.j2
+```
+
+The templates are the durable standards surface. When Tool Forge standards evolve, update those template files first so every newly scaffolded script starts compliant before customization.
 
 ## 9. ALWAYS Invoke by Symlink Name
 
@@ -187,8 +206,8 @@ Where `<tool_stem>` is the tool's filename without any extension (`.sh`, `.py`, 
 
 | Tool under test | Tool stem | Test script filename |
 |----------------|-----------|---------------------|
-| `task_tool.sh` / `task_tool.py` | `task_tool` | `task_tool_test_script.bash` |
-| `research_tool.sh` / `research_tool.py` | `research_tool` | `research_tool_test_script.bash` |
+| `task_tool/task_tool.bash` / `task_tool/task_tool.py` | `task_tool` | `task_tool_test_script.bash` |
+| `research_tool/research_tool.bash` / `research_tool/research_tool.py` | `research_tool` | `research_tool_test_script.bash` |
 | `url_tool.sh` | `url_tool` | `url_tool_test_script.bash` |
 | `hot_tool.sh` | `hot_tool` | `hot_tool_test_script.bash` |
 
@@ -210,13 +229,14 @@ The log subdirectory name is the full test script stem — including the `_test_
 **File layout (complete example):**
 ```
 _shared/scripts/
-  task_tool.sh                             # tool bash wrapper
-  task_tool.py                             # tool Python logic
-  task_tool_test_script.bash               # test runner (same directory as tool)
-  task_tool_test_golden/                   # golden baselines (committed to repo)
-    test_01.golden
-    test_02.golden
-    ...
+  task_tool/
+    task_tool.bash                         # tool bash wrapper
+    task_tool.py                           # tool Python logic
+    task_tool_test_script.bash             # test runner (same directory as tool)
+    task_tool_test_golden/                 # golden baselines (committed to repo)
+      test_01.golden
+      test_02.golden
+      ...
 
 _shared/logs/
   task_tool/                               # tool operational logs
@@ -234,23 +254,23 @@ When consolidating a standalone script into a tool (e.g., `create_task.sh` → `
 - `--keep-temp` — preserve temp workspace for debugging
 - `--quiet` — summary and failures only
 
-## 11. CSV-Primary Data Pattern (CSV + DuckDB + J2 → Markdown)
+## 11. CSV-Primary Data Pattern (CSV + duckdb_sql + stdlib renderer)
 
 When a tool maintains a structured index, registry, or tabular dataset, prefer the **CSV-primary** pattern over parsing markdown tables.
 
 **Architecture:**
 ```
-data.csv                    ← source of truth (DuckDB reads/writes)
-data.md.j2                  ← Jinja2 template (layout + embedded query results)
+data.csv                    ← source of truth (duckdb_sql reads/writes)
+data.md.template            ← committed template (layout + embedded query results)
 data.md                     ← rendered output (never hand-edited, never parsed)
 ```
 
 **How it works:**
-1. All writes (create, update, delete) go to the CSV via DuckDB `INSERT`/`UPDATE`/`DELETE`.
-2. All reads use DuckDB `SELECT` against the CSV — filters, joins, aggregates, all native SQL.
-3. The markdown file is rendered by applying DuckDB query results to a J2 template. It is a **view**, not a data store.
-4. The J2 template can embed multiple queries — summary stats in frontmatter, sectioned tables in body, computed fields anywhere.
-5. `rebuild` = re-render the J2 template from the CSV. Idempotent, fast, no data loss.
+1. All writes (create, update, delete) go through `duckdb_sql`.
+2. All reads use `duckdb_sql` against the CSV for filters, joins, aggregates, and other native SQL operations.
+3. The markdown file is rendered by DIL-owned stdlib Python logic. It is a **view**, not a data store.
+4. The template can embed multiple query results and computed fields, but rendering stays inside DIL-owned code.
+5. `rebuild` = re-render the template from the CSV. Idempotent, fast, no data loss.
 
 **Why this pattern:**
 - **Token savings:** Agents emit SQL (`SELECT * WHERE status='blocked'`) instead of reasoning about grep/awk/regex patterns to parse markdown tables. SQL is a known format — near-zero inference cost.
@@ -268,7 +288,7 @@ data.md                     ← rendered output (never hand-edited, never parsed
 - Configuration files with complex nesting (use JSON/YAML)
 - Files with fewer than ~10 rows where the overhead isn't justified
 
-**Dependencies:** `duckdb` (Python package or CLI binary), `jinja2` (Python package). Both are stable, well-maintained, and have no transitive dependencies that conflict with Script Forge tools.
+**Dependencies:** Script Forge tools use the existing `duckdb_sql` command for SQL over CSV. Do not import the Python `duckdb` module directly outside the `duckdb_sql` implementation itself unless a task explicitly documents the gap and the missing capability is added back to `duckdb_sql` when practical. For agent-facing output, use `duckdb_sql -g` by default to avoid token-heavy grid formatting; prefer `-j`, `-S`, `-H`, or `--sep` when those modes fit the consumer. Template rendering should use DIL-owned stdlib Python logic by default. External `jinja2` is allowed only as a documented dependency exception when the user-approved architecture explicitly calls for it.
 
 **Candidates in current DIL:**
 - `task_index.md` (DIL-1491 — first implementation)
@@ -285,20 +305,20 @@ All Script Forge tools MUST use the shared logging library instead of inline `ec
 
 **Bash:**
 ```bash
-source "$SCRIPT_DIR/lib/sf_log.sh"
-sf_log_init "tool_name" "action" "$BASE"
-sf_log "message"
-sf_log_warn "warning message"
-sf_log_error "error message"
-sf_log_section "Section Name"
-sf_log_close
+source "$SCRIPT_DIR/lib/script_forge_log.sh"
+script_forge_log_init "tool_name" "action" "$BASE"
+script_forge_log "message"
+script_forge_log_warn "warning message"
+script_forge_log_error "error message"
+script_forge_log_section "Section Name"
+script_forge_log_close
 ```
 
 **Python:**
 ```python
-from sf_log import SFLogger
+from script_forge_log import ScriptForgeLogger
 
-with SFLogger("tool_name", "action", base) as log:
+with ScriptForgeLogger("tool_name", "action", base) as log:
     log.info("message")
     log.warn("warning message")
     log.error("error message")
@@ -330,12 +350,12 @@ LOG_FILE: /path/to/log
 ```
 
 **Libraries:**
-- Bash: `lib/sf_log.sh` — source it, zero dependencies
-- Python: `lib/sf_log.py` — import it, stdlib-only (no pip)
+- Bash: `lib/script_forge_log.sh` — source it, zero dependencies
+- Python: `lib/script_forge_log.py` — import it, stdlib-only (no pip)
 
-**Provenance:** This pattern originates from `ScriptUtils.configure_logger()` in `/org/platform/scripts/python/libs/bin/utils/ScriptUtils.py`, adapted for DIL Script Forge with stdlib-only constraint (no `loguru` dependency). The `createNewScript` J2 templates in `/org/platform/scripts/` bake this pattern into every new script at creation time — DIL's `lib/sf_log.sh` and `lib/sf_log.py` serve the same purpose for DIL-resident tools.
+**Provenance:** This pattern originates from `ScriptUtils.configure_logger()` in `/org/platform/scripts/python/libs/bin/utils/ScriptUtils.py`, adapted for DIL Tool Forge with stdlib-only constraint (no `loguru` dependency). The Exampleorg `createNewScript` templates in `/org/platform/scripts/` bake this pattern into every new script at creation time. DIL's equivalent creator is named `createTool`, and DIL's `lib/script_forge_log.sh` and `lib/script_forge_log.py` serve the same purpose for DIL-resident tools.
 
-**Retrofit:** Existing tools should be migrated to use the shared library as they are touched. New tools created via `createNewScript` or manually MUST use it from the start.
+**Retrofit:** Existing tools should be migrated to use the shared library as they are touched. New DIL tools created via `createTool` or manually MUST use it from the start.
 
 ## 13. Symlink-Safe SCRIPT_DIR Resolution (Non-Negotiable)
 
@@ -353,9 +373,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 This is the **first line of defense** for the extensionless symlink system (Standard #1). If `SCRIPT_DIR` resolves wrong, every `source "$SCRIPT_DIR/lib/..."` and `exec python3 "$SCRIPT_DIR/tool.py"` fails. This was discovered and fixed across 17 tools during the DIL-1489 drawer migration.
 
-## 14. Tool Directory Layout (Drawer-for-Every-Tool)
+## 14. Every Tool Deserves Its Own Drawer
 
-Every tool gets its own directory within `_shared/scripts/`. No flat files in the scripts root except `findLatestPy.sh`, `identify_agent.sh`, and the `task_tool.sh`/`task_tool.py` pair (which predates this standard).
+Every tool gets its own directory within `_shared/scripts/`. No flat files in the scripts root except small legacy standalone utilities explicitly documented by the Script Forge migration plan.
 
 ```
 _shared/scripts/
@@ -363,10 +383,126 @@ _shared/scripts/
     tool_name.bash          ← bash wrapper (entry point)
     tool_name.py            ← Python logic (if applicable)
     tool_name.md            ← documentation (if applicable)
+    j2_templates/           ← tool-owned display/report templates
+      README.md             ← template purpose, conventions, dependency notes
     tool_name_test_script.bash  ← test suite (Standard #10)
     tool_name_test_golden/      ← golden baselines (Standard #10)
   bin/
     tool_name               ← extensionless symlink → ../tool_name/tool_name.bash
 ```
 
+## 17. Structured Resultset Rendering
+
+Report-producing tools MUST separate data retrieval from human presentation.
+
+**Default pipeline:**
+1. The tool gathers/searches/query results into a structured resultset (JSON, CSV, or equivalent).
+2. The resultset is passed to a renderer/nozzle/linkifier layer.
+3. The renderer applies a tool-owned template from the tool drawer.
+
+**Template location:**
+
+```text
+_shared/scripts/<tool>/j2_templates/
+```
+
+Equivalent Script Forge-compatible repositories follow the same drawer-local pattern, for example:
+
+```text
+/org/platform/scripts/bash/<tool>/j2_templates/
+```
+
+**Console report rules:**
+- Use fixed-width deterministic columns for human console reports unless a different format is explicitly required.
+- Do not use ad hoc pipe-delimited rows for human-facing report tables.
+- Use `url_tool` or an approved nozzle/linkifier for ticket IDs and external references.
+- Console links should render as clickable labels without exposing raw URLs when the terminal supports it.
+- Keep machine-readable output separate via JSON, CSV, or delimiter-controlled modes.
+
+The tool owns its templates. Shared rendering mechanics belong under `_shared/scripts/lib/`, especially reusable nozzles, linkifiers, and stdlib render helpers.
+
 **Why:** The directory IS the tool's namespace. When a tool grows (tests, config, templates, golden files), the directory absorbs growth without restructuring. `ls scripts/` shows tool names, not a flat pile of files.
+
+## 15. JSONL vs CSV Decision Rule
+
+Standard #11 defines the CSV-primary pattern for queryable tabular data. JSONL (one JSON object per line, append with `>>`) is an alternative for append-only data. Use this decision rule to pick the right format at design time.
+
+**Choose CSV when:**
+- The schema is flat and fixed — every row has the same columns
+- DuckDB will query the data (CSV is DuckDB's fastest, simplest reader)
+- The data will feed a J2-rendered markdown view (Standard #11 pipeline)
+- Columns are scalar values: strings, numbers, timestamps, booleans
+- The file will be read by agents that benefit from SQL over JSON parsing
+
+**Choose JSONL when:**
+- Rows have variable or optional nested fields (arrays, objects, maps)
+- The schema evolves frequently and rows from different versions coexist
+- Each record is consumed independently and never joined/aggregated with SQL
+- The data is a raw event stream where human readability per-line matters more than cross-row queries
+- A nested `error` object, `tags` array, or `options` map would require awkward flattening into CSV columns
+
+**Hybrid (append JSONL, materialize CSV):**
+- When raw events are JSONL-shaped but reporting needs SQL, write JSONL as the append-only ingest format and periodically materialize a flat CSV summary via DuckDB's `read_json_auto()`. The CSV becomes the query layer; the JSONL is the durable event log. This adds a materialization step — only use it when both the nested raw shape and the flat query shape are genuinely needed.
+
+**Decision shortcut:**
+Ask one question: *"Does every row have the same columns with no nesting?"*
+- Yes → CSV
+- No → JSONL
+- "Mostly yes, but one or two fields might be nested" → CSV with the nested fields as single text columns (JSON-encoded strings). Only escalate to JSONL if multiple fields need nesting or the nested structure is the primary query target.
+
+**Applies to:** audit ledgers, run logs, attempt logs, sync records, and any append-only operational data produced by Script Forge tools. This standard complements Standard #11 — when CSV is chosen, the full CSV + DuckDB + J2 pipeline applies.
+
+## 16. Marker-Based Path Resolution (Non-Negotiable)
+
+Scripts MUST resolve base directories by walking upward to a known marker — never by counting directory levels.
+
+**Correct (marker-based, survives any restructuring):**
+```bash
+_cursor="$SCRIPT_DIR"
+while [[ -n "$_cursor" && "$_cursor" != "/" ]]; do
+  if [[ -d "$_cursor/_shared/_meta" ]]; then
+    BASE_DIL="$_cursor"
+    break
+  fi
+  _cursor="$(dirname "$_cursor")"
+done
+```
+
+```python
+cursor = Path(script_dir).resolve()
+while cursor != cursor.parent:
+    if (cursor / "_shared" / "_meta").is_dir():
+        return str(cursor)
+    cursor = cursor.parent
+```
+
+**Wrong (breaks when directory structure changes):**
+```bash
+BASE_DIL="$(cd "$SCRIPT_DIR/../.." && pwd)"
+```
+
+```python
+repo_base = Path(script_dir).resolve().parent.parent
+```
+
+**Why this is a foundational principle, not a convenience:**
+
+Hardcoded level counts (`../..`) embed a structural assumption into every script that uses them. When the structure changes — and it will, because tools grow, directories get reorganized, drawer layouts deepen — every hardcoded path breaks simultaneously. The `_shared/_shared` bug that hit x_tool, signal_tool, and message_tool after the Standard #14 drawer migration is the proof case: one structural change silently corrupted log paths, data paths, and signal paths across multiple tools.
+
+The cascading effects of fragile path resolution reach beyond the developer's terminal. Logs land in wrong directories and get missed during incident response. Audit data writes to ghost paths and disappears. Guard files fail to protect concurrent runs. These are not cosmetic failures — they are operational failures that affect reliability for the people who depend on the systems we build.
+
+Choosing marker-based resolution over hardcoded levels is a moral choice: it prioritizes the durability and mobility of the system over the convenience of writing `../..`. The marker approach works at any depth, survives any restructuring, and requires zero maintenance when tools move. The cost is a few extra lines of code. The alternative is silent breakage that compounds until someone gets paged.
+
+**Marker selection:** Use the most specific structural marker available. For DIL repositories, `_shared/_meta` is the canonical root marker. For other repositories, choose a directory or file that exists only at the root and is unlikely to be duplicated at other levels.
+
+**Applies to:** all base path resolution in Script Forge tools — bash wrappers, Python implementations, shared libraries, and test scripts. No exceptions.
+
+## Naming Transition Note (2026-05-01)
+
+DIL is adopting **DIL Tool Forge** as the preferred name for the existing Script Forge system.
+
+- Scope is unchanged: standards in this document continue to govern `_shared/scripts/` tools, wrappers, drawers, tests, and shared libs.
+- During transition, both names may appear in docs and task notes:
+  - `Script Forge` (legacy/current references)
+  - `DIL Tool Forge` (preferred forward-facing name)
+- Operational behavior and standards requirements do not change because of this naming update.

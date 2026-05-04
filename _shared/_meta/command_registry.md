@@ -7,7 +7,7 @@ category: system
 memoryType: registry
 priority: critical
 tags: [registry, commands, tools, scripts, zero-inference]
-updated: 2026-04-21
+updated: 2026-05-01
 source: internal
 domain: operations
 project: dil-active
@@ -35,7 +35,7 @@ Scripts in `_shared/scripts/`. Available everywhere, no domain restriction.
 | trigger | command | description |
 |---|---|---|
 | morning brief, daily brief, briefing | `morning_brief` | Generate daily task briefing, prepend to `_shared/reminders.md` |
-| create jira task, new jira ticket, jira + dil task | `_shared/scripts/create_jira_task.sh --summary "<title>" --project "<slug>" --epic <EPIC> [opts]` | Create Jira ticket AND mirroring DIL task in one shot. **Preferred for all work-domain tasks.** |
+| create jira task, new jira ticket, jira + dil task | `create_jira_task --summary "<title>" --project "<slug>" --epic <EPIC> [opts]` | Create Jira ticket AND mirroring DIL task in one shot. **Preferred for all work-domain tasks.** |
 | create task, new task (DIL only) | `create_task --domain <domain> --title "<title>" --project "<project>"` | Create a DIL-only task (no Jira). Use for personal domain or when Jira ticket already exists (pass `--task-id`). |
 | create task (json) | `create_task json <manifest.json>` | Create task from JSON manifest |
 | archive tasks | `archive_tasks` | Move terminal tasks to `archived/{year}/` |
@@ -43,45 +43,58 @@ Scripts in `_shared/scripts/`. Available everywhere, no domain restriction.
 | create memory, remember this | `memory_tool create --type <type> --title "<title>" [--scope shared\|local] [--tags CSV] [--content-file PATH] [--category CAT]` | Create a DIL memory note with proper frontmatter. `--scope shared` writes directly to `_shared/`. Default is local (machine/assistant). Exit codes: 0=success, 1=error, 2=validation. |
 | relocate memory, promote memory, move memory | `memory_tool relocate <path> --target-scope shared\|machine/assistant [--force]` | Move a memory note between scopes. Patches frontmatter (machine, assistant, owner, updated), updates source and target indexes, appends changelog. Use `shared` to promote or `machine/assistant` to demote. |
 | mind meld, export to template, publish to template | `memory_tool mind_meld <path> [--template-repo PATH] [--model MODEL] [--skip-llm] [--force]` | Export a memory to the DIL template repo. Templatizes frontmatter, runs LLM (ollama) to redact PII/business info while preserving principles, shows diff for approval. Default model: gemma4:latest. Default template repo: ~/projects/ai_projects/distributed_intent_ledger. |
-| remove memory | `_shared/scripts/remove_memory.sh` | Remove a DIL memory note |
-| ingest source, ingest file, ingest url, import file, import url, store external asset, knowledge ingest | `_shared/scripts/ingest_source.sh <path-or-url>` | Ingest an external asset into the knowledge pipeline with manifest, provenance, registry write, and adapter routing |
+| remove memory, retire memory, delete memory, restore memory | `memory_tool remove <path> --reason "<why>" [--permanent\|--restore\|--prune-trash]` | Retire a DIL memory note through the canonical memory tool. Accepts absolute paths or paths relative to the DIL base. Default is soft-delete to `_shared/_trash/`; use `--restore` to restore or `--prune-trash` to clean old trash. |
+| ingest source, ingest file, ingest url, import file, import url, store external asset, knowledge ingest | `ingest_source <path-or-url>` | Ingest an external asset into the knowledge pipeline with manifest, provenance, registry write, and adapter routing |
 | ingestion runbook, knowledge ingestion, should i ingest this, ingest or create memory | `_shared/runbooks/knowledge-ingestion-runbook.md` | Decision rule for when to use ingest_source.sh vs create_memory.sh |
+| create tool, scaffold tool, new tool, tool creator, create script, scaffold script | `createTool <tool_name>` | DIL Tool Forge tool creator. Canonical command for scaffolding a fresh standards-compliant Bash/Python tool pair, drawer-local golden test suite, `j2_templates/README.md`, and extensionless bin symlink. |
+| llm matrix tool, matrix tool, model matrix | `llm_matrix_tool [opts]` | DIL Tool Forge matrix runner for LM Studio model probing, retries, registry learning, and live CSV/DuckDB output. Canonical command lives in `_shared/scripts/llm_matrix_tool/` with matching logs under `_shared/logs/llm_matrix_tool/`. |
+| test task tool, task_tool test, task regression | `task_tool test` | Run the drawer-local task_tool golden regression suite at `_shared/scripts/task_tool/task_tool_test_script.bash`. |
+| test research tool, research_tool test | `_shared/scripts/research_tool/research_tool_test_script.bash` | Run the drawer-local research_tool golden regression suite. |
+| test log river, log_river test | `_shared/scripts/log_river/log_river_test_script.bash` | Run the drawer-local log_river golden regression suite. |
+| test script forge qc, script_forge_qc test | `_shared/scripts/script_forge_qc/script_forge_qc_test_script.bash` | Run the drawer-local script_forge_qc golden regression suite. |
+| script forge qc, qc dashboard, test run registry, last tested, validation history | `script_forge_qc latest|summary|last-status|path` | Query the DIL Script Forge QC registry at `_shared/data/script_forge_qc/test_runs.csv` using `duckdb_sql -g` for token-efficient agent output. |
+| log river, render log river, log visualization, harvest logs | `log_river render --output <html>` / `log_river harvest --output <json>` | Harvest DIL/work log filenames and render the existing Log River static HTML visualization. Defaults to no browser open; use `--open` for GUI launch. |
+| setting, settings, global setting, get setting, set setting | `setting_tool get <key>` / `setting_tool set <key> <value> --type <type>` / `setting_tool list --include-defaults` | Read, add, update, and list DIL global settings from `_shared/_meta/agent_runtime_policy.json` with built-in defaults. Supports json, str, int, float, decimal, bool, date, timestamp, sequence, path, and url values. |
 | set task status, update status | `set_task_status <task_id> <status>` | Change task status |
 | assign task | `assign_task` | Assign a task to an agent |
 | search tasks, list tasks, show tasks, find task, task search | `task_tool search [--status STATUS] [--project SLUG] [--domain DOMAIN] [--latest N] [--count] [--json]` | Fast task discovery and filtering from index |
 | review task, show task details | `task_tool review <TASK_ID> [--json]` | Show full task details for a single task |
 | validate tasks | `validate_tasks` | Validate task files against schema |
 | rebuild index, reindex | `rebuild_task_index` | Regenerate `_shared/_meta/task_index.md` from task files |
-| import jira, jira import | `_shared/scripts/jira_import.sh` | Import Jira tickets as DIL work tasks |
-| identify agent | `_shared/scripts/identify_agent.sh` | Resolve current agent identity from env/process tree |
-| search dil, dil search, find in dil, search memory, search preferences, recall | `_shared/scripts/dil_search.sh "<query>" [--recall] [--scope SCOPE] [--domain DOMAIN] [--limit N] [--json]` | Hybrid search across DIL memory/tasks/preferences with keyword+temporal+status ranking. Use `--recall` for protocol-aligned multi-source retrieval. |
-| x search, search bookmarks, search x, find bookmark | `_shared/scripts/x_tool search <query> [--author HANDLE] [--limit N] [--json]` | FTS5 full-text search across X bookmarks with BM25 ranking (SQLite). 242x faster than legacy JSONL scan. |
-| x list, list bookmarks, x bookmarks by author | `_shared/scripts/x_tool list [--author HANDLE] [--category CAT] [--domain DOM] [--sort-by FIELD] [--limit N] [--json]` | List/filter X bookmarks by author, date, category, domain. |
-| x show, show bookmark, bookmark detail | `_shared/scripts/x_tool show <id> [--json]` | Full bookmark detail: text, engagement metrics, quoted tweets, links, tags. |
-| x stats, bookmark stats | `_shared/scripts/x_tool stats [--json]` | Aggregate bookmark statistics: total, unique authors, top authors, languages. |
-| x categories, bookmark categories | `_shared/scripts/x_tool categories [--json]` | Category distribution across bookmarks. |
-| x domains, bookmark domains | `_shared/scripts/x_tool domains [--json]` | Domain/subject distribution across bookmarks. |
-| x compose, compose x post, draft x post, compose tweet | `_shared/scripts/x_tool compose --body "text" [--reply-to ID]` | Draft an X post via message_tool nozzle pipeline (xpost formatter, 280-char aware). |
-| x post, post to x, send x post | `_shared/scripts/x_tool post [--send] [--send --yes]` | Dispatch draft to clipboard/CDP. Default: paste+screenshot. --send: confirm+post. --send --yes: full auto. |
-| x drafts, x post drafts | `_shared/scripts/x_tool drafts [--limit N]` | List message_tool drafts. |
-| x sync, sync x bookmarks, sync bookmarks | `_shared/scripts/x_tool sync [--browser NAME] [--agent-browser]` | Sync X bookmarks via Field Theory CLI. |
-| x tag, tag bookmark | `_shared/scripts/x_tool tag (--url URL \| --id ID) --tag TEXT` | Add tag to a bookmark in JSONL cache and rebuild index. |
-| x find, find x bookmark | `_shared/scripts/x_tool find <query> [--limit N]` | Legacy JSONL search (use `search` instead for FTS5). |
-| create project | `_shared/scripts/create_project.sh` | Register a new project in the project registry |
-| register session, session register, agent register | `_shared/scripts/signal_tool register --agent-name <NAME> --machine <MACHINE>` | Register this agent session in the session registry (bootstrap step 10) |
-| deregister session, session close, agent deregister | `_shared/scripts/signal_tool deregister <SESSION_KEY>` | Close an agent session in the registry |
-| list sessions, active sessions, who is online | `_shared/scripts/signal_tool sessions [--active-only]` | List registered agent sessions |
-| session artifacts, list session artifacts, normalize session artifacts, rename session artifacts | `_shared/scripts/session_artifact_tool list\|plan\|rename [--apply]` | List and normalize `_shared/artifacts/sessions` filenames using the DIL session artifact convention; writes rename plans under `_shared/data/session_artifact_tool/` |
-| dil agent loop, agent loop, local loop controller | `_shared/scripts/bin/dil_agent_loop validate\|run\|list\|status\|stop ...` | DIL-native local bounded loop controller. Canonical package: `_shared/projects/dil_agent_loop/`; state under `_shared/data/dil_agent_loop/`; logs under `_shared/logs/dil_agent_loop/`. |
-| send signal, signal agent | `_shared/scripts/signal_tool send --to <AGENT@MACHINE> --subject "..."` | Send a signal to another agent via CSV ledger |
-| check signals, pending signals | `_shared/scripts/signal_tool check` | Check for pending signals addressed to this agent |
-| poll inbox, poll signals | `_shared/scripts/signal_tool poll --account <NAME>` | Poll email inbox for #TAG: signals and ingest to CSV ledger |
-| broadcast signal, signal all | `_shared/scripts/signal_tool broadcast --subject "..."` | Broadcast a signal to all DIL agents |
-| bump dil version, version bump | `_shared/scripts/signal_tool version-bump --reason "..."` | Bump DIL version and notify all agents |
-| engineering notebook, eng note | `_shared/scripts/create_engineering_notebook_entry.sh` | Create an engineering notebook entry |
+| import jira, jira import | `jira_import` | Import Jira tickets as DIL work tasks |
+| identify agent | `identify_agent` | Resolve current agent identity from env/process tree |
+| search dil, dil search, find in dil, search memory, search preferences, recall | `dil_search "<query>" [--recall] [--scope SCOPE] [--domain DOMAIN] [--limit N] [--json]` | Hybrid search across DIL memory/tasks/preferences with keyword+temporal+status ranking. Use `--recall` for protocol-aligned multi-source retrieval. |
+| x search, search bookmarks, search x, find bookmark | `x_tool search <query> [--author HANDLE] [--limit N] [--json]` | FTS5 full-text search across X bookmarks with BM25 ranking (SQLite). 242x faster than legacy JSONL scan. |
+| x list, list bookmarks, x bookmarks by author | `x_tool list [--author HANDLE] [--category CAT] [--domain DOM] [--sort-by FIELD] [--limit N] [--json]` | List/filter X bookmarks by author, date, category, domain. |
+| x show, show bookmark, bookmark detail | `x_tool show <id> [--json]` | Full bookmark detail: text, engagement metrics, quoted tweets, links, tags. |
+| x stats, bookmark stats | `x_tool stats [--json]` | Aggregate bookmark statistics: total, unique authors, top authors, languages. |
+| x categories, bookmark categories | `x_tool categories [--json]` | Category distribution across bookmarks. |
+| x domains, bookmark domains | `x_tool domains [--json]` | Domain/subject distribution across bookmarks. |
+| x compose, compose x post, draft x post, compose tweet | `x_tool compose --body "text" [--reply-to ID]` | Draft an X post via message_tool nozzle pipeline (xpost formatter, 280-char aware). |
+| x post, post to x, send x post | `x_tool post [--send] [--send --yes]` | Dispatch draft to clipboard/CDP. Default: paste+screenshot. --send: confirm+post. --send --yes: full auto. |
+| x drafts, x post drafts | `x_tool drafts [--limit N]` | List message_tool drafts. |
+| x sync, sync x bookmarks, sync bookmarks | `x_tool sync [--browser NAME] [--agent-browser]` | Sync X bookmarks via Field Theory CLI. |
+| x tag, tag bookmark | `x_tool tag (--url URL \| --id ID) --tag TEXT` | Add tag to a bookmark in JSONL cache and rebuild index. |
+| x find, find x bookmark | `x_tool find <query> [--limit N]` | Legacy JSONL search (use `search` instead for FTS5). |
+| create project | `create_project` | Register a new project in the project registry |
+| register session, session register, agent register | `signal_tool register --agent-name <NAME> --machine <MACHINE>` | Register this agent session in the session registry (bootstrap step 10) |
+| deregister session, session close, agent deregister | `signal_tool deregister <SESSION_KEY>` | Close an agent session in the registry |
+| list sessions, active sessions, who is online | `signal_tool sessions [--active-only]` | List registered agent sessions |
+| session artifacts, list session artifacts, normalize session artifacts, rename session artifacts | `session_artifact_tool list\|plan\|rename [--apply]` | List and normalize `_shared/artifacts/sessions` filenames using the DIL session artifact convention; writes rename plans under `_shared/data/session_artifact_tool/` |
+| dil agent loop, agent loop, local loop controller | `dil_agent_loop validate\|run\|list\|status\|stop ...` | DIL-native local bounded loop controller. Canonical package: `_shared/projects/dil_agent_loop/`; state under `_shared/data/dil_agent_loop/`; logs under `_shared/logs/dil_agent_loop/`. |
+| send signal, signal agent | `signal_tool send --to <AGENT@MACHINE> --subject "..."` | Send a signal to another agent via CSV ledger |
+| check signals, pending signals | `signal_tool check` | Check for pending signals addressed to this agent |
+| poll inbox, poll signals | `signal_tool poll --account <NAME>` | Poll email inbox for #TAG: signals and ingest to CSV ledger |
+| broadcast signal, signal all | `signal_tool broadcast --subject "..."` | Broadcast a signal to all DIL agents |
+| bump dil version, version bump | `signal_tool version-bump --reason "..."` | Bump DIL version and notify all agents |
+| write hot state, update hot state, session handoff, hot entry, _hot.md write | `whats_hot_tool write "<content>" --title "<title>"` | **MANDATORY** — prepend session state to `_shared/_hot.md`. Never edit `_hot.md` directly. Sentinels, prepend-only, indexed. |
+| read hot state, hot latest, hot previous, hot entry read | `whats_hot_tool read --latest \| -N N \| --date YYYY-MM-DD \| --all` | Read `_hot.md` entries deterministically. `-N 0` = latest, `-N 1` = previous. |
+| hot status, hot state check | `whats_hot_tool status` | Report _hot.md entry count, last write, file size. |
+| whats hot, whats_hot, hot alias | `whats_hot` | Alias for `whats_hot_tool` via `_shared/scripts/bin/whats_hot`; use this when the shorter name is preferred. |
+| engineering notebook, eng note | `create_engineering_notebook_entry` | Create an engineering notebook entry |
 | execution note, task note | `append_task_note` | Append execution note to a task file |
-| fleet inventory, agent models | `_shared/scripts/fleet_agent_model_inventory.sh` | Inventory agent models across fleet machines |
-| git status, git summary, git diff, git log, git tool | `_shared/scripts/git_tool <subcommand> [--repo PATH] [--json]` | DIL-compliant, agent-safe wrapper for common Git operations with logs/data artifacts and destructive-command refusal |
+| fleet inventory, agent models | `fleet_agent_model_inventory` | Inventory agent models across fleet machines |
+| git status, git summary, git diff, git log, git tool | `git_tool <subcommand> [--repo PATH] [--json]` | DIL-compliant, agent-safe wrapper for common Git operations with logs/data artifacts and destructive-command refusal |
 | check mail, list mail, inbox, email list | `email_tool list [--account NAME] [--folder NAME] [--page N] [--page-size N]` | List email envelopes (inbox by default) |
 | read mail, read email, read message | `email_tool read <ID> [--account NAME]` | Read a specific email message |
 | search mail, search email, find email | `email_tool search <QUERY> [--account NAME] [--folder NAME] [--page-size N]` | Search emails by keyword |
@@ -151,6 +164,8 @@ Located in `/org/platform/scripts/bin/`. Only available in work context.
 | vpn disconnect, disconnect vpn | `vpn_tool disconnect` | Disconnect VPN |
 | vpn status | `vpn_tool status` | Show VPN connection status, IP, zone |
 | vpn nodes | `vpn_tool nodes` | Test VPN node availability |
+| exampleorg activity, jira last 7 days, automation pod standup activity | `exampleorg_activity_report [--days N] [--max N]` | Combined 7-day report: `jira_tool updates`, `jira_tool search --mine`, and DIL WORK work-task snapshot for standup/status checks. |
+| gcloud switchover, work gcloud auth, gcp work project switch | `gcloud_work_switchover [--project PROJECT_ID] [--account EMAIL] [--login] [--no-adc] [--yes]` | Re-auth (`--login`) and switch active gcloud account/project to WORK target, optionally align ADC quota project, then verify config/token. |
 | teams webhook | `teams_tool webhook --url <URL> --title "..." --body "..."` | Send MS Teams webhook notification |
 | teams email | `teams_tool email --to <EMAIL> --subject "..." --body "..."` | Send MS Teams channel email notification |
 
@@ -161,6 +176,8 @@ Located in `/org/platform/scripts/bin/`. Only available in work context.
 - **Work tools require VPN/network access** to Exampleorg systems
 - **Jira token**: cached at `/tmp/jira_token_temp.txt`, fallback: `getSecret z_org_jira_personal_access_token`
 - **Jira formatters** (`md2jira`, `jira-panel`) are separate from `jira_tool`
+- **Contract registry**: `_shared/_meta/contract_registry.md`
+- **Jira tool contract**: `_shared/contracts/jira_tool-contract-2026-05-01.md`
 - Agent manifests for jira_tool: `/org/platform/data/jira_tool/`
 - Logs for jira_tool: `/org/platform/logs/jira_tool/`
 - Full Jira sync policy: `_shared/preferences/jira-dil-bidirectional-sync-policy-2026-03-04.md`
@@ -174,3 +191,5 @@ Located in `/org/platform/scripts/bin/`. Only available in work context.
 - **vpn_tool**: config at `~/.config/vpn_tool/config`, logs at `/org/platform/logs/vpn_tool/`, tmux session: `vpn` (root-owned)
 - **gitlab_tool**: project access tokens via 1Password, logs at `/org/platform/logs/gitlab_tool/`
 - **ssh_tool**: CyberArk PSM proxy with OTP relay, hosts in `ssh_hosts.yml`
+
+| tool forge standards, script forge standards, dil tool forge policy | `_shared/policies/script-forge-standards-2026-04-27.md` | Canonical standards policy for the DIL Tool Forge (formerly Script Forge) tooling system. |
