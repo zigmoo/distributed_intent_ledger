@@ -166,6 +166,13 @@ Located in `/org/platform/scripts/bin/`. Only available in work context.
 | vpn nodes | `vpn_tool nodes` | Test VPN node availability |
 | exampleorg activity, jira last 7 days, automation pod standup activity | `exampleorg_activity_report [--days N] [--max N]` | Combined 7-day report: `jira_tool updates`, `jira_tool search --mine`, and DIL WORK work-task snapshot for standup/status checks. |
 | gcloud switchover, work gcloud auth, gcp work project switch | `gcloud_work_switchover [--project PROJECT_ID] [--account EMAIL] [--login] [--no-adc] [--yes]` | Re-auth (`--login`) and switch active gcloud account/project to WORK target, optionally align ADC quota project, then verify config/token. |
+| compose message, write message, draft message | `message_tool compose --to "<name>" --channel <channel> [--body "..."]` | Create a new draft message file in `_shared/messages/*.md`. **All agent-composed prose MUST use this.** Do NOT type into external input fields. |
+| send message, deliver message | `message_tool send [<file>]` | Deliver a draft through the channel's registered nozzle + delivery tool. Updates status to sent. |
+| list messages, show messages | `message_tool list [--limit N]` | List message drafts/sent messages. |
+| show message | `message_tool show <file>` | Display a message file's frontmatter and body. |
+| format message | `message_tool format <file> [--nozzle <nozzle>]` | Render a draft through a specific nozzle without sending. |
+| resend message, re-copy message | `message_tool resend [<file>]` | Re-copy a message to clipboard for re-paste. |
+| teams cdp sequence | `message_tool cdp-sequence <file>` | Output Chrome DevTools Protocol command sequence for Teams dispatch. |
 | teams webhook | `teams_tool webhook --url <URL> --title "..." --body "..."` | Send MS Teams webhook notification |
 | teams email | `teams_tool email --to <EMAIL> --subject "..." --body "..."` | Send MS Teams channel email notification |
 

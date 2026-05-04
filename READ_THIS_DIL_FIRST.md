@@ -46,7 +46,7 @@ This ensures the agent always reads and follows this DIL guide on every session 
 
 After reading this file, **immediately read `_shared/_hot.md`** if it exists. This file contains the ephemeral working state from the previous session — what was being worked on, what the next immediate action is, and what responses are pending. It bridges the gap between sessions that task files alone don't capture.
 
-At the end of each session, **overwrite `_shared/_hot.md`** with the current working state so the next session can resume seamlessly.
+At session end or whenever working state changes, **use `whats_hot_tool write "<content>" --title "<title>"`** to prepend the current working state. Never edit `_shared/_hot.md` directly — all writes MUST go through the tool to preserve sentinel-bounded entries and indexed retrieval. Read with `whats_hot_tool read --latest`.
 
 ## Goal
 
@@ -102,7 +102,7 @@ Before any read/write/bootstrap action, resolve `machine` and `assistant` from r
 **Preferred method (recommended):**
 ```bash
 MACHINE=$(hostname -s | tr '[:upper:]' '[:lower:]')
-ASSISTANT=$($HOME/Documents/dil_agentic_memory_0001/identify_agent)
+ASSISTANT=$($HOME/Documents/dil_agentic_memory_0001/_shared/scripts/identify_agent.sh)
 ```
 
 This script implements a full detection cascade (env vars → process tree → config markers) with no hardcoded agent names. All mappings live in `_shared/_meta/agent_aliases.conf`.
@@ -222,9 +222,9 @@ When the user issues any of the following commands, assistants MUST persist the 
 Before doing any work, check `_shared/_meta/command_registry.md` for an existing script/tool that matches the user's intent. **Do NOT manually replicate what a script does — run the script.** The registry maps trigger phrases to commands across all domains (DIL, work, personal).
 
 Key triggers every agent must know without looking up:
-- **"morning brief"** → `morning_brief` (do NOT manually gather task data)
-- **"create jira task"** → `create_jira_task` — creates Jira ticket AND mirroring DIL task in one shot. **Preferred for all work-domain tasks.**
-- **"create task"** → `create_task` (DIL-only, or when Jira ticket already exists via `--task-id`)
+- **"morning brief"** → `_shared/scripts/morning_brief.sh` (do NOT manually gather task data)
+- **"create jira task"** → `_shared/scripts/create_jira_task.sh` — creates Jira ticket AND mirroring DIL task in one shot. **Preferred for all work-domain tasks.**
+- **"create task"** → `_shared/scripts/create_task.sh` (DIL-only, or when Jira ticket already exists via `--task-id`)
 - **Jira operations** → `jira_tool` at `/org/platform/scripts/bin/jira_tool` (do NOT tell user to update Jira manually)
 
 For the full list: `_shared/_meta/command_registry.md`
@@ -235,8 +235,8 @@ Before storing knowledge content, read:
 - `_shared/runbooks/knowledge-ingestion-runbook.md`
 
 Mandatory split:
-- Use `ingest_source` for externally sourced assets such as URLs, downloaded files, imported documents, repos, media, code, and datasets.
-- Use `create_memory` for authored DIL notes such as preferences, lessons, observations, decisions, and commitments.
+- Use `_shared/scripts/ingest_source.sh` for externally sourced assets such as URLs, downloaded files, imported documents, repos, media, code, and datasets.
+- Use `_shared/scripts/create_memory.sh` for authored DIL notes such as preferences, lessons, observations, decisions, and commitments.
 - Do not use `create_memory.sh` to stand in for ingestion of an external asset.
 
 ## Research Artifact Convention (Required)
@@ -254,34 +254,23 @@ All scripts and agentic tools in the DIL Script Forge must follow the standards 
 - `_shared/policies/script-forge-standards-2026-04-27.md`
 
 Key rules (see the policy file for full details):
-- **DIL bin in PATH (CRITICAL):** `_shared/scripts/bin/` must be in `$PATH`. Without this, no DIL tool works. Verify with `command -v task_tool`. If it returns nothing, add the PATH entry to the user's shell RC file:
-
-  | Shell | RC File | Line to add |
-  |---|---|---|
-  | bash | `~/.bashrc` | `export PATH="$HOME/Documents/dil_agentic_memory_0001/_shared/scripts/bin:$PATH"` |
-  | zsh | `~/.zshrc` | `export PATH="$HOME/Documents/dil_agentic_memory_0001/_shared/scripts/bin:$PATH"` |
-  | fish | `~/.config/fish/config.fish` | `fish_add_path $HOME/Documents/dil_agentic_memory_0001/_shared/scripts/bin` |
-  | ksh | `~/.kshrc` or `~/.profile` | `export PATH="$HOME/Documents/dil_agentic_memory_0001/_shared/scripts/bin:$PATH"` |
-  | sh/dash | `~/.profile` | `PATH="$HOME/Documents/dil_agentic_memory_0001/_shared/scripts/bin:$PATH"` |
-  | csh/tcsh | `~/.cshrc` | `setenv PATH $HOME/Documents/dil_agentic_memory_0001/_shared/scripts/bin:$PATH` |
-
-  After adding, reload the shell (`source ~/.bashrc` or restart terminal) and verify: `command -v task_tool` should return a path. If it doesn't, the PATH is wrong — debug before proceeding.
+- **DIL bin in PATH:** `_shared/scripts/bin/` must be in `$PATH`. Verify with `command -v task_tool`. If missing, add to `~/.bashrc`: `export PATH="$HOME/Documents/dil_agentic_memory_0001/_shared/scripts/bin:$PATH"`
 - **Extensionless symlink rule:** The command in `$PATH` is ALWAYS the extensionless stem name as a symbolic link. Never a script with an extension.
 - **Bash/Python pair pattern:** Substantial tools use a Bash wrapper (bootstrapping) + Python implementation (logic).
 - **Named shims:** Subcommands get one-line shim scripts with their own extensionless symlinks for command registry speed.
 - **Path independence:** Scripts resolve base paths from their own location, never hardcoded absolute paths.
-- **Always invoke by symlink name:** `task_tool search`, never `bash _shared/scripts/task_tool.sh search`.
+- **Always invoke by symlink name:** `task_tool search`, never `bash _shared/scripts/task_tool/task_tool.bash search`.
 
 ## Standard Tooling (Mandatory)
 
 Agents must use the provided automation scripts for creating content to ensure the integrity of the **Distributed Intent Ledger (DIL)**. These scripts handle schema compliance, indexing, and logging automatically.
 
-1. **Creating Memory Notes**: `create_memory`
+1. **Creating Memory Notes**: `_shared/scripts/create_memory.sh`
    - Usage: `create_memory.sh --type <type> --title "<title>" ...`
    - Handles: Frontmatter generation, ID slugs, appending to local vault index, change logging.
    - **Do not manually create memory files** unless the script is unavailable or failing.
 
-2. **Creating Tasks**: `create_task`
+2. **Creating Tasks**: `_shared/scripts/create_task.sh`
    - CLI usage: `create_task.sh --domain personal --title "<title>" --project "<project>" [options]`
    - JSON sidecar: `create_task.sh json <manifest.json>` — reads fields from JSON, archives manifest after execution.
    - Handles: domain resolution via registry, ID allocation (multi-prefix counter), task file creation in `active/`, shared index updates, change logging, structured logging, Elucubrate cache refresh.
@@ -290,12 +279,12 @@ Agents must use the provided automation scripts for creating content to ensure t
    - Environment-aware: detects `ACTOR`/`MODEL` from env vars (`ACTOR`, `ASSISTANT_ID`, `AGENT_NAME`, `AGENT_MODEL`) or process tree.
    - **Do not manually allocate task IDs** to avoid collisions.
 
-3. **Archiving Tasks**: `archive_tasks`
+3. **Archiving Tasks**: `_shared/scripts/archive_tasks.sh`
    - Usage: `archive_tasks.sh [--dry-run]`
    - Moves terminal tasks past their domain's `archive_after_days` from `active/` to `archived/{year}/`.
    - Regenerates archive index files. Idempotent, safe for cron.
 
-4. **Listing Archived Tasks**: `list_archived`
+4. **Listing Archived Tasks**: `_shared/scripts/list_archived.sh`
    - Usage: `list_archived.sh [--domain DOMAIN] [--year YEAR] [--grep PATTERN] [--status STATUS] [--json]`
    - Searches and filters archived tasks across all domains.
 
@@ -570,11 +559,11 @@ These rules define task tracking for all assistants across all machines.
 - Terminal tasks (done, cancelled, retired) older than the domain's `archive.after_days` are moved from `active/` to `archived/{year}/`.
 - Year is based on the task's `updated` date (proxy for terminal date).
 - Archival uses trailing_window: the window anchors on the newest file in active/, not on today.
-- Run `archive_tasks` to archive (idempotent, safe for cron).
+- Run `_shared/scripts/archive_tasks.sh` to archive (idempotent, safe for cron).
 - Each `archived/{year}/` contains an `index.md` with a table of archived tasks.
 - Archived tasks remain as plain `.md` files (no compression) to preserve Obsidian links, search, and sync.
 - Obsidian excludes `**/archived/**` from indexing via `userIgnoreFilters` for performance.
-- Use `list_archived` to search/filter archives from CLI.
+- Use `_shared/scripts/list_archived.sh` to search/filter archives from CLI.
 
 9. Obsidian interoperability
 - Use wiki-links for related entities/tasks (example: `[[WORK-11330]]`, `[[DIL-1101]]`).
@@ -636,6 +625,14 @@ These defaults reduce drift between chat, shell history, and canonical tasks.
 5. Implicit approval for safe in-scope execution
 - If user requested an outcome, safe/non-destructive in-scope steps are implicitly approved.
 - Pause only for high-risk deviations, missing credentials, or out-of-scope actions.
+
+6. Compose all prose via message files
+- All agent-composed prose — internal or external — must use the message object contract at `_shared/messages/CONTRACT.md`.
+- Compose in `_shared/messages/`, include frontmatter, deliver through nozzles.
+- This ensures durability (survives crashes), portability (syncs via Obsidian), and access to deterministic formatting tools.
+- Message files are also cross-session and cross-agent thinking artifacts: one session composes a draft, gets compacted or dies, and the next session — or a different agent entirely — picks it up cold from the file. Frontmatter makes each composition self-describing. This makes composed thought durable and transferable across the agent mesh.
+- Routine one-liner `jira_tool comment` posts are exempt.
+- Full policy: `_shared/policies/compose-via-message-contract-2026-05-02.md`
 
 ## Task Discovery Runbook (Required)
 
@@ -704,7 +701,7 @@ For personal/triv domain tasks, skip this step — IDs are auto-allocated by `cr
 ### Step 2: Create DIL task file
 
 ```bash
-create_task \
+_shared/scripts/create_task.sh \
   --domain <domain> \
   --task-id <ID>           # required for external-ID domains (work); omit for auto-ID domains \
   --title "<title>" \
