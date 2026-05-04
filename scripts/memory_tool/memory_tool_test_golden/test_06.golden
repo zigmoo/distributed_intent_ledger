@@ -1,0 +1,16 @@
+usage: memory_tool remove [-h] [--reason REASON] [--permanent] [--restore]
+                          [--prune-trash] [--base BASE] [--dry-run]
+                          [source]
+
+positional arguments:
+  source           Memory file path, absolute or relative to DIL base
+
+options:
+  -h, --help       show this help message and exit
+  --reason REASON  Reason for removal (required unless --restore or --prune-
+                   trash)
+  --permanent      Permanently delete instead of moving to _shared/_trash
+  --restore        Restore a memory note from _shared/_trash
+  --prune-trash    Permanently delete trash files older than 30 days
+  --base BASE      Base vault path override
+  --dry-run        Print actions without executing

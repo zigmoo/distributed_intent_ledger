@@ -1,0 +1,8 @@
+usage: morning_brief.py [-h] --base BASE [--dry-run]
+
+Generate morning task briefing
+
+options:
+  -h, --help   show this help message and exit
+  --base BASE
+  --dry-run

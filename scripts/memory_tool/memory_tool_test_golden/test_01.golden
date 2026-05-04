@@ -1,0 +1,17 @@
+usage: memory_tool [-h] {create,relocate,remove,mind_meld,promote} ...
+
+Create and manage DIL memory notes.
+
+positional arguments:
+  {create,relocate,remove,mind_meld,promote}
+    create              Create a new memory note
+    relocate            Move a memory note between scopes
+    remove              Retire, restore, prune, or permanently delete a memory
+                        note
+    mind_meld           Export a memory to the DIL template repo, generalized
+                        and redacted
+    promote             Copy files to the DIL template repo and optionally
+                        commit/push
+
+options:
+  -h, --help            show this help message and exit

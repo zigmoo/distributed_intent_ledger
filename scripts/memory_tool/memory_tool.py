@@ -5,6 +5,7 @@ memory_tool.py — Create, relocate, and manage DIL memory notes.
 Subcommands:
   create      Create a new memory note with schema-compliant frontmatter
   relocate    Move a memory note between scopes (local <-> shared)
+  remove      Retire, restore, prune, or permanently delete memory notes
   mind_meld   Export a memory to the DIL template repo, generalized and redacted
   promote     Copy any files to the DIL template repo and commit (--redact for LLM pass)
 
@@ -28,9 +29,9 @@ except ImportError:
     resolve_dil_base = None
 
 try:
-    from sf_log import SFLogger
+    from tool_forge_log import ToolForgeLogger
 except ImportError:
-    SFLogger = None
+    ToolForgeLogger = None
 
 SCRIPT_NAME = "memory_tool"
 
@@ -153,10 +154,10 @@ def append_to_file(path: Path, line: str) -> None:
             f.write(line + "\n")
 
 
-def _make_logger(base: str, action: str) -> "SFLogger | None":
-    if SFLogger is None:
+def _make_logger(base: str, action: str) -> "ToolForgeLogger | None":
+    if ToolForgeLogger is None:
         return None
-    return SFLogger(SCRIPT_NAME, action, base)
+    return ToolForgeLogger(SCRIPT_NAME, action, base)
 
 
 def log_operation(base: str, action: str, message: str) -> None:
@@ -414,6 +415,56 @@ def cmd_relocate(args: argparse.Namespace) -> int:
 
     print(f"Relocated: {rel_source} -> {rel_target}")
     return 0
+
+
+# ---------------------------------------------------------------------------
+# remove subcommand
+# ---------------------------------------------------------------------------
+
+def _memory_path_relative_to_base(base: Path, source: str) -> str:
+    path = Path(source).expanduser()
+    if path.is_absolute():
+        try:
+            return str(path.resolve().relative_to(base.resolve()))
+        except ValueError:
+            raise ValueError(f"Path is outside DIL base: {path}")
+    return source
+
+
+def cmd_remove(args: argparse.Namespace) -> int:
+    base = Path(resolve_base(str(Path(__file__).parent), args.base))
+    script = Path(__file__).resolve().parent.parent / "remove_memory.sh"
+    if not script.is_file():
+        print(f"Error: remove_memory.sh not found at {script}", file=sys.stderr)
+        return 1
+
+    cmd = [str(script), "--base", str(base)]
+    if args.prune_trash:
+        cmd.append("--prune-trash")
+    else:
+        if not args.source:
+            print("Error: source path is required unless --prune-trash is used.", file=sys.stderr)
+            return 2
+        try:
+            rel_source = _memory_path_relative_to_base(base, args.source)
+        except ValueError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            return 2
+        cmd.extend(["--file", rel_source])
+        if args.restore:
+            cmd.append("--restore")
+        else:
+            if not args.reason:
+                print("Error: --reason is required unless --restore or --prune-trash is used.", file=sys.stderr)
+                return 2
+            cmd.extend(["--reason", args.reason])
+
+    if args.permanent:
+        cmd.append("--permanent")
+    if args.dry_run:
+        cmd.append("--dry-run")
+
+    return subprocess.run(cmd).returncode
 
 
 # ---------------------------------------------------------------------------
@@ -865,6 +916,16 @@ def build_parser() -> argparse.ArgumentParser:
     p_reloc.add_argument("--base", default="", help="Base vault path override")
     p_reloc.add_argument("--dry-run", action="store_true", help="Print actions without executing")
 
+    # -- remove --
+    p_remove = sub.add_parser("remove", help="Retire, restore, prune, or permanently delete a memory note")
+    p_remove.add_argument("source", nargs="?", default="", help="Memory file path, absolute or relative to DIL base")
+    p_remove.add_argument("--reason", default="", help="Reason for removal (required unless --restore or --prune-trash)")
+    p_remove.add_argument("--permanent", action="store_true", help="Permanently delete instead of moving to _shared/_trash")
+    p_remove.add_argument("--restore", action="store_true", help="Restore a memory note from _shared/_trash")
+    p_remove.add_argument("--prune-trash", action="store_true", help="Permanently delete trash files older than 30 days")
+    p_remove.add_argument("--base", default="", help="Base vault path override")
+    p_remove.add_argument("--dry-run", action="store_true", help="Print actions without executing")
+
     # -- mind_meld --
     p_meld = sub.add_parser("mind_meld", help="Export a memory to the DIL template repo, generalized and redacted")
     p_meld.add_argument("source", help="Path to the source memory file")
@@ -899,6 +960,8 @@ def main() -> int:
         return cmd_create(args)
     elif args.command == "relocate":
         return cmd_relocate(args)
+    elif args.command == "remove":
+        return cmd_remove(args)
     elif args.command == "mind_meld":
         return cmd_mind_meld(args)
     elif args.command == "promote":

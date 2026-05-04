@@ -1,0 +1,23 @@
+usage: memory_tool create [-h] --type TYPE --title TITLE [--category CATEGORY]
+                          [--tags TAGS] [--machine MACHINE]
+                          [--assistant ASSISTANT] [--scope {local,shared}]
+                          [--content-file CONTENT_FILE] [--base BASE]
+                          [--dry-run]
+
+options:
+  -h, --help            show this help message and exit
+  --type TYPE           Memory type: commitment, decision, handoff, lesson,
+                        observation, people, preference, project, reference,
+                        system
+  --title TITLE         Title of the note
+  --category CATEGORY   Category folder (default: auto from type)
+  --tags TAGS           Comma-separated tags
+  --machine MACHINE     Machine scope (default: from hostname)
+  --assistant ASSISTANT
+                        Assistant scope (default: from env/process)
+  --scope {local,shared}
+                        Write to local scope or _shared
+  --content-file CONTENT_FILE
+                        File containing note body (else stdin)
+  --base BASE           Base vault path override
+  --dry-run             Print actions without executing

@@ -1,0 +1,24 @@
+--- DRY RUN ---
+Target: <BASE>/_shared/observations/test-observation-note-DATE.md
+---
+title: "Test observation note"
+date: DATE
+machine: shared
+assistant: shared
+category: observations
+memoryType: observation
+priority: normal
+tags: [clawvault, observation]
+updated: DATE
+source: internal
+domain: operations
+project: clawvault
+status: active
+owner: shared
+due:
+---
+
+# Test observation note
+
+
+

@@ -1,0 +1,14 @@
+usage: memory_tool relocate [-h] --target-scope TARGET_SCOPE [--force]
+                            [--base BASE] [--dry-run]
+                            source
+
+positional arguments:
+  source                Path to the source memory file
+
+options:
+  -h, --help            show this help message and exit
+  --target-scope TARGET_SCOPE
+                        Target scope: 'shared' or 'machine/assistant'
+  --force               Overwrite if target exists
+  --base BASE           Base vault path override
+  --dry-run             Print actions without executing
