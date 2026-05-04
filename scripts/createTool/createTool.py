@@ -22,9 +22,9 @@ sys.path.insert(0, str(SCRIPTS_DIR / "lib"))
 from resolve_base import resolve_dil_base
 
 try:
-    from script_forge_log import ScriptForgeLogger
+    from tool_forge_log import ToolForgeLogger
 except ImportError:
-    ScriptForgeLogger = None
+    ToolForgeLogger = None
 
 try:
     import jinja2
@@ -162,7 +162,7 @@ def main() -> int:
 
     base = Path(arguments.base).expanduser().resolve()
 
-    log = ScriptForgeLogger(SCRIPT_NAME, "create", str(base)) if ScriptForgeLogger else None
+    log = ToolForgeLogger(SCRIPT_NAME, "create", str(base)) if ToolForgeLogger else None
 
     if log:
         log.section("Validation")

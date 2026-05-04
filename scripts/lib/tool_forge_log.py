@@ -1,12 +1,12 @@
-"""sf_log.py — Script Forge shared logging library (Python).
+"""tool_forge_log.py — Script Forge shared logging library (Python).
 
 Stdlib-only. Produces logs compatible with log_river harvest and identical
-in format to sf_log.sh output.
+in format to tool_forge_log.sh output.
 
 Usage:
-    from sf_log import SFLogger
+    from tool_forge_log import ToolForgeLogger
 
-    log = SFLogger("tool_name", "action", base)
+    log = ToolForgeLogger("tool_name", "action", base)
     log.info("processed 42 items")
     log.section("Validation")
     log.info("all checks passed")
@@ -14,7 +14,7 @@ Usage:
     log.close()
 
     # Or as context manager:
-    with SFLogger("tool_name", "action", base) as log:
+    with ToolForgeLogger("tool_name", "action", base) as log:
         log.info("doing work")
 
 Log file: $LOG_DIR/<tool_name>/<tool_name>.<action>.<YYYYMMDD_HHMMSS>.log
@@ -30,7 +30,7 @@ import subprocess
 from pathlib import Path
 
 
-class SFLogger:
+class ToolForgeLogger:
     def __init__(self, tool_name: str, action: str = "run", base: str | Path | None = None):
         self.tool_name = tool_name
         self.action = action
@@ -40,7 +40,7 @@ class SFLogger:
         if base:
             log_dir = Path(base) / "_shared" / "logs" / tool_name
         else:
-            log_dir = Path("/tmp/sf_logs") / tool_name
+            log_dir = Path("/tmp/tool_forge_logs") / tool_name
         log_dir.mkdir(parents=True, exist_ok=True)
 
         self.log_file = log_dir / f"{tool_name}.{action}.{self.timestamp}.log"
@@ -107,7 +107,7 @@ class SFLogger:
     def path(self) -> Path:
         return self.log_file
 
-    def __enter__(self) -> "SFLogger":
+    def __enter__(self) -> "ToolForgeLogger":
         return self
 
     def __exit__(self, *exc: object) -> None:

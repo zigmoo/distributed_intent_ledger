@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# sf_log.sh — Script Forge shared logging library (bash)
+# tool_forge_log.sh — Script Forge shared logging library (bash)
 #
-# Source this file, call sf_log_init to set up, then sf_log to write entries.
+# Source this file, call tool_forge_log_init to set up, then tool_forge_log to write entries.
 # Produces logs compatible with log_river harvest.
 #
 # Usage:
-#   source "$SCRIPT_DIR/lib/sf_log.sh"
-#   sf_log_init "tool_name" "action" "$BASE"
-#   sf_log "Section 1: Starting work"
-#   sf_log "processed 42 items"
-#   sf_log_section "Section 2: Validation"
-#   sf_log "all checks passed"
-#   sf_log_close
+#   source "$SCRIPT_DIR/lib/tool_forge_log.sh"
+#   tool_forge_log_init "tool_name" "action" "$BASE"
+#   tool_forge_log "Section 1: Starting work"
+#   tool_forge_log "processed 42 items"
+#   tool_forge_log_section "Section 2: Validation"
+#   tool_forge_log "all checks passed"
+#   tool_forge_log_close
 #
 # Log file: $LOG_DIR/<tool_name>/<tool_name>.<action>.<YYYYMMDD_HHMMSS>.log
 # Format: YYYY-MM-DD HH:MM:SS.mmm | LEVEL | message
@@ -22,7 +22,7 @@ SF_LOG_ACTION=""
 SF_LOG_SECTION=0
 SF_LOG_TIMESTAMP=""
 
-sf_log_init() {
+tool_forge_log_init() {
   local tool_name="$1"
   local action="${2:-run}"
   local base="${3:-${BASE:-}}"
@@ -36,7 +36,7 @@ sf_log_init() {
   if [[ -n "$base" ]]; then
     log_dir="$base/_shared/logs/$tool_name"
   else
-    log_dir="/tmp/sf_logs/$tool_name"
+    log_dir="/tmp/tool_forge_logs/$tool_name"
   fi
   mkdir -p "$log_dir"
 
@@ -47,7 +47,7 @@ sf_log_init() {
     echo "LOG_FILE: $SF_LOG_FILE"
     echo "================================================================================"
     echo ""
-    sf_log_section_header "Configuration"
+    tool_forge_log_section_header "Configuration"
     echo "timestamp:  $(date '+%Y-%m-%d %H:%M:%S')"
     echo "tool:       $tool_name"
     echo "action:     $action"
@@ -58,41 +58,41 @@ sf_log_init() {
   } > "$SF_LOG_FILE"
 }
 
-sf_log() {
+tool_forge_log() {
   [[ -n "$SF_LOG_FILE" ]] || return 0
   local ts
   ts="$(date '+%Y-%m-%d %H:%M:%S.%3N' 2>/dev/null || date '+%Y-%m-%d %H:%M:%S')"
   echo "$ts | INFO | $*" >> "$SF_LOG_FILE"
 }
 
-sf_log_error() {
+tool_forge_log_error() {
   [[ -n "$SF_LOG_FILE" ]] || return 0
   local ts
   ts="$(date '+%Y-%m-%d %H:%M:%S.%3N' 2>/dev/null || date '+%Y-%m-%d %H:%M:%S')"
   echo "$ts | ERROR | $*" >> "$SF_LOG_FILE"
 }
 
-sf_log_warn() {
+tool_forge_log_warn() {
   [[ -n "$SF_LOG_FILE" ]] || return 0
   local ts
   ts="$(date '+%Y-%m-%d %H:%M:%S.%3N' 2>/dev/null || date '+%Y-%m-%d %H:%M:%S')"
   echo "$ts | WARN | $*" >> "$SF_LOG_FILE"
 }
 
-sf_log_section_header() {
+tool_forge_log_section_header() {
   local name="$1"
   SF_LOG_SECTION=$((SF_LOG_SECTION + 1))
   echo "Section ${SF_LOG_SECTION}: ${name}" >> "$SF_LOG_FILE"
   echo "--------------------------------------------------------------------------------" >> "$SF_LOG_FILE"
 }
 
-sf_log_section() {
+tool_forge_log_section() {
   [[ -n "$SF_LOG_FILE" ]] || return 0
   echo "" >> "$SF_LOG_FILE"
-  sf_log_section_header "$1"
+  tool_forge_log_section_header "$1"
 }
 
-sf_log_close() {
+tool_forge_log_close() {
   [[ -n "$SF_LOG_FILE" ]] || return 0
   {
     echo ""
@@ -102,6 +102,6 @@ sf_log_close() {
   } >> "$SF_LOG_FILE"
 }
 
-sf_log_file() {
+tool_forge_log_file() {
   echo "$SF_LOG_FILE"
 }

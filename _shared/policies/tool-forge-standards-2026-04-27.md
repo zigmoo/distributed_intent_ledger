@@ -305,20 +305,20 @@ All Tool Forge tools MUST use the shared logging library instead of inline `echo
 
 **Bash:**
 ```bash
-source "$SCRIPT_DIR/lib/script_forge_log.sh"
-script_forge_log_init "tool_name" "action" "$BASE"
-script_forge_log "message"
-script_forge_log_warn "warning message"
-script_forge_log_error "error message"
-script_forge_log_section "Section Name"
-script_forge_log_close
+source "$SCRIPT_DIR/lib/tool_forge_log.sh"
+tool_forge_log_init "tool_name" "action" "$BASE"
+tool_forge_log "message"
+tool_forge_log_warn "warning message"
+tool_forge_log_error "error message"
+tool_forge_log_section "Section Name"
+tool_forge_log_close
 ```
 
 **Python:**
 ```python
-from script_forge_log import ScriptForgeLogger
+from tool_forge_log import ToolForgeLogger
 
-with ScriptForgeLogger("tool_name", "action", base) as log:
+with ToolForgeLogger("tool_name", "action", base) as log:
     log.info("message")
     log.warn("warning message")
     log.error("error message")
@@ -350,10 +350,10 @@ LOG_FILE: /path/to/log
 ```
 
 **Libraries:**
-- Bash: `lib/script_forge_log.sh` — source it, zero dependencies
-- Python: `lib/script_forge_log.py` — import it, stdlib-only (no pip)
+- Bash: `lib/tool_forge_log.sh` — source it, zero dependencies
+- Python: `lib/tool_forge_log.py` — import it, stdlib-only (no pip)
 
-**Provenance:** This pattern originates from `ScriptUtils.configure_logger()` in `/org/platform/scripts/python/libs/bin/utils/ScriptUtils.py`, adapted for DIL Tool Forge with stdlib-only constraint (no `loguru` dependency). The Exampleorg `createNewScript` templates in `/org/platform/scripts/` bake this pattern into every new script at creation time. DIL's equivalent creator is named `createTool`, and DIL's `lib/script_forge_log.sh` and `lib/script_forge_log.py` serve the same purpose for DIL-resident tools.
+**Provenance:** This pattern originates from `ScriptUtils.configure_logger()` in `/org/platform/scripts/python/libs/bin/utils/ScriptUtils.py`, adapted for DIL Tool Forge with stdlib-only constraint (no `loguru` dependency). The Exampleorg `createNewScript` templates in `/org/platform/scripts/` bake this pattern into every new script at creation time. DIL's equivalent creator is named `createTool`, and DIL's `lib/tool_forge_log.sh` and `lib/tool_forge_log.py` serve the same purpose for DIL-resident tools.
 
 **Retrofit:** Existing tools should be migrated to use the shared library as they are touched. New DIL tools created via `createTool` or manually MUST use it from the start.
 

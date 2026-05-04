@@ -67,7 +67,7 @@ make_test_base() {
   mkdir -p "$test_base/_shared/scripts/bin"
   mkdir -p "$test_base/_shared/logs"
   cp "$SCRIPTS_DIR/lib/resolve_base.sh" "$test_base/_shared/scripts/lib/"
-  for optional_library in resolve_base.py script_forge_log.py script_forge_log.sh; do
+  for optional_library in resolve_base.py tool_forge_log.py tool_forge_log.sh; do
     if [[ -f "$SCRIPTS_DIR/lib/$optional_library" ]]; then
       cp "$SCRIPTS_DIR/lib/$optional_library" "$test_base/_shared/scripts/lib/"
     fi
@@ -146,12 +146,12 @@ test_03_bash_has_readlink() {
   grep -c 'readlink -f' "$test_base/_shared/scripts/scaffold_test/scaffold_test.bash"
 }
 
-test_04_python_has_script_forge_logger() {
+test_04_python_has_tool_forge_logger() {
   local test_base
   test_base="$(make_test_base)"
   createTool --name scaffold_test --description "test tool" --base "$test_base" >/dev/null 2>&1
   echo "=== SCRIPT_FORGE_LOGGER CHECK ==="
-  grep -c 'ScriptForgeLogger' "$test_base/_shared/scripts/scaffold_test/scaffold_test.py"
+  grep -c 'ToolForgeLogger' "$test_base/_shared/scripts/scaffold_test/scaffold_test.py"
 }
 
 test_05_bash_only_skips_python() {
@@ -178,7 +178,7 @@ test_07_rejects_existing_drawer() {
 run_test 1 "dry run"                          test_01_dry_run
 run_test 2 "create and verify layout"         test_02_create_and_verify_layout
 run_test 3 "bash wrapper has readlink -f"     test_03_bash_has_readlink
-run_test 4 "python has ScriptForgeLogger"     test_04_python_has_script_forge_logger
+run_test 4 "python has ToolForgeLogger"     test_04_python_has_tool_forge_logger
 run_test 5 "bash-only skips python file"      test_05_bash_only_skips_python
 run_test 6 "rejects invalid name"             test_06_rejects_invalid_name
 run_test 7 "rejects existing drawer"          test_07_rejects_existing_drawer
