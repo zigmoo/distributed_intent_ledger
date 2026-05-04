@@ -1,0 +1,1 @@
+{"_contract": "model_registry.jsonl — append-only JSONL registry of local LLM model capabilities discovered by llm_matrix_tool. Each line is a JSON object with model name, context size, token throughput, and discovery timestamp. Tool: llm_matrix_tool. Status: pre-alpha."}
