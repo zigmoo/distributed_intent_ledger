@@ -1,0 +1,11 @@
+LEGEND model=full model_ref event=human-readable action status=result state context=ctx length tokens_out=output tokens tps=tok/s elapsed_s=elapsed seconds
+LEGEND labels MODEL_START=testing: <model> CONTEXT_PRELOAD=context preload RESULT=result RETRY_OK=retry ok RETRY_FAILED=retry failed RESOURCE_RELIEF_TEST=resource relief test CONTEXT_INCREASE_TEST=context increase test OPTIMIZE_OK=optimize ok OPTIMIZE_FAILED=optimize failed
+SUMMARY total=10 selected=5 mode=test ok=0 fail=0 retry_ok=0 retry_fail=0 ratchet_retry_ok=0 ratchet_retry_fail=0 guardrail=0 bad_id=0 ctx_err=0 optimize_ok=0 optimize_fail=0
+MATRIX_END TIMESTAMP
+ledger_exists=True
+tool=llm_matrix_tool
+total=10
+selected=5
+mode=test
+uses_with_block=True
+file_handle_test=ok

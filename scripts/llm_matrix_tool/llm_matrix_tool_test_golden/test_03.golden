@@ -1,0 +1,9 @@
+load_remote_model mid="model'; rm -rf /; echo '" quoted=True
+remote_current_context mid="model'; rm -rf /; echo '" quoted=True sys_argv=True
+load_remote_model mid='model$(whoami)' quoted=True
+remote_current_context mid='model$(whoami)' quoted=True sys_argv=True
+load_remote_model mid='model;echo pwned' quoted=True
+remote_current_context mid='model;echo pwned' quoted=True sys_argv=True
+load_remote_model mid='model|cat /etc/passwd' quoted=True
+remote_current_context mid='model|cat /etc/passwd' quoted=True sys_argv=True
+all_escaped=True
