@@ -4,7 +4,8 @@ usage: llm_matrix_tool.py [-h] [--model MODELS] [--models-file MODELS_FILE]
                           [--max-context MAX_CONTEXT]
                           [--probe-timeout PROBE_TIMEOUT]
                           [--remote-timeout REMOTE_TIMEOUT] [--optimize]
-                          [--optimize-only]
+                          [--optimize-only] [--host HOST]
+                          [--provider PROVIDER]
 
 Run the LM Studio model matrix and optionally rerun failures or optimize
 working models.
@@ -31,3 +32,6 @@ options:
                         successfully probes.
   --optimize-only       Skip first-pass matrix run and run only
                         optimize_llm_performance on the selected models.
+  --host HOST           Only probe models on this host (e.g., framemoowork,
+                        moosacrem1promax).
+  --provider PROVIDER   Only probe models from this opencode provider name.
