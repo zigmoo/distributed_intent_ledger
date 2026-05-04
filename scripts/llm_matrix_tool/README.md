@@ -1,5 +1,7 @@
 # llm_matrix_tool
 
+> **Status: pre-alpha.** Functional but rough. Architecture is sound, interfaces may change. Useful to resourceful users and agents willing to read the code.
+
 Purpose: run an LM Studio model matrix from framemoowork against the Mac LM Studio host, with:
 - early route precheck
 - per-model pass/fail visibility
