@@ -6,79 +6,41 @@ import re
 import argparse
 import tabulate
 import duckdb
-import logging
 from pathlib import Path
 from datetime import datetime
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+LIB_DIR = SCRIPT_DIR.parent.parent / "lib"
+sys.path.insert(0, str(LIB_DIR))
+
+from resolve_base import resolve_dil_base
+from tool_forge_log import ToolForgeLogger
+
+_logger = None
+
 
 def resolve_base_dir():
-    """Resolution cascade: BASE_DIR env → scripts-library-relative → DIL drawer-relative → fail.
-    Returns the directory that contains logs/ and data/ subdirectories."""
-    base = os.environ.get("BASE_DIR")
-    if base and os.path.isdir(base):
-        return base
-    script_dir = Path(__file__).resolve().parent
-    # Scripts library layout: python/duckdb_sql/bin/ → scripts/ has logs/ and data/
-    candidate = script_dir.parent.parent.parent
-    if (candidate / "bin").is_dir() and (candidate / "bash").is_dir():
-        return str(candidate)
-    # DIL layout: _shared/scripts/duckdb_sql/bin/ → _shared/ has logs/ and data/
-    dil_scripts = script_dir.parent.parent
-    dil_shared = dil_scripts.parent
-    if (dil_scripts / "bin").is_dir() and (dil_shared / "logs").is_dir():
-        return str(dil_shared)
-    print(
-        "ERROR: Cannot resolve BASE_DIR. Set BASE_DIR env var or run from within scripts library.",
-        file=sys.stderr,
-    )
-    sys.exit(1)
-
-
-def resolve_hostname():
-    """Short hostname, lowercase."""
-    try:
-        import subprocess
-        return subprocess.check_output(
-            ["hostname", "-s"], stderr=subprocess.DEVNULL, text=True
-        ).strip().lower()
-    except Exception:
-        return os.environ.get("HOSTNAME", "unknown").split(".")[0].lower()
+    """Marker-based resolution per Script Forge Standard #16."""
+    return resolve_dil_base(script_dir=SCRIPT_DIR)
 
 
 def setup_logging(base_dir, verbose):
-    """Configure logging per foundry conventions: {hostname}.{script}.{action}.{timestamp}.log"""
+    """Set up ScriptForgeLogger per Script Forge Standard #12."""
+    global _logger
     if not verbose:
-        logging.getLogger().setLevel(logging.CRITICAL)
-        for handler in logging.getLogger().handlers[:]:
-            logging.getLogger().removeHandler(handler)
         return None
-
-    hostname = resolve_hostname()
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_dir = os.path.join(base_dir, "logs", "duckdb_sql")
-    os.makedirs(log_dir, exist_ok=True)
-    log_file = os.path.join(log_dir, f"{hostname}.duckdb_sql.query.{timestamp}.log")
-
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s | %(levelname)s | %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-        handlers=[
-            logging.FileHandler(log_file),
-            logging.StreamHandler(sys.stderr),
-        ],
-    )
-    return log_file
+    _logger = ToolForgeLogger("duckdb_sql", "query", base_dir)
+    return str(_logger.path)
 
 
 def log_info(msg, verbose):
-    if verbose:
-        logging.info(msg)
+    if verbose and _logger:
+        _logger.info(msg)
 
 
 def log_error(msg, verbose):
-    if verbose:
-        logging.error(msg)
+    if verbose and _logger:
+        _logger.error(msg)
 
 
 def make_table_name(data_file):
@@ -166,8 +128,9 @@ def print_results(rows, columns, args, output_mode="table"):
     if args.output_file or (hasattr(args, "output_file_only") and args.output_file_only):
         base_dir = resolve_base_dir()
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        hostname = resolve_hostname()
-        data_dir = os.path.join(base_dir, "data", "duckdb_sql")
+        import subprocess
+        hostname = subprocess.check_output(["hostname", "-s"], text=True).strip().lower()
+        data_dir = os.path.join(base_dir, "_shared", "data", "duckdb_sql")
         os.makedirs(data_dir, exist_ok=True)
         output_file = os.path.join(data_dir, f"{hostname}.duckdb_sql.results.{timestamp}.txt")
         with open(output_file, "w") as f:
@@ -323,6 +286,8 @@ def main():
 
     con.close()
     log_info("Execution completed", verbose)
+    if _logger:
+        _logger.close()
 
 
 if __name__ == "__main__":

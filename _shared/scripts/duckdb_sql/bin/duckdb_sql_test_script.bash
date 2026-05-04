@@ -181,7 +181,7 @@ test_16_multi_csv_join() {
   "$DUCKDB_SQL" \
     -d "$TEST_INPUT/people.csv" \
     -d "$TEST_INPUT/orders.csv" \
-    -s "SELECT p.name, p.city, SUM(o.amount) as total FROM people p JOIN orders o ON p.name = o.name GROUP BY p.name, p.city ORDER BY total DESC"
+    -s "SELECT p.name, p.city, SUM(o.amount) as total FROM people p JOIN orders o ON p.name = o.name GROUP BY p.name, p.city ORDER BY total DESC, p.name"
 }
 
 test_17_multi_csv_count_both() {
