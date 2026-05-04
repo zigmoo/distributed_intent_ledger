@@ -251,7 +251,7 @@ For experiments, benchmarks, execution notes, and conclusions that support resea
 ## Tool Forge Standards (Mandatory)
 
 All tools in the DIL Tool Forge (formerly Script Forge) must follow the standards defined in:
-- `_shared/policies/script-forge-standards-2026-04-27.md`
+- `_shared/policies/tool-forge-standards-2026-04-27.md`
 
 Each tool lives in a **drawer** — a self-contained directory under `_shared/scripts/<tool_name>/` containing:
 - `<tool_name>.bash` — Bash wrapper (bootstrapping, PATH resolution, arg passthrough)

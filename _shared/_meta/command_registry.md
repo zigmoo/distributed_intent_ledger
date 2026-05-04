@@ -199,4 +199,4 @@ Located in `/org/platform/scripts/bin/`. Only available in work context.
 - **gitlab_tool**: project access tokens via 1Password, logs at `/org/platform/logs/gitlab_tool/`
 - **ssh_tool**: CyberArk PSM proxy with OTP relay, hosts in `ssh_hosts.yml`
 
-| tool forge standards, dil tool forge policy | `_shared/policies/script-forge-standards-2026-04-27.md` | Canonical standards policy for the DIL Tool Forge tooling system. |
+| tool forge standards, dil tool forge policy | `_shared/policies/tool-forge-standards-2026-04-27.md` | Canonical standards policy for the DIL Tool Forge tooling system. |
