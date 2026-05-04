@@ -51,8 +51,8 @@ Scripts in `_shared/scripts/`. Available everywhere, no domain restriction.
 | test task tool, task_tool test, task regression | `task_tool test` | Run the drawer-local task_tool golden regression suite at `_shared/scripts/task_tool/task_tool_test_script.bash`. |
 | test research tool, research_tool test | `_shared/scripts/research_tool/research_tool_test_script.bash` | Run the drawer-local research_tool golden regression suite. |
 | test log river, log_river test | `_shared/scripts/log_river/log_river_test_script.bash` | Run the drawer-local log_river golden regression suite. |
-| test tool forge qc, test script forge qc, script_forge_qc test | `_shared/scripts/script_forge_qc/script_forge_qc_test_script.bash` | Run the drawer-local Tool Forge QC golden regression suite. |
-| tool forge qc, script forge qc, qc dashboard, test run registry, last tested, validation history | `script_forge_qc latest|summary|last-status|path` | Query the DIL Tool Forge QC registry at `_shared/data/script_forge_qc/test_runs.csv` using `duckdb_sql -g` for token-efficient agent output. |
+| test tool forge qc, script_forge_qc test | `_shared/scripts/script_forge_qc/script_forge_qc_test_script.bash` | Run the drawer-local Tool Forge QC golden regression suite. |
+| tool forge qc, qc dashboard, test run registry, last tested, validation history | `script_forge_qc latest|summary|last-status|path` | Query the DIL Tool Forge QC registry at `_shared/data/script_forge_qc/test_runs.csv` using `duckdb_sql -g` for token-efficient agent output. |
 | log river, render log river, log visualization, harvest logs | `log_river render --output <html>` / `log_river harvest --output <json>` | Harvest DIL/work log filenames and render the existing Log River static HTML visualization. Defaults to no browser open; use `--open` for GUI launch. |
 | setting, settings, global setting, get setting, set setting | `setting_tool get <key>` / `setting_tool set <key> <value> --type <type>` / `setting_tool list --include-defaults` | Read, add, update, and list DIL global settings from `_shared/_meta/agent_runtime_policy.json` with built-in defaults. Supports json, str, int, float, decimal, bool, date, timestamp, sequence, path, and url values. |
 | set task status, update status | `set_task_status <task_id> <status>` | Change task status |
@@ -199,4 +199,4 @@ Located in `/org/platform/scripts/bin/`. Only available in work context.
 - **gitlab_tool**: project access tokens via 1Password, logs at `/org/platform/logs/gitlab_tool/`
 - **ssh_tool**: CyberArk PSM proxy with OTP relay, hosts in `ssh_hosts.yml`
 
-| tool forge standards, script forge standards, dil tool forge policy | `_shared/policies/script-forge-standards-2026-04-27.md` | Canonical standards policy for the DIL Tool Forge (formerly Script Forge) tooling system. |
+| tool forge standards, dil tool forge policy | `_shared/policies/script-forge-standards-2026-04-27.md` | Canonical standards policy for the DIL Tool Forge tooling system. |
