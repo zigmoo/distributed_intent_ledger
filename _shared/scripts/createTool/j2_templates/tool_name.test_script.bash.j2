@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# script_forge_qc_test_script.bash — golden file diff test suite for script_forge_qc
-# Script Forge Standard #10: Diff-Stable Test Output
+# {{ tool_name }}.test_script.bash — golden file diff test suite for {{ tool_name }}
+# Tool Forge Standard #10: Diff-Stable Test Output
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
@@ -9,9 +9,9 @@ SCRIPTS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 source "$SCRIPTS_DIR/lib/resolve_base.sh"
 BASE="$(resolve_dil_base_or_die "$SCRIPTS_DIR" "${BASE_DIL:-}")"
 
-TOOL_NAME="script_forge_qc"
-TEST_SCRIPT_NAME="script_forge_qc_test_script"
-GOLDEN_DIR="$SCRIPT_DIR/${TEST_SCRIPT_NAME%_test_script}_test_golden"
+TOOL_NAME="{{ tool_name }}"
+TEST_SCRIPT_NAME="{{ tool_name }}.test_script"
+GOLDEN_DIR="$SCRIPT_DIR/${TEST_SCRIPT_NAME%.test_script}.test_golden"
 LOG_DIR="$BASE/_shared/logs/$TEST_SCRIPT_NAME"
 mkdir -p "$LOG_DIR" "$GOLDEN_DIR"
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
@@ -32,7 +32,10 @@ while [[ $# -gt 0 ]]; do
     --test) SINGLE_TEST="$2"; shift 2 ;;
     --keep-temp) KEEP_TEMP=true; shift ;;
     --quiet) QUIET=true; shift ;;
-    -h|--help) echo "Usage: $TEST_SCRIPT_NAME [--rebuild] [--test N] [--keep-temp] [--quiet]"; exit 0 ;;
+    -h|--help)
+      echo "Usage: $TEST_SCRIPT_NAME [--rebuild] [--test N] [--keep-temp] [--quiet]"
+      exit 0
+      ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
@@ -50,7 +53,7 @@ normalize() {
     -e 's/[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}T[0-9]\{2\}:[0-9]\{2\}:[0-9]\{2\}Z/TIMESTAMP/g' \
     -e 's/[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}/DATE/g' \
     -e 's/[0-9]\{8\}_[0-9]\{6\}/DATETIME/g' \
-    -e 's|/home/[^ ]*|<PATH>|g'
+    -e 's/pid=[0-9]*/pid=<PID>/g'
 }
 
 ACTUAL_DIR="$TEST_WORKSPACE/actual"
@@ -67,7 +70,9 @@ run_test() {
     return
   fi
 
-  if ! $QUIET; then printf "\n[%s] %s\n" "$test_number" "$test_label"; fi
+  if ! $QUIET; then
+    printf "\n[%s] %s\n" "$test_number" "$test_label"
+  fi
 
   local actual_file="$ACTUAL_DIR/test_$(printf '%02d' "$test_number").actual"
   local golden_file="$GOLDEN_DIR/test_$(printf '%02d' "$test_number").golden"
@@ -76,7 +81,9 @@ run_test() {
 
   if $REBUILD; then
     cp "$actual_file" "$golden_file"
-    if ! $QUIET; then echo "  REBUILT: $golden_file"; fi
+    if ! $QUIET; then
+      echo "  REBUILT: $golden_file"
+    fi
     PASSED=$((PASSED + 1))
     return
   fi
@@ -88,7 +95,9 @@ run_test() {
   fi
 
   if diff -u "$golden_file" "$actual_file" > /dev/null 2>&1; then
-    if ! $QUIET; then echo "  PASS"; fi
+    if ! $QUIET; then
+      echo "  PASS"
+    fi
     PASSED=$((PASSED + 1))
   else
     echo "  FAIL: output differs from golden baseline"
@@ -97,44 +106,21 @@ run_test() {
   fi
 }
 
-make_test_base() {
-  local test_base="$TEST_WORKSPACE/dil"
-  mkdir -p "$test_base/_shared/data/script_forge_qc"
-  cat > "$test_base/_shared/data/script_forge_qc/test_runs.csv" <<'CSV'
-run_ts_utc,suite,tool,runner,machine,git_commit,mode,single_test,tests_total,passed,failed,skipped,rebuilt,status,log_path,duration_sec
-2026-04-29T10:00:00Z,task_tool_test_script,task_tool,codex,framemoowork,abc123,all,,33,33,0,0,0,PASS,/tmp/task.log,4
-2026-04-29T10:05:00Z,log_river_test_script,log_river,codex,framemoowork,abc123,all,,3,3,0,0,0,PASS,/tmp/log.log,1
-CSV
-  echo "$test_base"
-}
+# --- Test cases ---
 
 test_01_help_output() {
-  script_forge_qc --help 2>&1 | sed -n '1,80p'
+  $TOOL_NAME --help 2>&1 || true
 }
 
-test_02_path() {
-  local test_base
-  test_base="$(make_test_base)"
-  script_forge_qc --base "$test_base" path
-}
+# Add more test functions here:
+# test_02_basic_operation() { ... }
+# test_03_error_handling() { ... }
 
-test_03_latest_json() {
-  local test_base
-  test_base="$(make_test_base)"
-  script_forge_qc --base "$test_base" latest --limit 1 --json
-}
-
-test_04_summary_and_status() {
-  local test_base
-  test_base="$(make_test_base)"
-  script_forge_qc --base "$test_base" summary
-  script_forge_qc --base "$test_base" last-status --suite task_tool_test_script
-}
+# --- Run tests ---
 
 run_test 1 "help output" test_01_help_output
-run_test 2 "path" test_02_path
-run_test 3 "latest json" test_03_latest_json
-run_test 4 "summary and status" test_04_summary_and_status
+
+# --- Summary ---
 
 echo ""
 if $REBUILD; then
@@ -144,7 +130,6 @@ elif [[ $FAILED -eq 0 ]]; then
 else
   echo "=== FAILED: $PASSED passed, $FAILED failed, $SKIPPED skipped ($TOTAL total) ==="
 fi
-echo "Golden dir: $GOLDEN_DIR"
 echo "Log: $LOG_FILE"
 
 [[ $FAILED -eq 0 ]]

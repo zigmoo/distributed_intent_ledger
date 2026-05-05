@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# task_tool_test_script.bash — Diff-stable progressive test suite for task_tool
+# task_tool.test_script.bash — Diff-stable progressive test suite for task_tool
 #
 # Pattern: each test captures normalized output to a file, then diffs against
 # a golden baseline. Null diff = pass. Any diff = functional regression.
 #
 # Usage:
-#   task_tool_test_script.bash                    # run all, diff against golden
-#   task_tool_test_script.bash --rebuild           # regenerate golden baselines
-#   task_tool_test_script.bash --test 5            # run single test by number
-#   task_tool_test_script.bash --keep-temp         # preserve temp workspace
-#   task_tool_test_script.bash --quiet             # summary only
+#   task_tool.test_script.bash                    # run all, diff against golden
+#   task_tool.test_script.bash --rebuild           # regenerate golden baselines
+#   task_tool.test_script.bash --test 5            # run single test by number
+#   task_tool.test_script.bash --keep-temp         # preserve temp workspace
+#   task_tool.test_script.bash --quiet             # summary only
 #
 # Exit codes: 0=all pass, 1=failures detected, 2=setup error
 
@@ -23,7 +23,7 @@ BASE="$(resolve_dil_base_or_die "$SCRIPTS_DIR")"
 # Ensure DIL bin/ is in PATH — tests must call tools by symlink name, not full path
 export PATH="$SCRIPTS_DIR/bin:$PATH"
 
-GOLDEN_DIR="$SCRIPT_DIR/task_tool_test_golden"
+GOLDEN_DIR="$SCRIPT_DIR/task_tool.test_golden"
 KEEP_TEMP=0
 QUIET=0
 REBUILD=0
@@ -33,9 +33,9 @@ SINGLE_TEST=""
 TIMESTAMP_VAL="$(date +%Y%m%d_%H%M%S)"
 RUN_TS_UTC="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 RUN_STARTED_EPOCH="$(date +%s)"
-LOG_DIR="$BASE/_shared/logs/task_tool_test_script"
+LOG_DIR="$BASE/_shared/logs/task_tool.test_script"
 mkdir -p "$LOG_DIR"
-LOG_FILE="$LOG_DIR/task_tool_test_script.run.${TIMESTAMP_VAL}.log"
+LOG_FILE="$LOG_DIR/task_tool.test_script.run.${TIMESTAMP_VAL}.log"
 QC_DATA_DIR="$BASE/_shared/data/script_forge_qc"
 QC_TEST_RUNS_CSV="$QC_DATA_DIR/test_runs.csv"
 
@@ -65,7 +65,7 @@ append_qc_test_run_registry() {
   fi
 
   RUN_TS_UTC="$RUN_TS_UTC" \
-  SUITE="task_tool_test_script" \
+  SUITE="task_tool.test_script" \
   TOOL="task_tool" \
   RUNNER="$runner" \
   MACHINE="$machine" \
@@ -137,10 +137,10 @@ fi
 
 usage() {
   cat << 'USAGE'
-task_tool_test_script.bash — Diff-stable progressive test suite for task_tool
+task_tool.test_script.bash — Diff-stable progressive test suite for task_tool
 
 Usage:
-  task_tool_test_script.bash [options]
+  task_tool.test_script.bash [options]
 
 Options:
   --rebuild             Regenerate golden baseline files from current output
@@ -155,7 +155,7 @@ Test Pattern:
   and diffs against a golden baseline file. Null diff = pass. Any variance
   from the golden baseline indicates a functional regression.
 
-  Golden files live in: _shared/scripts/task_tool/task_tool_test_golden/
+  Golden files live in: _shared/scripts/task_tool/task_tool.test_golden/
 USAGE
   exit 0
 }

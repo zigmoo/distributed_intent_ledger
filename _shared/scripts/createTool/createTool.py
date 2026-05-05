@@ -94,15 +94,15 @@ def scaffold_tool(
         python_content = render_template("tool_name.py.j2", template_variables)
         files_to_create[tool_drawer / f"{tool_name}.py"] = python_content
 
-    test_content = render_template("tool_name_test_script.bash.j2", template_variables)
-    files_to_create[tool_drawer / f"{tool_name}_test_script.bash"] = test_content
+    test_content = render_template("tool_name.test_script.bash.j2", template_variables)
+    files_to_create[tool_drawer / f"{tool_name}.test_script.bash"] = test_content
 
     j2_readme_content = render_template("j2_templates_README.md.j2", template_variables)
     files_to_create[tool_drawer / "j2_templates" / "README.md"] = j2_readme_content
 
     symlink_path = bin_directory / tool_name
     symlink_target = f"../{tool_name}/{tool_name}.bash"
-    golden_directory = tool_drawer / f"{tool_name}_test_golden"
+    golden_directory = tool_drawer / f"{tool_name}.test_golden"
     j2_templates_directory = tool_drawer / "j2_templates"
 
     if dry_run:
@@ -232,7 +232,7 @@ def main() -> int:
         print(f"  j2 templates: {result['j2_templates_directory']}")
         print(f"\nNext steps:")
         print(f"  {arguments.name} --help")
-        print(f"  bash {result['drawer']}/{arguments.name}_test_script.bash --rebuild")
+        print(f"  bash {result['drawer']}/{arguments.name}.test_script.bash --rebuild")
 
     return 0
 

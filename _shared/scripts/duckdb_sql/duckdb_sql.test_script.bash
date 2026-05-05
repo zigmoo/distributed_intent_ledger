@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# duckdb_sql_test_script — golden file diff test suite for duckdb_sql
+# duckdb_sql.test_script — golden file diff test suite for duckdb_sql
 # Script Forge Standard #10: Diff-Stable Test Output
 set -euo pipefail
 
@@ -10,7 +10,7 @@ source "$SCRIPTS_DIR/lib/resolve_base.sh"
 BASE="$(resolve_dil_base_or_die "$SCRIPTS_DIR" "${BASE_DIL:-}")"
 
 TOOL_NAME="duckdb_sql"
-TEST_SCRIPT_NAME="duckdb_sql_test_script"
+TEST_SCRIPT_NAME="duckdb_sql.test_script"
 GOLDEN_DIR="$SCRIPT_DIR/test/golden"
 TEST_INPUT="$SCRIPT_DIR/test/input"
 LOG_DIR="$BASE/_shared/logs/$TEST_SCRIPT_NAME"

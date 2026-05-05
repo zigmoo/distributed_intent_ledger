@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# log_river_test_script.bash — golden file diff test suite for log_river
+# script_forge_qc.test_script.bash — golden file diff test suite for script_forge_qc
 # Script Forge Standard #10: Diff-Stable Test Output
 set -euo pipefail
 
@@ -9,9 +9,9 @@ SCRIPTS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 source "$SCRIPTS_DIR/lib/resolve_base.sh"
 BASE="$(resolve_dil_base_or_die "$SCRIPTS_DIR" "${BASE_DIL:-}")"
 
-TOOL_NAME="log_river"
-TEST_SCRIPT_NAME="log_river_test_script"
-GOLDEN_DIR="$SCRIPT_DIR/${TEST_SCRIPT_NAME%_test_script}_test_golden"
+TOOL_NAME="script_forge_qc"
+TEST_SCRIPT_NAME="script_forge_qc.test_script"
+GOLDEN_DIR="$SCRIPT_DIR/${TEST_SCRIPT_NAME%.test_script}.test_golden"
 LOG_DIR="$BASE/_shared/logs/$TEST_SCRIPT_NAME"
 mkdir -p "$LOG_DIR" "$GOLDEN_DIR"
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
@@ -50,7 +50,7 @@ normalize() {
     -e 's/[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}T[0-9]\{2\}:[0-9]\{2\}:[0-9]\{2\}Z/TIMESTAMP/g' \
     -e 's/[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}/DATE/g' \
     -e 's/[0-9]\{8\}_[0-9]\{6\}/DATETIME/g' \
-    -e 's/pid=[0-9]*/pid=<PID>/g'
+    -e 's|/home/[^ ]*|<PATH>|g'
 }
 
 ACTUAL_DIR="$TEST_WORKSPACE/actual"
@@ -67,9 +67,7 @@ run_test() {
     return
   fi
 
-  if ! $QUIET; then
-    printf "\n[%s] %s\n" "$test_number" "$test_label"
-  fi
+  if ! $QUIET; then printf "\n[%s] %s\n" "$test_number" "$test_label"; fi
 
   local actual_file="$ACTUAL_DIR/test_$(printf '%02d' "$test_number").actual"
   local golden_file="$GOLDEN_DIR/test_$(printf '%02d' "$test_number").golden"
@@ -99,37 +97,44 @@ run_test() {
   fi
 }
 
+make_test_base() {
+  local test_base="$TEST_WORKSPACE/dil"
+  mkdir -p "$test_base/_shared/data/script_forge_qc"
+  cat > "$test_base/_shared/data/script_forge_qc/test_runs.csv" <<'CSV'
+run_ts_utc,suite,tool,runner,machine,git_commit,mode,single_test,tests_total,passed,failed,skipped,rebuilt,status,log_path,duration_sec
+2026-04-29T10:00:00Z,task_tool_test_script,task_tool,codex,framemoowork,abc123,all,,33,33,0,0,0,PASS,/tmp/task.log,4
+2026-04-29T10:05:00Z,log_river_test_script,log_river,codex,framemoowork,abc123,all,,3,3,0,0,0,PASS,/tmp/log.log,1
+CSV
+  echo "$test_base"
+}
+
 test_01_help_output() {
-  log_river --help 2>&1 | sed -n '1,80p'
+  script_forge_qc --help 2>&1 | sed -n '1,80p'
 }
 
-test_02_harvest_json() {
-  local harvest_json="$TEST_WORKSPACE/harvest.json"
-  log_river harvest --output "$harvest_json" >/dev/null
-  test -s "$harvest_json"
-  python3 -m json.tool "$harvest_json" >/dev/null
-  python3 - "$harvest_json" <<'PY'
-import json, sys
-with open(sys.argv[1], encoding="utf-8") as handle:
-    data = json.load(handle)
-print("json_ok", isinstance(data, dict))
-print("has_events", "events" in data)
-print("event_count_positive", len(data.get("events", [])) >= 0)
-PY
+test_02_path() {
+  local test_base
+  test_base="$(make_test_base)"
+  script_forge_qc --base "$test_base" path
 }
 
-test_03_render_html() {
-  local harvest_json="$TEST_WORKSPACE/harvest.json"
-  local html="$TEST_WORKSPACE/log_river.html"
-  log_river harvest --output "$harvest_json" >/dev/null
-  log_river render --data-file "$harvest_json" --output "$html" >/dev/null
-  test -s "$html"
-  grep -c '<html' "$html"
+test_03_latest_json() {
+  local test_base
+  test_base="$(make_test_base)"
+  script_forge_qc --base "$test_base" latest --limit 1 --json
+}
+
+test_04_summary_and_status() {
+  local test_base
+  test_base="$(make_test_base)"
+  script_forge_qc --base "$test_base" summary
+  script_forge_qc --base "$test_base" last-status --suite task_tool_test_script
 }
 
 run_test 1 "help output" test_01_help_output
-run_test 2 "harvest json" test_02_harvest_json
-run_test 3 "render html" test_03_render_html
+run_test 2 "path" test_02_path
+run_test 3 "latest json" test_03_latest_json
+run_test 4 "summary and status" test_04_summary_and_status
 
 echo ""
 if $REBUILD; then

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# createTool_test_script.bash — golden file diff test suite for createTool
+# createTool.test_script.bash — golden file diff test suite for createTool
 # Tool Forge Standard #10: Diff-Stable Test Output
 set -euo pipefail
 
@@ -10,8 +10,8 @@ source "$SCRIPTS_DIR/lib/resolve_base.sh"
 BASE="$(resolve_dil_base_or_die "$SCRIPTS_DIR" "${BASE_DIL:-}")"
 
 TOOL_NAME="createTool"
-TEST_SCRIPT_NAME="createTool_test_script"
-GOLDEN_DIR="$SCRIPT_DIR/createTool_test_golden"
+TEST_SCRIPT_NAME="createTool.test_script"
+GOLDEN_DIR="$SCRIPT_DIR/createTool.test_golden"
 LOG_DIR="$BASE/_shared/logs/$TEST_SCRIPT_NAME"
 mkdir -p "$LOG_DIR" "$GOLDEN_DIR"
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"

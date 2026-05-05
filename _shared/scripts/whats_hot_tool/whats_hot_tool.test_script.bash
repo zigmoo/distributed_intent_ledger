@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# whats_hot_tool_test_script.bash — golden file diff test suite for whats_hot_tool
+# whats_hot_tool.test_script.bash — golden file diff test suite for whats_hot_tool
 # Script Forge Standard #10: Diff-Stable Test Output
 set -euo pipefail
 
@@ -11,8 +11,8 @@ BASE="$(resolve_dil_base_or_die "$SCRIPTS_DIR" "${BASE_DIL:-}")"
 
 TOOL_CMD="$SCRIPT_DIR/whats_hot_tool.bash"
 TOOL_NAME="whats_hot_tool"
-TEST_SCRIPT_NAME="whats_hot_tool_test_script"
-GOLDEN_DIR="$SCRIPT_DIR/${TEST_SCRIPT_NAME%_test_script}_test_golden"
+TEST_SCRIPT_NAME="whats_hot_tool.test_script"
+GOLDEN_DIR="$SCRIPT_DIR/${TEST_SCRIPT_NAME%.test_script}.test_golden"
 LOG_DIR="$BASE/_shared/logs/$TEST_SCRIPT_NAME"
 mkdir -p "$LOG_DIR" "$GOLDEN_DIR"
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"

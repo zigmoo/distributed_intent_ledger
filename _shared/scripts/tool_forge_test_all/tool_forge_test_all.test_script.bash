@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# {{ tool_name }}_test_script.bash — golden file diff test suite for {{ tool_name }}
+# tool_forge_test_all.test_script.bash — golden file diff test suite for tool_forge_test_all
 # Tool Forge Standard #10: Diff-Stable Test Output
 set -euo pipefail
 
@@ -9,9 +9,9 @@ SCRIPTS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 source "$SCRIPTS_DIR/lib/resolve_base.sh"
 BASE="$(resolve_dil_base_or_die "$SCRIPTS_DIR" "${BASE_DIL:-}")"
 
-TOOL_NAME="{{ tool_name }}"
-TEST_SCRIPT_NAME="{{ tool_name }}_test_script"
-GOLDEN_DIR="$SCRIPT_DIR/${TEST_SCRIPT_NAME%_test_script}_test_golden"
+TOOL_NAME="tool_forge_test_all"
+TEST_SCRIPT_NAME="tool_forge_test_all.test_script"
+GOLDEN_DIR="$SCRIPT_DIR/${TEST_SCRIPT_NAME%.test_script}.test_golden"
 LOG_DIR="$BASE/_shared/logs/$TEST_SCRIPT_NAME"
 mkdir -p "$LOG_DIR" "$GOLDEN_DIR"
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"

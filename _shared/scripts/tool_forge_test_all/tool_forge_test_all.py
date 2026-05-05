@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """tool_forge_test_all.py — Run all Tool Forge test suites in a single pass.
 
-Discovers *_test_script.bash files under _shared/scripts/, runs each with
+Discovers *.test_script.bash files under _shared/scripts/, runs each with
 --quiet, captures exit codes and summary lines, and reports aggregate results.
 """
 
@@ -24,19 +24,19 @@ from resolve_base import resolve_dil_base
 SCRIPT_NAME = "tool_forge_test_all"
 
 INFRA_DEPENDENT = {
-    "llm_matrix_tool": {"max_test": 2, "reason": "tests 3+ need LM Studio running"},
+    "llm_tool": {"max_test": 2, "reason": "tests 3+ need LM Studio running"},
 }
 
 
 def discover_test_suites(scripts_dir: Path) -> list[dict]:
     suites = []
-    for path in sorted(scripts_dir.rglob("*_test_script.bash")):
+    for path in sorted(scripts_dir.rglob("*.test_script.bash")):
         if "venv" in str(path) or "__pycache__" in str(path):
             continue
-        if path.name == f"{SCRIPT_NAME}_test_script.bash":
+        if path.name == f"{SCRIPT_NAME}.test_script.bash":
             continue
         drawer = path.parent.name
-        tool_name = path.stem.replace("_test_script", "")
+        tool_name = path.stem.replace(".test_script", "")
         suites.append({
             "path": str(path),
             "drawer": drawer,
