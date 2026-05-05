@@ -1,8 +1,9 @@
 DRY RUN | scaffold_test
   would create: <BASE>/_shared/scripts/scaffold_test/scaffold_test.bash
   would create: <BASE>/_shared/scripts/scaffold_test/scaffold_test.py
-  would create: <BASE>/_shared/scripts/scaffold_test/scaffold_test_test_script.bash
+  would create: <BASE>/_shared/scripts/scaffold_test/scaffold_test.test_script.bash
   would create: <BASE>/_shared/scripts/scaffold_test/j2_templates/README.md
+  would create: <BASE>/_shared/scripts/scaffold_test/CONTRACT.md
   would symlink: <BASE>/_shared/scripts/bin/scaffold_test → ../scaffold_test/scaffold_test.bash
-  would mkdir: <BASE>/_shared/scripts/scaffold_test/scaffold_test_test_golden
+  would mkdir: <BASE>/_shared/scripts/scaffold_test/scaffold_test.test_golden
   would mkdir: <BASE>/_shared/scripts/scaffold_test/j2_templates

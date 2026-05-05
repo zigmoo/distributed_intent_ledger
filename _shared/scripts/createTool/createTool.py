@@ -2,7 +2,7 @@
 """createTool.py — Scaffold a new Tool Forge tool with all standards pre-wired.
 
 Generates a tool drawer with bash wrapper, Python implementation, test suite stub,
-golden baselines directory, j2_templates documentation, and extensionless symlink
+golden baselines directory, j2_templates documentation, CONTRACT.md, and extensionless symlink
 — all compliant with Tool Forge Standards #1, #2, #10, #12, #13, #14, #16.
 """
 
@@ -99,6 +99,9 @@ def scaffold_tool(
 
     j2_readme_content = render_template("j2_templates_README.md.j2", template_variables)
     files_to_create[tool_drawer / "j2_templates" / "README.md"] = j2_readme_content
+
+    contract_content = render_template("CONTRACT.md.j2", template_variables)
+    files_to_create[tool_drawer / "CONTRACT.md"] = contract_content
 
     symlink_path = bin_directory / tool_name
     symlink_target = f"../{tool_name}/{tool_name}.bash"

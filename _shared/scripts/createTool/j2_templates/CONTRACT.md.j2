@@ -1,0 +1,66 @@
+---
+title: "{{ tool_name }} Contract"
+tool: {{ tool_name }}
+status: draft
+created: "{{ '{{' }} now {{ '}}' }}"
+---
+
+# {{ tool_name }}
+
+{{ description }}
+
+## Interface
+
+```
+{{ tool_name }} [options] [arguments]
+```
+
+### Required Arguments
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| <!-- fill in --> | | |
+
+### Options
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--help` | | Show usage |
+| `--json` | | Machine-readable output |
+| `--dry-run` | | Preview without side effects |
+
+## Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success |
+| 1 | General error |
+| 2 | Input validation failure |
+
+## Environment
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `BASE_DIL` | no | DIL base path override (resolved from script location if unset) |
+
+## Inputs
+
+<!-- What does this tool read? Files, stdin, API endpoints, environment -->
+
+## Outputs
+
+<!-- What does this tool produce? stdout format, files written, side effects -->
+
+## Dependencies
+
+<!-- Runtime deps: other tools, services, credentials, Python packages -->
+
+## Examples
+
+```bash
+# Basic usage
+{{ tool_name }} --help
+
+# Typical invocation
+# {{ tool_name }} ...
+```
