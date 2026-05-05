@@ -10,10 +10,9 @@ VENV_DIR="$DRAWER_DIR/venv"
 REQUIREMENTS="$SCRIPT_DIR/requirements.txt"
 
 if [ ! -f "$VENV_DIR/bin/activate" ]; then
-    echo "Creating venv at $VENV_DIR..." >&2
-    python3 -m venv "$VENV_DIR"
+    python3 -m venv "$VENV_DIR" 2>/dev/null
     source "$VENV_DIR/bin/activate"
-    pip install --quiet -r "$REQUIREMENTS"
+    pip install --quiet --disable-pip-version-check -r "$REQUIREMENTS" 2>/dev/null
     deactivate
 fi
 
