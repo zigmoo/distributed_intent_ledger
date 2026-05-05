@@ -1,6 +1,0 @@
-DIL_BASE=<TMP>/dil_pathres
-REGISTRY_relative=<BASE>/_shared/_meta/model_registry.jsonl
-RUN_LEDGER_relative=<BASE>/_shared/logs/llm_matrix_tool/llm_matrix_tool_runs.jsonl
-CONTEXT_CACHE_relative=<BASE>/_shared/logs/llm_matrix_tool/model_context_cache.jsonl
-EVENTS_CSV_starts_with_base=True
-path_resolution=ok

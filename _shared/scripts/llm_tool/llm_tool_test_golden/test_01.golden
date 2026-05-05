@@ -1,21 +1,16 @@
-usage: llm_matrix_tool.py [-h] [--model MODELS] [--models-file MODELS_FILE]
-                          [--failures-only] [--source-log SOURCE_LOG]
-                          [--limit LIMIT] [--min-context MIN_CONTEXT]
-                          [--max-context MAX_CONTEXT]
-                          [--probe-timeout PROBE_TIMEOUT]
-                          [--remote-timeout REMOTE_TIMEOUT] [--optimize]
-                          [--optimize-only] [--host HOST]
-                          [--provider PROVIDER]
-                          [--configure-harness {opencode}]
-                          [--target-host TARGET_HOST]
-                          [--target-user TARGET_USER]
-                          [--source-host SOURCE_HOST]
-                          [--source-server {lmstudio}]
-                          [--selection {powerful,fastest,specific}]
-                          [--specific-model SPECIFIC_MODEL]
-                          [--base-url BASE_URL] [--context CONTEXT]
-                          [--skip-load] [--install-harness]
-                          [--configure-dry-run]
+usage: llm_tool.py [-h] [--model MODELS] [--models-file MODELS_FILE]
+                   [--failures-only] [--source-log SOURCE_LOG] [--limit LIMIT]
+                   [--min-context MIN_CONTEXT] [--max-context MAX_CONTEXT]
+                   [--probe-timeout PROBE_TIMEOUT]
+                   [--remote-timeout REMOTE_TIMEOUT] [--optimize]
+                   [--optimize-only] [--host HOST] [--provider PROVIDER]
+                   [--configure-harness {opencode,pi}]
+                   [--target-host TARGET_HOST] [--target-user TARGET_USER]
+                   [--source-host SOURCE_HOST] [--source-server {lmstudio}]
+                   [--selection {powerful,fastest,specific}]
+                   [--specific-model SPECIFIC_MODEL] [--base-url BASE_URL]
+                   [--context CONTEXT] [--skip-load] [--install-harness]
+                   [--configure-dry-run]
 
 Run the LM Studio model matrix, optimize working models, or configure agent
 harness model routes.
@@ -45,7 +40,7 @@ options:
   --host HOST           Only probe models on this host (e.g., framemoowork,
                         moosacrem1promax).
   --provider PROVIDER   Only probe models from this opencode provider name.
-  --configure-harness {opencode}
+  --configure-harness {opencode,pi}
                         Configure a target agent harness with a selected model
                         route.
   --target-host TARGET_HOST

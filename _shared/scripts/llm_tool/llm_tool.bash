@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# llm_matrix_tool — Wrapper for LM Studio model matrix with context ratchet + registry updates
+# llm_tool — Wrapper for LM Studio model matrix with context ratchet + registry updates
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
@@ -30,16 +30,16 @@ fi
 export BASE_DIL="$BASE"
 export PYTHONUNBUFFERED=1
 
-tool_forge_log_init "llm_matrix_tool" "run" "$BASE"
+tool_forge_log_init "llm_tool" "run" "$BASE"
 LOG_FILE="$(tool_forge_log_file)"
 echo "LOG_FILE: $LOG_FILE"
-tool_forge_log "starting python runner: $PYTHON_PATH $SCRIPT_DIR/llm_matrix_tool.py"
+tool_forge_log "starting python runner: $PYTHON_PATH $SCRIPT_DIR/llm_tool.py"
 
 set +e
 if command -v stdbuf >/dev/null 2>&1; then
-  stdbuf -oL -eL "$PYTHON_PATH" "$SCRIPT_DIR/llm_matrix_tool.py" "$@" 2>&1 | tee -a "$LOG_FILE"
+  stdbuf -oL -eL "$PYTHON_PATH" "$SCRIPT_DIR/llm_tool.py" "$@" 2>&1 | tee -a "$LOG_FILE"
 else
-  "$PYTHON_PATH" "$SCRIPT_DIR/llm_matrix_tool.py" "$@" 2>&1 | tee -a "$LOG_FILE"
+  "$PYTHON_PATH" "$SCRIPT_DIR/llm_tool.py" "$@" 2>&1 | tee -a "$LOG_FILE"
 fi
 RC=${PIPESTATUS[0]}
 set -e

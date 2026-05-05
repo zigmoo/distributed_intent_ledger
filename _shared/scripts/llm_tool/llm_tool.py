@@ -25,10 +25,10 @@ HOME = Path.home()
 DIL_BASE = Path(resolve_dil_base(script_dir=_SCRIPT_DIR))
 CONFIG = HOME / ".config" / "opencode" / "opencode.json"
 REGISTRY = DIL_BASE / "_shared" / "_meta" / "model_registry.jsonl"
-RUN_LEDGER = DIL_BASE / "_shared" / "logs" / "llm_matrix_tool" / "llm_matrix_tool_runs.jsonl"
-CONTEXT_CACHE = DIL_BASE / "_shared" / "logs" / "llm_matrix_tool" / "model_context_cache.jsonl"
+RUN_LEDGER = DIL_BASE / "_shared" / "logs" / "llm_tool" / "llm_tool_runs.jsonl"
+CONTEXT_CACHE = DIL_BASE / "_shared" / "logs" / "llm_tool" / "model_context_cache.jsonl"
 RUN_STAMP = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-EVENTS_CSV = DIL_BASE / "_shared" / "logs" / "llm_matrix_tool" / f"llm_matrix_tool.events.{RUN_STAMP}.csv"
+EVENTS_CSV = DIL_BASE / "_shared" / "logs" / "llm_tool" / f"llm_tool.events.{RUN_STAMP}.csv"
 SSH_TARGETS_BY_HOST = {
     "moosacrem1promax": [
         "moosacrem1promax.jay-frog.ts.net",
@@ -378,7 +378,7 @@ def print_summary(total, selected_total, run_mode="full", source_log=None, optim
     with RUN_LEDGER.open("a", encoding="utf-8") as f:
         f.write(json.dumps({
             "ts": now_iso(),
-            "tool": "llm_matrix_tool",
+            "tool": "llm_tool",
             "total": total,
             "selected": selected_total,
             "mode": run_mode,
@@ -441,7 +441,7 @@ def parse_args(argv=None):
     parser.add_argument("--optimize-only", action="store_true", help="Skip first-pass matrix run and run only optimize_llm_performance on the selected models.")
     parser.add_argument("--host", help="Only probe models on this host (e.g., framemoowork, moosacrem1promax).")
     parser.add_argument("--provider", help="Only probe models from this opencode provider name.")
-    parser.add_argument("--configure-harness", choices=["opencode"], help="Configure a target agent harness with a selected model route.")
+    parser.add_argument("--configure-harness", choices=["opencode", "pi"], help="Configure a target agent harness with a selected model route.")
     parser.add_argument("--target-host", help="Target host to configure. Defaults to local machine.")
     parser.add_argument("--target-user", default="moo", help="Target user account for harness config.")
     parser.add_argument("--source-host", default="moosacrem1promax", help="Model server host, usually an LM Studio host.")
@@ -466,7 +466,7 @@ def load_models_sidecar(path):
 
 
 def latest_log_path():
-    logs = sorted(RUN_LEDGER.parent.glob("llm_matrix_tool.run.*.log"))
+    logs = sorted(RUN_LEDGER.parent.glob("llm_tool.run.*.log"))
     if not logs:
         return None
     return logs[-1]
@@ -998,7 +998,7 @@ def install_opencode_on_target(target_host, target_user, timeout=DEFAULT_REMOTE_
         f"set -e; cd {shlex.quote(home)}; "
         f"mkdir -p .config/opencode .local/bin; "
         f"cd .config/opencode; "
-        f"npm install {OPENCODE_NPM_PACKAGE}@{OPENCODE_NPM_VERSION} >/tmp/llm_matrix_tool_opencode_install.log 2>&1; "
+        f"npm install {OPENCODE_NPM_PACKAGE}@{OPENCODE_NPM_VERSION} >/tmp/llm_tool_opencode_install.log 2>&1; "
         f"ln -sfn {shlex.quote(home + '/.config/opencode/node_modules/.bin/opencode')} "
         f"{shlex.quote(home + '/.local/bin/opencode')}; "
         f"{shlex.quote(home + '/.local/bin/opencode')} --version"
@@ -1027,6 +1027,78 @@ def write_opencode_config_on_target(target_host, target_user, cfg, dry_run=False
         f"python3 -c {shlex.quote(py)} {shlex.quote(config_path)} {shlex.quote(payload)}; "
         f"jq -r '.model' {shlex.quote(config_path)}"
     )
+    return run_on_target(target_host, cmd, timeout=timeout)
+
+
+def build_pi_config(source_host, base_url, selected_row, fallback_rows=None):
+    """Build a pi models.json config with the selected model and fallbacks."""
+    provider = provider_key_for_host(source_host)
+    selected_model_id = selected_row.get("backend_model_id") or selected_row.get("model_id")
+    models = [{"id": selected_model_id, "name": selected_row.get("display_name") or selected_model_id}]
+    for row in fallback_rows or []:
+        model_id = row.get("backend_model_id") or row.get("model_id")
+        if not model_id or model_id == selected_model_id:
+            continue
+        models.append({"id": model_id, "name": row.get("display_name") or model_id})
+    return {
+        "providers": {
+            provider: {
+                "baseUrl": base_url,
+                "api": "openai-completions",
+                "apiKey": "lm-studio",
+                "compat": {
+                    "supportsDeveloperRole": False,
+                    "supportsReasoningEffort": False,
+                },
+                "models": models,
+            }
+        },
+        "_selectedModel": selected_model_id,
+        "_selectedProvider": provider,
+    }
+
+
+def write_pi_config_on_target(target_host, target_user, cfg, dry_run=False, timeout=DEFAULT_REMOTE_TIMEOUT):
+    """Write pi models.json and settings.json on the target host."""
+    home = remote_home_for_user(target_host, target_user)
+    models_path = f"{home}/.pi/agent/models.json"
+    settings_path = f"{home}/.pi/agent/settings.json"
+    provider = cfg.get("_selectedProvider", "")
+    model_id = cfg.get("_selectedModel", "")
+    if dry_run:
+        print(json.dumps(cfg, indent=2, ensure_ascii=False))
+        return subprocess.CompletedProcess([], 0, stdout="dry-run\n", stderr="")
+    models_payload = encode_json_for_remote(cfg)
+    models_py = (
+        "import base64, json, pathlib, sys; "
+        "path=pathlib.Path(sys.argv[1]); "
+        "new=json.loads(base64.b64decode(sys.argv[2]).decode('utf-8')); "
+        "existing=json.loads(path.read_text()) if path.exists() else {'providers':{}}; "
+        "existing['providers'].update(new['providers']); "
+        "path.write_text(json.dumps(existing, indent=4) + '\\n'); "
+        "print(new.get('_selectedProvider','') + '/' + new.get('_selectedModel',''))"
+    )
+    settings_py = (
+        "import json, pathlib, sys; "
+        "path=pathlib.Path(sys.argv[1]); "
+        "s=json.loads(path.read_text()) if path.exists() else {}; "
+        "s['defaultProvider']=sys.argv[2]; s['defaultModel']=sys.argv[3]; "
+        "path.write_text(json.dumps(s, indent=2) + '\\n')"
+    )
+    cmd = (
+        f"set -e; "
+        f"for f in {shlex.quote(models_path)} {shlex.quote(settings_path)}; do "
+        f"  test -f \"$f\" && cp \"$f\" \"$f.bak.$(date +%Y%m%d_%H%M%S)\"; "
+        f"done; "
+        f"python3 -c {shlex.quote(models_py)} {shlex.quote(models_path)} {shlex.quote(models_payload)}; "
+        f"python3 -c {shlex.quote(settings_py)} {shlex.quote(settings_path)} {shlex.quote(provider)} {shlex.quote(model_id)}"
+    )
+    return run_on_target(target_host, cmd, timeout=timeout)
+
+
+def verify_pi_on_target(target_host, target_user, provider, model_id, timeout=DEFAULT_PROBE_TIMEOUT):
+    """Probe pi on the target host with a simple prompt."""
+    cmd = f"pi --provider {shlex.quote(provider)} --model {shlex.quote(model_id)} -p 'Answer with exactly OK' 2>&1 | head -5"
     return run_on_target(target_host, cmd, timeout=timeout)
 
 
@@ -1064,7 +1136,89 @@ def verify_opencode_on_target(target_host, target_user, model_ref, timeout=DEFAU
     return run_on_target(target_host, cmd, timeout=timeout)
 
 
+def configure_harness_pi(args):
+    """Configure pi agent harness with a selected model route."""
+    target_host = args.target_host or short_hostname()
+    source_host = args.source_host
+    specific = args.specific_model if args.selection == "specific" else None
+    selected = choose_registry_model(source_host, args.source_server, args.selection, specific_model=specific)
+    if specific:
+        selected = dict(selected)
+        selected["backend_model_id"] = specific
+        selected["model_id"] = specific
+        selected.setdefault("display_name", specific)
+    fallback_rows = sorted(
+        registry_candidates(source_host, args.source_server),
+        key=lambda r: numeric_value(r, "tps", 0.0),
+        reverse=True,
+    )[:3]
+    model_id = selected.get("backend_model_id") or selected.get("model_id")
+    if not model_id:
+        raise RuntimeError("Selected model has no backend model id")
+    base_url = args.base_url or discover_base_url_from_target(target_host, source_host, timeout=args.remote_timeout)
+    cfg = build_pi_config(source_host, base_url, selected, fallback_rows=fallback_rows)
+    provider = cfg["_selectedProvider"]
+    model_ref = f"{provider}/{model_id}"
+
+    print(f"CONFIGURE_START harness=pi target={target_host} user={args.target_user} source={source_host}")
+    print(f"CONFIGURE_SELECT selection={args.selection} model_id={model_id} model_ref={model_ref}")
+    print(f"CONFIGURE_ENDPOINT base_url={base_url}")
+
+    if args.configure_dry_run:
+        write_pi_config_on_target(target_host, args.target_user, cfg, dry_run=True, timeout=args.remote_timeout)
+        print("CONFIGURE_LOAD_SKIPPED dry_run=true")
+        print("CONFIGURE_WRITE_SKIPPED dry_run=true")
+        print("CONFIGURE_VERIFY_SKIPPED dry_run=true")
+        return 0
+
+    if args.skip_load:
+        print("CONFIGURE_LOAD_SKIPPED skip_load=true")
+        if not verify_source_context(source_host, model_id, args.context, fail_below=True):
+            print(f"CONFIGURE_AUTO_LOAD model_id={model_id} context={int(args.context)}")
+            load = load_source_model(source_host, model_id, args.context, timeout=args.remote_timeout)
+            if load.returncode != 0:
+                print(f"CONFIGURE_LOAD_FAIL model_id={model_id}")
+                print((load.stderr or load.stdout or "").strip())
+                return 1
+            print(f"CONFIGURE_LOAD_OK model_id={model_id} context={int(args.context)}")
+            if not verify_source_context(source_host, model_id, args.context, fail_below=True):
+                return 1
+    else:
+        load = load_source_model(source_host, model_id, args.context, timeout=args.remote_timeout)
+        if load.returncode != 0:
+            print(f"CONFIGURE_LOAD_FAIL model_id={model_id}")
+            print((load.stderr or load.stdout or "").strip())
+            return 1
+        print(f"CONFIGURE_LOAD_OK model_id={model_id} context={int(args.context)}")
+        if not verify_source_context(source_host, model_id, args.context, fail_below=True):
+            return 1
+
+    written = write_pi_config_on_target(
+        target_host, args.target_user, cfg, dry_run=False, timeout=args.remote_timeout,
+    )
+    if written.returncode != 0:
+        print("CONFIGURE_WRITE_FAIL harness=pi")
+        print((written.stderr or written.stdout or "").strip())
+        return 1
+    print(f"CONFIGURE_WRITE_OK config_model={(written.stdout or '').strip()}")
+
+    verified = verify_pi_on_target(target_host, args.target_user, provider, model_id, timeout=args.probe_timeout)
+    if verified.returncode != 0:
+        print("CONFIGURE_VERIFY_FAIL harness=pi")
+        print((verified.stderr or verified.stdout or "").strip()[:1000])
+        return 1
+    stdout = (verified.stdout or "").strip()
+    if "ok" in stdout.lower() or len(stdout) > 0:
+        print(f"CONFIGURE_VERIFY_OK harness=pi model_ref={model_ref}")
+    else:
+        print(f"CONFIGURE_VERIFY_FAIL harness=pi reason=empty_response")
+        return 1
+    return 0
+
+
 def configure_harness(args):
+    if args.configure_harness == "pi":
+        return configure_harness_pi(args)
     if args.configure_harness != "opencode":
         raise RuntimeError(f"Unsupported harness: {args.configure_harness}")
     target_host = args.target_host or short_hostname()
@@ -1295,7 +1449,7 @@ def record_registry_context(model_id, status, ctx, host="moosacrem1promax"):
             "display_name": model_id,
             "status": "active",
             "owner": "shared",
-            "source": "llm_matrix_tool context verification",
+            "source": "llm_tool context verification",
             "updated": now_iso(),
             "context_verification_status": status,
             "last_context_verified_at": now_iso(),
@@ -1659,7 +1813,7 @@ def main(argv=None):
     global ARGS, LOG, ok, fail, retry_ok, retry_fail, guardrail, bad_id, ctx_err
     global optimize_ok, optimize_fail
     ARGS = parse_args(argv)
-    LOG = ToolForgeLogger("llm_matrix_tool", "run", str(DIL_BASE))
+    LOG = ToolForgeLogger("llm_tool", "run", str(DIL_BASE))
     if ARGS.configure_harness:
         try:
             return configure_harness(ARGS)

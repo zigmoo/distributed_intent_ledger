@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# llm_matrix_tool_test_script.bash — golden file diff test suite for llm_matrix_tool
+# llm_tool_test_script.bash — golden file diff test suite for llm_tool
 # Script Forge Standard #10: Diff-Stable Test Output
 set -euo pipefail
 
@@ -9,8 +9,8 @@ SCRIPTS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 source "$SCRIPTS_DIR/lib/resolve_base.sh"
 BASE="$(resolve_dil_base_or_die "$SCRIPTS_DIR" "${BASE_DIL:-}")"
 
-TOOL_NAME="llm_matrix_tool"
-TEST_SCRIPT_NAME="llm_matrix_tool_test_script"
+TOOL_NAME="llm_tool"
+TEST_SCRIPT_NAME="llm_tool_test_script"
 GOLDEN_DIR="$SCRIPT_DIR/${TEST_SCRIPT_NAME%_test_script}_test_golden"
 LOG_DIR="$BASE/_shared/logs/$TEST_SCRIPT_NAME"
 mkdir -p "$LOG_DIR" "$GOLDEN_DIR"
@@ -118,14 +118,14 @@ run_test() {
 make_test_base() {
   local test_base="$TEST_WORKSPACE/dil_$1"
   mkdir -p "$test_base/_shared/_meta"
-  mkdir -p "$test_base/_shared/logs/llm_matrix_tool"
+  mkdir -p "$test_base/_shared/logs/llm_tool"
   echo "$test_base"
 }
 
 # --- Test cases ---
 
 test_01_help_output() {
-  BASE_DIL="$TEST_WORKSPACE/dil_help" "$PYTHON_PATH" "$SCRIPT_DIR/llm_matrix_tool.py" --help 2>&1
+  BASE_DIL="$TEST_WORKSPACE/dil_help" "$PYTHON_PATH" "$SCRIPT_DIR/llm_tool.py" --help 2>&1
 }
 
 test_02_path_resolution() {
@@ -136,7 +136,7 @@ import sys, os
 os.environ['BASE_DIL'] = '$test_base'
 sys.path.insert(0, '$SCRIPT_DIR')
 import importlib
-import llm_matrix_tool as lmt
+import llm_tool as lmt
 importlib.reload(lmt)
 print(f'DIL_BASE={lmt.DIL_BASE}')
 print(f'REGISTRY_relative={str(lmt.REGISTRY).replace(str(lmt.DIL_BASE), \"<BASE>\")}')
@@ -156,11 +156,11 @@ from unittest import mock
 os.environ['BASE_DIL'] = '$test_base'
 sys.path.insert(0, '$SCRIPT_DIR')
 import importlib
-import llm_matrix_tool as lmt
+import llm_tool as lmt
 importlib.reload(lmt)
 
 lmt.ARGS = lmt.parse_args(['--remote-timeout', '10'])
-mock_run = mock.patch('llm_matrix_tool.run',
+mock_run = mock.patch('llm_tool.run',
     return_value=subprocess.CompletedProcess([], 0, stdout='', stderr='')).start()
 
 malicious_ids = [
@@ -198,17 +198,17 @@ print(f'all_escaped={all_ok}')
 test_04_file_handle_leak() {
   local test_base
   test_base="$(make_test_base fhleak)"
-  mkdir -p "$test_base/_shared/logs/llm_matrix_tool"
+  mkdir -p "$test_base/_shared/logs/llm_tool"
   "$PYTHON_PATH" -c "
 import sys, os, json
 os.environ['BASE_DIL'] = '$test_base'
 sys.path.insert(0, '$SCRIPT_DIR')
 import importlib
-import llm_matrix_tool as lmt
+import llm_tool as lmt
 importlib.reload(lmt)
 from pathlib import Path
 
-ledger = Path('$test_base') / '_shared' / 'logs' / 'llm_matrix_tool' / 'llm_matrix_tool_runs.jsonl'
+ledger = Path('$test_base') / '_shared' / 'logs' / 'llm_tool' / 'llm_tool_runs.jsonl'
 lmt.RUN_LEDGER = ledger
 lmt.ok = lmt.fail = lmt.retry_ok = lmt.retry_fail = 0
 lmt.ratchet_retry_ok = lmt.ratchet_retry_fail = 0
@@ -235,25 +235,25 @@ print('file_handle_test=ok')
 test_05_forge_logger_integration() {
   local test_base
   test_base="$(make_test_base logger)"
-  mkdir -p "$test_base/_shared/logs/llm_matrix_tool"
+  mkdir -p "$test_base/_shared/logs/llm_tool"
   "$PYTHON_PATH" -c "
 import sys, os
 os.environ['BASE_DIL'] = '$test_base'
 sys.path.insert(0, '$SCRIPT_DIR')
 import importlib
-import llm_matrix_tool as lmt
+import llm_tool as lmt
 importlib.reload(lmt)
 
 print(f'ToolForgeLogger_imported={\"ToolForgeLogger\" in dir(lmt)}')
 print(f'LOG_var_exists={hasattr(lmt, \"LOG\")}')
 
 from pathlib import Path
-log_dir = Path('$test_base') / '_shared' / 'logs' / 'llm_matrix_tool'
+log_dir = Path('$test_base') / '_shared' / 'logs' / 'llm_tool'
 from tool_forge_log import ToolForgeLogger
-logger = ToolForgeLogger('llm_matrix_tool', 'test', '$test_base')
+logger = ToolForgeLogger('llm_tool', 'test', '$test_base')
 logger.info('test message')
 logger.close()
-log_files = list(log_dir.glob('llm_matrix_tool.test.*.log'))
+log_files = list(log_dir.glob('llm_tool.test.*.log'))
 print(f'forge_log_created={len(log_files) > 0}')
 if log_files:
     content = log_files[0].read_text()
