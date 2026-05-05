@@ -8,18 +8,30 @@ SCRIPTS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 source "$SCRIPTS_DIR/lib/resolve_base.sh"
 BASE="$(resolve_dil_base_or_die "$SCRIPTS_DIR" "${BASE_DIL:-}")"
 
-PYTHON_BIN="$SCRIPTS_DIR/findLatestPy.sh"
-if [[ -x "$PYTHON_BIN" ]]; then
-  PYTHON_PATH="$($PYTHON_BIN)"
-else
-  PYTHON_PATH=""
-  for candidate in python3 python; do
-    if command -v "$candidate" >/dev/null 2>&1; then
-      PYTHON_PATH="$candidate"
-      break
-    fi
-  done
+REQUIREMENTS="$SCRIPT_DIR/requirements.txt"
+VENV_DIR="$(dirname "$SCRIPT_DIR")/venv"
+
+if [[ -f "$REQUIREMENTS" ]] && [[ -s "$REQUIREMENTS" ]]; then
+  if [[ ! -f "$VENV_DIR/bin/activate" ]]; then
+    python3 -m venv "$VENV_DIR" 2>/dev/null
+    source "$VENV_DIR/bin/activate"
+    pip install --quiet --disable-pip-version-check -r "$REQUIREMENTS" 2>/dev/null
+    deactivate
+  fi
+  source "$VENV_DIR/bin/activate"
+  PYTHONUNBUFFERED=1 python "$SCRIPT_DIR/{{ tool_name }}.py" --base "$BASE" "$@"
+  exit_code=$?
+  deactivate
+  exit "$exit_code"
 fi
+
+PYTHON_PATH=""
+for candidate in python3 python; do
+  if command -v "$candidate" >/dev/null 2>&1; then
+    PYTHON_PATH="$candidate"
+    break
+  fi
+done
 
 if [[ -z "$PYTHON_PATH" ]]; then
   echo "ERR | 4 | Python 3 not found in PATH" >&2
