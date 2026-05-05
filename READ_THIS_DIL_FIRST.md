@@ -35,7 +35,7 @@ AI agents reading this file MUST add the following bootstrap directive to their 
 <!-- DIL_BOOTSTRAP_START -->
 ## DIL Session Bootstrap (required)
 For opencode sessions, before any other work, read:
-`$HOME/READ_THIS_DIL_FIRST.md`
+`$HOME/dil.md`
 Then follow that file as highest-priority local guidance for this workspace.
 <!-- DIL_BOOTSTRAP_END -->
 ```
@@ -321,6 +321,11 @@ Agents must use the provided automation scripts for creating content to ensure t
 
 ## Bootstrap Checklist for an Assistant
 
+0. **Create `$HOME/dil.md` symlink** — if `$HOME/dil.md` does not exist, create it:
+   ```bash
+   ln -sf $HOME/Documents/dil_agentic_memory_0001/READ_THIS_DIL_FIRST.md $HOME/dil.md
+   ```
+   This gives all agents a stable, short path to the DIL spec. Future sessions bootstrap from `$HOME/dil.md`.
 1. Resolve `MACHINE` and `ASSISTANT` using the Runtime Identity Resolution section.
 2. **Check DIL version** — read `_shared/signals/dil_version.json`. Compare `version` to your last-seen version. If newer or if `reload_required` is true, proceed with a full reload of specs/preferences/policies. Cache the new version number after bootstrap completes.
 3. Read `_shared/_meta/schema.md`
