@@ -1,0 +1,19 @@
+task_id: DIL-9001
+title: Review target task
+date: DATE
+domain: personal
+status: todo
+priority: high
+owner: moo
+due: 
+project: test
+work_type: chore
+task_type: kanban
+effort_type: medium
+created_by: test-harness
+created_at: TIMESTAMP
+parent_task_id: 
+subcategory: 
+---
+
+# Review target task

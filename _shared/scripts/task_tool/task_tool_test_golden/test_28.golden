@@ -1,0 +1,4 @@
+WARNING: Project registry not found: <TMP>/dil/_shared/_meta/project_registry.md
+ERROR: Cycle detected in parent_task_id chain starting at DIL-9001
+ERROR: Cycle detected in parent_task_id chain starting at DIL-9002
+Validation failed: 2 error(s), 1 warning(s)

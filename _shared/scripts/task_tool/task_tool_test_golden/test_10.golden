@@ -1,0 +1,2 @@
+ERR | 1 | Invalid status transition: in_progress -> todo
+EXIT: 0

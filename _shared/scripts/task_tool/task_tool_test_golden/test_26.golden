@@ -1,0 +1,4 @@
+WARNING: Project registry not found: <TMP>/dil/_shared/_meta/project_registry.md
+ERROR: <TMP>/dil/_shared/domains/personal/tasks/active/DIL-9001.md parent_task_id cannot self-reference (DIL-9001)
+ERROR: Cycle detected in parent_task_id chain starting at DIL-9001
+Validation failed: 2 error(s), 1 warning(s)
