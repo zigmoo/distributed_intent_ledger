@@ -1,0 +1,20 @@
+[
+  {
+    "run_ts_utc": "DATE 05:05:00-05:00",
+    "suite": "log_river_test_script",
+    "tool": "log_river",
+    "status": "PASS",
+    "tests_total": "3",
+    "passed": "3",
+    "failed": "0",
+    "skipped": "0",
+    "rebuilt": "0",
+    "mode": "all",
+    "single_test": "None",
+    "machine": "framemoowork",
+    "runner": "codex",
+    "git_commit": "abc123",
+    "duration_sec": "1",
+    "log_path": "/tmp/log.log"
+  }
+]

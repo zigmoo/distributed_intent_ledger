@@ -15,12 +15,15 @@ resolve_dil_base() {
   fi
 
   if [[ -n "$script_dir" ]]; then
-    local repo_base
-    repo_base="$(cd "$script_dir/../.." 2>/dev/null && pwd || true)"
-    if [[ -n "$repo_base" && -d "$repo_base/_shared" ]]; then
-      printf '%s\n' "$repo_base"
-      return 0
-    fi
+    local cursor
+    cursor="$(cd "$script_dir" 2>/dev/null && pwd || true)"
+    while [[ -n "$cursor" && "$cursor" != "/" ]]; do
+      if [[ -d "$cursor/_shared/_meta" ]]; then
+        printf '%s\n' "$cursor"
+        return 0
+      fi
+      cursor="$(dirname "$cursor")"
+    done
   fi
 
   local legacy_base="$HOME/Documents/dil_agentic_memory_0001"

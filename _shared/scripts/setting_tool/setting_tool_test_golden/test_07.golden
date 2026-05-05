@@ -1,0 +1,7 @@
+dateSetting="DATE" | source=registry | path=<TMP>/settings.json
+timestampSetting="TIMESTAMP" | source=registry | path=<TMP>/settings.json
+integerSetting=30 | source=registry | path=<TMP>/settings.json
+decimalSetting="12.3400" | source=registry | path=<TMP>/settings.json
+sequenceSetting=["alpha", "beta"] | source=registry | path=<TMP>/settings.json
+pathSetting="<BASE>/_shared/artifacts" | source=registry | path=<TMP>/settings.json
+urlSetting="https://example.com/path?q=1" | source=registry | path=<TMP>/settings.json

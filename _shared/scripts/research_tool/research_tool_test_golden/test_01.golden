@@ -1,0 +1,26 @@
+usage: research_tool [-h] [--base BASE]
+                     {create,benchmarking,comparisons,conclusions,errata,execution-notes,ideas,prompts,benchmark,execution,conclude,idea,validate,link,locate-python} ...
+
+Manage DIL research artifacts
+
+positional arguments:
+  {create,benchmarking,comparisons,conclusions,errata,execution-notes,ideas,prompts,benchmark,execution,conclude,idea,validate,link,locate-python}
+    create              Create a research artifact
+    benchmarking        Create a benchmark artifact
+    comparisons         Create a comparison artifact
+    conclusions         Create a conclusion artifact
+    errata              Create a correction artifact
+    execution-notes     Create a execution artifact
+    ideas               Create a idea artifact
+    prompts             Create a prompt artifact
+    benchmark           Create a benchmarking artifact
+    execution           Create a execution-notes artifact
+    conclude            Create a conclusions artifact
+    idea                Create a ideas artifact
+    validate            Validate a research artifact
+    link                Add related artifacts to an existing artifact
+    locate-python       Print the newest available Python binary path
+
+options:
+  -h, --help            show this help message and exit
+  --base BASE           DIL base path

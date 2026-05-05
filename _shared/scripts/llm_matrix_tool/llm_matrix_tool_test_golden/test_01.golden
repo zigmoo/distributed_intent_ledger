@@ -1,0 +1,72 @@
+usage: llm_matrix_tool.py [-h] [--model MODELS] [--models-file MODELS_FILE]
+                          [--failures-only] [--source-log SOURCE_LOG]
+                          [--limit LIMIT] [--min-context MIN_CONTEXT]
+                          [--max-context MAX_CONTEXT]
+                          [--probe-timeout PROBE_TIMEOUT]
+                          [--remote-timeout REMOTE_TIMEOUT] [--optimize]
+                          [--optimize-only] [--host HOST]
+                          [--provider PROVIDER]
+                          [--configure-harness {opencode}]
+                          [--target-host TARGET_HOST]
+                          [--target-user TARGET_USER]
+                          [--source-host SOURCE_HOST]
+                          [--source-server {lmstudio}]
+                          [--selection {powerful,fastest,specific}]
+                          [--specific-model SPECIFIC_MODEL]
+                          [--base-url BASE_URL] [--context CONTEXT]
+                          [--skip-load] [--install-harness]
+                          [--configure-dry-run]
+
+Run the LM Studio model matrix, optimize working models, or configure agent
+harness model routes.
+
+options:
+  -h, --help            show this help message and exit
+  --model MODELS        Model ref to test; repeatable.
+  --models-file MODELS_FILE
+                        JSON sidecar describing selected models and run
+                        options.
+  --failures-only       Select only failing models from a prior run log.
+  --source-log SOURCE_LOG
+                        Prior matrix log to mine for failures.
+  --limit LIMIT         Limit the selected model list to the first N entries.
+  --min-context MIN_CONTEXT
+                        Lowest context to try when ratcheting.
+  --max-context MAX_CONTEXT
+                        Highest context to try when ratcheting or optimizing.
+  --probe-timeout PROBE_TIMEOUT
+                        Timeout seconds for each opencode probe.
+  --remote-timeout REMOTE_TIMEOUT
+                        Timeout seconds for each remote lms command.
+  --optimize            Run optimize_llm_performance after a model
+                        successfully probes.
+  --optimize-only       Skip first-pass matrix run and run only
+                        optimize_llm_performance on the selected models.
+  --host HOST           Only probe models on this host (e.g., framemoowork,
+                        moosacrem1promax).
+  --provider PROVIDER   Only probe models from this opencode provider name.
+  --configure-harness {opencode}
+                        Configure a target agent harness with a selected model
+                        route.
+  --target-host TARGET_HOST
+                        Target host to configure. Defaults to local machine.
+  --target-user TARGET_USER
+                        Target user account for harness config.
+  --source-host SOURCE_HOST
+                        Model server host, usually an LM Studio host.
+  --source-server {lmstudio}
+                        Model server type for harness configuration.
+  --selection {powerful,fastest,specific}
+                        Model selection policy for harness configuration.
+  --specific-model SPECIFIC_MODEL
+                        Specific backend model id to configure when
+                        --selection specific is used.
+  --base-url BASE_URL   Known OpenAI-compatible base URL. If omitted, discover
+                        from the target host.
+  --context CONTEXT     Context length to load on the source model server.
+  --skip-load           Do not load the selected model on the source server
+                        before writing/verifying config.
+  --install-harness     Install or repair the target harness CLI when
+                        supported.
+  --configure-dry-run   Print planned harness config without writing remote
+                        files.

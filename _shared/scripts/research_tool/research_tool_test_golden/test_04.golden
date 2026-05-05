@@ -1,0 +1,7 @@
+OK | validate | <TMP>/dil_validate/_shared/research/ideas/DIL-2011-idea-DATET100011Z-validate-me.md
+ERR | 2 | Invalid RESEARCH_TOOL_ARTIFACT_TYPES_JSON: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)
+bad_json_string=failed_as_expected
+ERR | 2 | Artifact spec for broken missing fields: kind
+bad_spec=failed_as_expected
+ERR | 2 | Invalid artifact registry file <TMP>/bad-registry.json: Expecting ',' delimiter: line 2 column 1 (char 40)
+bad_file=failed_as_expected

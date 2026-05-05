@@ -1,0 +1,3 @@
+resolved_ref=lmstudio/Olmo-3-32B-Think-MLX-4bit
+host=moosacrem1promax
+endpoint=http://100.72.152.28:1234/v1/chat/completions

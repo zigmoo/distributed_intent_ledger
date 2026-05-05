@@ -1,0 +1,1 @@
+calls=ssh -o BatchMode=yes -o ConnectTimeout=15 moosacrem1promax.jay-frog.ts.net lms load allenai/olmo-3-32b-think -y || ssh -o BatchMode=yes -o ConnectTimeout=15 moosacrem1promax.local lms load allenai/olmo-3-32b-think -y

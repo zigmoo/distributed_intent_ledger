@@ -1,0 +1,1 @@
+calls=lms load allenai/olmo-3-32b-think -y

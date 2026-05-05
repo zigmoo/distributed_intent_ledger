@@ -1,0 +1,5 @@
+| Model ID | Display Name | Host | Server | Context | TPS |
+|----------|--------------|------|--------|---------|-----|
+{% for model in models %}
+| {{ model.model_id|truncate(28) }} | {{ model.display_name|truncate(22) }} | {{ model.host|truncate(8) }} | {{ model.server|truncate(9) }} | {{ model.context_window_tokens|default('—') }} | {{ model.tps|default('—') }} |
+{% endfor %}

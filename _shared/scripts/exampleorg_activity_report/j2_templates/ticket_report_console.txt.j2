@@ -1,0 +1,3 @@
+{% for row in rows -%}
+{{ row.link }}{{ row.ticket_pad }}  {{ "%-13s"|format(row.status) }}  {{ "%-8s"|format(row.priority) }}  {{ "%-20s"|format(row.owner) }}  {{ "%-10s"|format(row.updated) }}  {{ row.summary }}
+{% endfor -%}

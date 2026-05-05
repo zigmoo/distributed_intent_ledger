@@ -1,0 +1,2 @@
+OK | add | alphaSetting="one" | path=<TMP>/settings.json
+alphaSetting="one" | source=registry | path=<TMP>/settings.json

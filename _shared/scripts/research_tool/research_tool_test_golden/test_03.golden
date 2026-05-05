@@ -1,0 +1,8 @@
+OK | DIL-2008 | ideas | <TMP>/dil_override/_shared/research/ideas/DIL-2008-idea-DATET100008Z-alias-idea.md
+OK | DIL-2009 | digests | <TMP>/dil_override/_shared/research/digests/DIL-2009-digest-DATET100009Z-override-digest.md
+OK | DIL-2010 | ideas | <TMP>/dil_override/_shared/research/ideas/DIL-2010-idea-DATET100010Z-duplicate-guard.md
+ERR | 3 | Artifact already exists: <TMP>/dil_override/_shared/research/ideas/DIL-2010-idea-DATET100010Z-duplicate-guard.md
+duplicate_without_force=failed_as_expected
+OK | DIL-2010 | ideas | <TMP>/dil_override/_shared/research/ideas/DIL-2010-idea-DATET100010Z-duplicate-guard.md
+override_dir_exists=yes
+force_replaced=yes

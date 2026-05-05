@@ -1,0 +1,6 @@
+alphaSetting="one" | source=registry
+scriptForgeQcDashboardBuildRetentionCount=30 | source=default
+scriptForgeQcDataRetentionMaxTestExecutions=500 | source=default
+scriptForgeQcDataRetentionWindowDays=180 | source=default
+source="setting_tool" | source=registry
+updatedAt="TIMESTAMP" | source=registry

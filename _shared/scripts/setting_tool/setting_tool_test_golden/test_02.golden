@@ -1,0 +1,3 @@
+scriptForgeQcDashboardBuildRetentionCount=30 | source=default | path=<TMP>/missing-settings.json
+scriptForgeQcDataRetentionWindowDays=180 | source=default | path=<TMP>/missing-settings.json
+scriptForgeQcDataRetentionMaxTestExecutions=500 | source=default | path=<TMP>/missing-settings.json

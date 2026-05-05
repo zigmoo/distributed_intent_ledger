@@ -26,9 +26,11 @@ def resolve_dil_base(script_dir: str | Path | None = None, explicit: str | None 
         return str(Path(env_base).expanduser())
 
     if script_dir:
-        repo_base = Path(script_dir).resolve().parent.parent
-        if (repo_base / "_shared").is_dir():
-            return str(repo_base)
+        cursor = Path(script_dir).resolve()
+        while cursor != cursor.parent:
+            if (cursor / "_shared" / "_meta").is_dir():
+                return str(cursor)
+            cursor = cursor.parent
 
     legacy = Path.home() / "Documents" / "dil_agentic_memory_0001"
     if (legacy / "_shared").is_dir():

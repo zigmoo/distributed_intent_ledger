@@ -1,0 +1,15 @@
+usage: llm_local_tool [-h] --base BASE [--host HOST] [--timeout TIMEOUT]
+                      [subcommand] ...
+
+Local LLM management tool
+
+positional arguments:
+  subcommand
+  args
+
+options:
+  -h, --help         show this help message and exit
+  --base BASE
+  --host HOST        Prefer this host when resolving a local model (for
+                     example framemoowork or moosacrem1promax)
+  --timeout TIMEOUT  HTTP timeout in seconds for test requests

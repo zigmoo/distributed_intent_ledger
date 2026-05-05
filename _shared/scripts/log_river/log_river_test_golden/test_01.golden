@@ -1,0 +1,12 @@
+usage: log_river [-h] --base BASE {render,harvest} ...
+
+Harvest, persist, and visualize DIL operational activity.
+
+positional arguments:
+  {render,harvest}
+    render          Generate the Log River HTML visualization
+    harvest         Scan logs and emit a portable JSON data file
+
+options:
+  -h, --help        show this help message and exit
+  --base BASE       DIL base path

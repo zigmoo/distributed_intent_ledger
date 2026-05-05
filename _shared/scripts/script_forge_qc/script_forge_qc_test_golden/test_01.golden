@@ -1,0 +1,14 @@
+usage: script_forge_qc [-h] --base BASE {latest,summary,last-status,path} ...
+
+Query DIL Script Forge QC registry data
+
+positional arguments:
+  {latest,summary,last-status,path}
+    latest              show recent test runs
+    summary             summarize runs by suite/tool/status
+    last-status         show latest status
+    path                print the test run registry path
+
+options:
+  -h, --help            show this help message and exit
+  --base BASE           DIL base path

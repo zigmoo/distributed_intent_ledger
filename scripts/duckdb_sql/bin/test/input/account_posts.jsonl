@@ -1,5 +1,0 @@
-{"accountId":"1001","tweetId":"t100","sourceTweetId":"t100","role":"author","source":"bookmark"}
-{"accountId":"1002","tweetId":"t200","sourceTweetId":"t200","role":"author","source":"bookmark"}
-{"accountId":"1001","tweetId":"t300","sourceTweetId":"t100","role":"quoted","source":"deep_sync"}
-{"accountId":"1002","tweetId":"t300","sourceTweetId":"t100","role":"mentioned","source":"deep_sync"}
-{"accountId":"1003","tweetId":"t400","sourceTweetId":"t400","role":"author","source":"bookmark"}

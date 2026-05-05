@@ -1,0 +1,21 @@
+usage: setting_tool [-h] --base BASE [--settings-file SETTINGS_FILE] [--json]
+                    [--dry-run]
+                    {get,set,list,defaults} ...
+
+Read and update DIL global settings with defaults
+
+positional arguments:
+  {get,set,list,defaults}
+    get                 read one setting, falling back to defaults
+    set                 add or update one setting
+    list                list settings
+    defaults            list built-in defaults
+
+options:
+  -h, --help            show this help message and exit
+  --base BASE           DIL base path
+  --settings-file SETTINGS_FILE
+                        settings registry path (default:
+                        _shared/_meta/agent_runtime_policy.json)
+  --json                emit JSON
+  --dry-run             preview without side effects
