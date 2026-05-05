@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# file path: _shared/scripts/duckdb_sql/bin/duckdb_sql.bash
 # DIL-native wrapper for duckdb_sql.py
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
-SCRIPTS_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+SN="$(basename "${SCRIPT_PATH%.*}")"
 DRAWER_DIR="$(dirname "$SCRIPT_DIR")"
+SCRIPTS_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 VENV_DIR="$DRAWER_DIR/venv"
 
 VENV_TOOL="$SCRIPTS_DIR/bin/venv_tool"
@@ -14,7 +15,7 @@ if [[ -x "$VENV_TOOL" ]]; then
 fi
 
 source "$VENV_DIR/bin/activate"
-PYTHONUNBUFFERED=1 python "$SCRIPT_DIR/duckdb_sql.py" "$@"
+PYTHONUNBUFFERED=1 python "$SCRIPT_DIR/${SN}.py" "$@"
 exit_code=$?
 deactivate
 exit "$exit_code"
