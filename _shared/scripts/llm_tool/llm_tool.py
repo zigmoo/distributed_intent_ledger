@@ -1104,7 +1104,7 @@ def verify_pi_on_target(target_host, target_user, provider, model_id, timeout=DE
 
 def load_source_model(source_host, model_id, context_len, timeout=DEFAULT_REMOTE_TIMEOUT):
     safe_id = shlex.quote(model_id)
-    cmd = f"lms unload -a >/dev/null 2>&1 || true; lms load {safe_id} --context-length {int(context_len)} --ttl 3600 -y"
+    cmd = f"lms unload -a >/dev/null 2>&1 || true; lms load {safe_id} --context-length {int(context_len)} --ttl -1 -y"
     return host_cmd(source_host, cmd, timeout=timeout)
 
 
@@ -1393,7 +1393,7 @@ def retry_with_unload_all(record, context_len, probe_timeout=DEFAULT_PROBE_TIMEO
     timeout = ARGS.remote_timeout if ARGS else DEFAULT_REMOTE_TIMEOUT
     host_cmd(host, "lms unload -a || true", timeout=timeout)
     safe_id = shlex.quote(record.api_model_id)
-    host_cmd(host, f"lms load {safe_id} --context-length {int(context_len)} --ttl 3600 -y", timeout=timeout)
+    host_cmd(host, f"lms load {safe_id} --context-length {int(context_len)} --ttl -1 -y", timeout=timeout)
     return probe_model(record.model_ref, timeout=probe_timeout)
 
 
@@ -1563,7 +1563,7 @@ def ratchet_context_retry(record, min_context=DEFAULT_MIN_CONTEXT, max_context=D
 def load_remote_model(record, context_len):
     safe_id = shlex.quote(record.api_model_id)
     timeout = ARGS.remote_timeout if ARGS else DEFAULT_REMOTE_TIMEOUT
-    host_cmd(record.host, f"lms unload {safe_id} || true; lms load {safe_id} --context-length {int(context_len)} --ttl 3600 -y", timeout=timeout)
+    host_cmd(record.host, f"lms unload {safe_id} || true; lms load {safe_id} --context-length {int(context_len)} --ttl -1 -y", timeout=timeout)
 
 
 def optimize_llm_performance(record, current_context, max_context, probe_timeout=DEFAULT_PROBE_TIMEOUT):
