@@ -1,19 +1,16 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # file path: _shared/scripts/duckdb_sql/bin/duckdb_sql.bash
 # DIL-native wrapper for duckdb_sql.py
-# Self-contained venv management.
+set -euo pipefail
 
-SCRIPT_PATH=$(readlink -f "$0")
-SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
-DRAWER_DIR=$(dirname "$SCRIPT_DIR")
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+SCRIPTS_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+DRAWER_DIR="$(dirname "$SCRIPT_DIR")"
 VENV_DIR="$DRAWER_DIR/venv"
-REQUIREMENTS="$SCRIPT_DIR/requirements.txt"
 
-if [ ! -f "$VENV_DIR/bin/activate" ]; then
-    python3 -m venv "$VENV_DIR" 2>/dev/null
-    source "$VENV_DIR/bin/activate"
-    pip install --quiet --disable-pip-version-check -r "$REQUIREMENTS" 2>/dev/null
-    deactivate
+VENV_TOOL="$SCRIPTS_DIR/bin/venv_tool"
+if [[ -x "$VENV_TOOL" ]]; then
+  "$VENV_TOOL" ensure "$DRAWER_DIR" -q
 fi
 
 source "$VENV_DIR/bin/activate"
