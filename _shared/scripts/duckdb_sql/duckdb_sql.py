@@ -1,4 +1,4 @@
-# file path: _shared/scripts/duckdb_sql/bin/duckdb_sql.py
+# file path: _shared/scripts/duckdb_sql/duckdb_sql.py
 
 import sys
 import os
@@ -10,7 +10,7 @@ from pathlib import Path
 from datetime import datetime
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-LIB_DIR = SCRIPT_DIR.parent.parent / "lib"
+LIB_DIR = SCRIPT_DIR.parent / "lib"
 sys.path.insert(0, str(LIB_DIR))
 
 from resolve_base import resolve_dil_base
@@ -25,7 +25,7 @@ def resolve_base_dir():
 
 
 def setup_logging(base_dir, verbose):
-    """Set up ScriptForgeLogger per Script Forge Standard #12."""
+    """Set up ToolForgeLogger per Tool Forge Standard #12."""
     global _logger
     if not verbose:
         return None
