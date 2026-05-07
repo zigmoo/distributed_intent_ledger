@@ -66,8 +66,64 @@ test_02_commit_e2e() {
   git -C "$r" log -1 --pretty=%B
 }
 
+test_03_message_file_driven() {
+  local msgfile="$WORK/test_message.md"
+  cat > "$msgfile" <<'MSGEOF'
+---
+title: "DIL-7777: Add message-file-driven commit rendering"
+date: 2026-05-07
+machine: testhost
+assistant: test
+category: message
+memoryType: message
+priority: high
+tags: [test]
+updated: 2026-05-07
+source: internal
+domain: personal
+project: dil
+status: draft
+owner: test
+due:
+channel: git
+recipient: test-repo
+---
+
+Message file body used as why field when no --why is provided on CLI.
+MSGEOF
+  $TOOL_NAME commit-template --message-ref "$msgfile"
+}
+
+test_04_message_file_cli_override() {
+  local msgfile="$WORK/test_message_override.md"
+  cat > "$msgfile" <<'MSGEOF'
+---
+title: "DIL-8888: Summary from file should be overridden"
+date: 2026-05-07
+machine: testhost
+assistant: test
+category: message
+memoryType: message
+tags: [test]
+updated: 2026-05-07
+source: internal
+domain: personal
+project: dil
+status: draft
+owner: test
+channel: git
+recipient: test-repo
+---
+
+Body from file should be overridden by --why.
+MSGEOF
+  $TOOL_NAME commit-template --message-ref "$msgfile" --task-id DIL-9000 -m "CLI summary wins over file" --why "CLI why wins" --evidence "CLI evidence wins"
+}
+
 run_test 1 "template render" test_01_template
 run_test 2 "commit end-to-end" test_02_commit_e2e
+run_test 3 "message-file-driven template" test_03_message_file_driven
+run_test 4 "message-file with CLI overrides" test_04_message_file_cli_override
 
 echo ""
 if $REBUILD; then echo "=== REBUILT: $PASSED golden baselines regenerated ===";

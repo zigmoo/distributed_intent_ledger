@@ -1,0 +1,10 @@
+DIL-7777: Add message-file-driven commit rendering
+
+Why:
+Message file body used as why field when no --why is provided on CLI.
+
+Evidence:
+n/a
+
+message_ref: <TMP>/test_message.md
+
