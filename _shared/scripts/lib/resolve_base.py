@@ -28,7 +28,10 @@ def resolve_dil_base(script_dir: str | Path | None = None, explicit: str | None 
     if script_dir:
         cursor = Path(script_dir).resolve()
         while cursor != cursor.parent:
-            if (cursor / "_shared" / "_meta").is_dir():
+            meta = cursor / "_shared" / "_meta"
+            if meta.is_dir() and (meta / "model_registry.jsonl").exists():
+                return str(cursor)
+            if (cursor / "READ_THIS_DIL_FIRST.md").exists():
                 return str(cursor)
             cursor = cursor.parent
 

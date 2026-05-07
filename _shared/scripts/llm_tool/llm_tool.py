@@ -15,6 +15,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from time import perf_counter
+from urllib.error import URLError
+from urllib.request import Request, urlopen
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(_SCRIPT_DIR.parent / "lib"))
@@ -67,6 +69,8 @@ DEFAULT_MIN_CONTEXT = 16384
 DEFAULT_PROBE_TIMEOUT = 240
 DEFAULT_REMOTE_TIMEOUT = 240
 DEFAULT_CONFIG_CONTEXT = 32768
+DEFAULT_WATCHDOG_MIN_CONTEXT = 16384
+DEFAULT_WATCHDOG_PORT = 1234
 OPENCODE_NPM_PACKAGE = "opencode-ai"
 OPENCODE_NPM_VERSION = "1.14.33"
 LIVE_RENDER_INTERVAL = 10
@@ -453,6 +457,11 @@ def parse_args(argv=None):
     parser.add_argument("--skip-load", action="store_true", help="Do not load the selected model on the source server before writing/verifying config.")
     parser.add_argument("--install-harness", action="store_true", help="Install or repair the target harness CLI when supported.")
     parser.add_argument("--configure-dry-run", action="store_true", help="Print planned harness config without writing remote files.")
+    parser.add_argument("--watchdog", action="store_true", help="Run context watchdog: check loaded models, fix any with insufficient context.")
+    parser.add_argument("--watchdog-port", type=int, default=DEFAULT_WATCHDOG_PORT, help="LM Studio HTTP API port.")
+    parser.add_argument("--watchdog-min-context", type=int, default=DEFAULT_WATCHDOG_MIN_CONTEXT, help="Minimum acceptable loaded context; models below this trigger a reload.")
+    parser.add_argument("--watchdog-dry-run", action="store_true", help="Report context issues without fixing them.")
+    parser.add_argument("--watchdog-status", action="store_true", help="Show watchdog timer status and current model context health (no SSH).")
     return parser.parse_args(argv)
 
 
@@ -950,24 +959,28 @@ def discover_base_url_from_target(target_host, source_host, timeout=DEFAULT_REMO
     raise RuntimeError(f"No reachable LM Studio endpoint from target={target_host} source={source_host}")
 
 
+def _opencode_model_entry(row):
+    """Build a single opencode model entry from a registry row."""
+    model_id = row.get("backend_model_id") or row.get("model_id")
+    entry = {"id": model_id, "name": row.get("display_name") or model_id}
+    # OpenCode doesn't yet support vision/input config for custom providers
+    # (tracked: anomalyco/opencode#20802). Include for forward compat.
+    modalities = row.get("input_modalities", [])
+    if "image" in modalities:
+        entry["supports_attachments"] = True
+    return entry
+
+
 def build_opencode_config(source_host, base_url, selected_row, fallback_rows=None):
     provider = provider_key_for_host(source_host)
     selected_model_id = selected_row.get("backend_model_id") or selected_row.get("model_id")
     selected_key = slugify_model_key(selected_model_id)
-    models = {
-        selected_key: {
-            "id": selected_model_id,
-            "name": selected_row.get("display_name") or selected_model_id,
-        }
-    }
+    models = {selected_key: _opencode_model_entry(selected_row)}
     for row in fallback_rows or []:
         model_id = row.get("backend_model_id") or row.get("model_id")
         if not model_id or model_id == selected_model_id:
             continue
-        models.setdefault(slugify_model_key(model_id), {
-            "id": model_id,
-            "name": row.get("display_name") or model_id,
-        })
+        models.setdefault(slugify_model_key(model_id), _opencode_model_entry(row))
     return {
         "$schema": "https://opencode.ai/config.json",
         "model": f"{provider}/{selected_key}",
@@ -1030,16 +1043,31 @@ def write_opencode_config_on_target(target_host, target_user, cfg, dry_run=False
     return run_on_target(target_host, cmd, timeout=timeout)
 
 
+def _pi_model_entry(row):
+    """Build a single pi model entry from a registry row, including capabilities."""
+    model_id = row.get("backend_model_id") or row.get("model_id")
+    entry = {"id": model_id, "name": row.get("display_name") or model_id}
+    modalities = row.get("input_modalities", [])
+    if "image" in modalities:
+        entry["input"] = [m for m in modalities if m in ("text", "image")]
+    if row.get("reasoning"):
+        entry["reasoning"] = True
+    ctx = row.get("context_window_tokens")
+    if ctx:
+        entry["contextWindow"] = int(ctx)
+    return entry
+
+
 def build_pi_config(source_host, base_url, selected_row, fallback_rows=None):
     """Build a pi models.json config with the selected model and fallbacks."""
     provider = provider_key_for_host(source_host)
     selected_model_id = selected_row.get("backend_model_id") or selected_row.get("model_id")
-    models = [{"id": selected_model_id, "name": selected_row.get("display_name") or selected_model_id}]
+    models = [_pi_model_entry(selected_row)]
     for row in fallback_rows or []:
         model_id = row.get("backend_model_id") or row.get("model_id")
         if not model_id or model_id == selected_model_id:
             continue
-        models.append({"id": model_id, "name": row.get("display_name") or model_id})
+        models.append(_pi_model_entry(row))
     return {
         "providers": {
             provider: {
@@ -1102,9 +1130,19 @@ def verify_pi_on_target(target_host, target_user, provider, model_id, timeout=DE
     return run_on_target(target_host, cmd, timeout=timeout)
 
 
+def resolve_effective_context(args, model_id, host=None):
+    """Registry is the source of truth; CLI --context is an override."""
+    if "--context" in sys.argv:
+        return int(args.context)
+    registry_ctx = registry_target_context(model_id, host=host)
+    if registry_ctx:
+        return int(registry_ctx)
+    return int(args.context)
+
+
 def load_source_model(source_host, model_id, context_len, timeout=DEFAULT_REMOTE_TIMEOUT):
     safe_id = shlex.quote(model_id)
-    cmd = f"lms unload -a >/dev/null 2>&1 || true; lms load {safe_id} --context-length {int(context_len)} --ttl -1 -y"
+    cmd = f"lms unload -a >/dev/null 2>&1 || true; lms load {safe_id} --context-length {int(context_len)} -y"
     return host_cmd(source_host, cmd, timeout=timeout)
 
 
@@ -1126,6 +1164,249 @@ def verify_source_context(source_host, model_id, expected_context, fail_below=Tr
     record_registry_context(model_id, "ok", actual_int, host=source_host)
     print(f"CONFIGURE_CONTEXT_OK model_id={model_id} expected={expected_int} actual={actual_int}")
     return True
+
+
+LMSTUDIO_HOST_RESOLUTION = {
+    "moosacrem1promax": [
+        "moosacrem1promax.local",
+        "moosacrem1promax.jay-frog.ts.net",
+        "moosacrem1promax",
+    ],
+    "framemoowork": ["localhost", "framemoowork.local", "framemoowork"],
+}
+
+
+def _lmstudio_http(method, host, port, path, body=None, timeout=10):
+    candidates = LMSTUDIO_HOST_RESOLUTION.get(host, [f"{host}.local", host])
+    last_err = None
+    for hostname in candidates:
+        url = f"http://{hostname}:{port}{path}"
+        data = json.dumps(body).encode() if body else None
+        req = Request(url, data=data, method=method)
+        if data:
+            req.add_header("Content-Type", "application/json")
+        try:
+            with urlopen(req, timeout=timeout) as resp:
+                return json.loads(resp.read())
+        except (URLError, OSError, TimeoutError) as e:
+            last_err = e
+            continue
+    raise ConnectionError(f"Cannot reach LM Studio on {host}:{port} — {last_err}")
+
+
+def http_get_loaded_models(host, port=1234):
+    data = _lmstudio_http("GET", host, port, "/api/v0/models")
+    return [m for m in data.get("data", []) if m.get("state") == "loaded"]
+
+
+def http_unload_model(host, port, instance_id):
+    return _lmstudio_http("POST", host, port, "/api/v1/models/unload", {"instance_id": instance_id})
+
+
+def http_load_model(host, port, model_id, context_length):
+    return _lmstudio_http("POST", host, port, "/api/v1/models/load",
+                          {"model": model_id, "context_length": int(context_length)}, timeout=120)
+
+
+def registry_target_context(model_id, host=None):
+    for row in read_registry_rows():
+        if host and normalize_host(row.get("host")) != normalize_host(host):
+            continue
+        if not model_identity_matches(row, model_id):
+            continue
+        # Prefer min_working — it's the lowest context proven to work,
+        # avoids over-allocating VRAM on the inference host.
+        for key in ("min_working_context_length", "last_verified_context_length", "context_window_tokens"):
+            val = row.get(key)
+            if val is not None:
+                try:
+                    return int(val)
+                except (ValueError, TypeError):
+                    continue
+    return None
+
+
+def watchdog(args):
+    port = args.watchdog_port
+    min_ctx = args.watchdog_min_context
+    default_ctx = args.context
+    dry_run = args.watchdog_dry_run
+    hosts = [args.host] if args.host else [h for h in LMSTUDIO_HOST_RESOLUTION if h != short_hostname()]
+    if not hosts:
+        hosts = list(LMSTUDIO_HOST_RESOLUTION.keys())
+
+    fixed = 0
+    checked = 0
+    errors = 0
+
+    for host in hosts:
+        print(f"WATCHDOG_HOST host={host} port={port}")
+        append_event_csv("WATCHDOG_HOST", model_ref=host, status="start", mode="watchdog")
+        try:
+            models = http_get_loaded_models(host, port)
+        except ConnectionError as e:
+            print(f"WATCHDOG_UNREACHABLE host={host} error={e}")
+            append_event_csv("WATCHDOG_UNREACHABLE", model_ref=host, status="error", reason=str(e), mode="watchdog")
+            errors += 1
+            continue
+
+        if not models:
+            print(f"WATCHDOG_NO_MODELS host={host}")
+            append_event_csv("WATCHDOG_NO_MODELS", model_ref=host, status="ok", mode="watchdog")
+            continue
+
+        for model in models:
+            model_id = model.get("id", "unknown")
+            base_model_id = model_id.split(":")[0]
+            loaded_ctx = model.get("loaded_context_length", 0)
+            max_ctx = model.get("max_context_length", 0)
+            checked += 1
+
+            target_ctx = registry_target_context(base_model_id, host=host) or default_ctx
+            target_ctx = min(target_ctx, max_ctx) if max_ctx else target_ctx
+
+            if loaded_ctx >= min_ctx and loaded_ctx >= target_ctx:
+                print(f"WATCHDOG_OK model={model_id} loaded_ctx={loaded_ctx} target_ctx={target_ctx}")
+                append_event_csv("WATCHDOG_OK", model_ref=model_id, status="ok",
+                                 context=loaded_ctx, note=f"target={target_ctx}", mode="watchdog")
+                continue
+
+            print(f"WATCHDOG_FIX_NEEDED model={model_id} loaded_ctx={loaded_ctx} target_ctx={target_ctx}")
+            append_event_csv("WATCHDOG_FIX_NEEDED", model_ref=model_id, status="fix",
+                             context=loaded_ctx, note=f"target={target_ctx}", mode="watchdog")
+
+            if dry_run:
+                print(f"WATCHDOG_DRY_RUN model={model_id} would_reload_at={target_ctx}")
+                continue
+
+            # Hot-swap: load new instance first so the model stays available,
+            # then unload old instances with the wrong context.
+            old_instance_ids = []
+            try:
+                full_info = _lmstudio_http("GET", host, port, "/api/v1/models")
+                for m in full_info.get("models", []):
+                    if m.get("key") != base_model_id:
+                        continue
+                    for inst in m.get("loaded_instances", []):
+                        inst_id = inst.get("id")
+                        if inst_id:
+                            old_instance_ids.append(inst_id)
+            except Exception as e:
+                print(f"WATCHDOG_INSPECT_ERR model={model_id} error={e}")
+
+            try:
+                result = http_load_model(host, port, base_model_id, target_ctx)
+                new_instance_id = result.get("instance_id", "")
+                new_status = result.get("status", "unknown")
+                print(f"WATCHDOG_LOAD_NEW model={model_id} instance={new_instance_id} context={target_ctx} status={new_status}")
+            except Exception as e:
+                print(f"WATCHDOG_RELOAD_ERR model={model_id} context={target_ctx} error={e}")
+                append_event_csv("WATCHDOG_RELOAD_ERR", model_ref=model_id, status="error",
+                                 context=target_ctx, reason=str(e), mode="watchdog")
+                errors += 1
+                continue
+
+            for old_id in old_instance_ids:
+                if old_id == new_instance_id:
+                    continue
+                try:
+                    print(f"WATCHDOG_UNLOAD_OLD model={model_id} instance={old_id}")
+                    http_unload_model(host, port, old_id)
+                except Exception as e:
+                    print(f"WATCHDOG_UNLOAD_ERR model={model_id} instance={old_id} error={e}")
+
+            # Verify — v0 API may suffix instance number (e.g. "model:2")
+            try:
+                verify_models = http_get_loaded_models(host, port)
+                verified = [m for m in verify_models if m.get("id", "").split(":")[0] == base_model_id]
+                if verified:
+                    new_ctx = verified[0].get("loaded_context_length", 0)
+                    if new_ctx >= target_ctx:
+                        print(f"WATCHDOG_FIXED model={model_id} old_ctx={loaded_ctx} new_ctx={new_ctx}")
+                        append_event_csv("WATCHDOG_FIXED", model_ref=model_id, status="ok",
+                                         context=new_ctx, note=f"was={loaded_ctx}", mode="watchdog")
+                        record_registry_context(base_model_id, "ok", new_ctx, host=host)
+                        fixed += 1
+                    else:
+                        print(f"WATCHDOG_VERIFY_FAIL model={model_id} expected={target_ctx} got={new_ctx}")
+                        append_event_csv("WATCHDOG_VERIFY_FAIL", model_ref=model_id, status="error",
+                                         context=new_ctx, note=f"expected={target_ctx}", mode="watchdog")
+                        errors += 1
+                else:
+                    print(f"WATCHDOG_VERIFY_MISSING model={model_id} not found after reload")
+                    errors += 1
+            except Exception as e:
+                print(f"WATCHDOG_VERIFY_ERR model={model_id} error={e}")
+                errors += 1
+
+    print(f"WATCHDOG_SUMMARY checked={checked} fixed={fixed} errors={errors}")
+    append_event_csv("WATCHDOG_SUMMARY", status="ok" if errors == 0 else "error",
+                     note=f"checked={checked} fixed={fixed} errors={errors}", mode="watchdog")
+    return 1 if errors else 0
+
+
+def watchdog_status(args):
+    port = args.watchdog_port
+    hosts = [args.host] if args.host else [h for h in LMSTUDIO_HOST_RESOLUTION]
+
+    # Timer status (local systemd)
+    timer_ok = False
+    try:
+        r = run(["systemctl", "--user", "is-active", "llm-watchdog.timer"], timeout=5)
+        state = (r.stdout or "").strip()
+        timer_ok = state == "active"
+    except Exception:
+        state = "unknown"
+    try:
+        r2 = run(["systemctl", "--user", "show", "llm-watchdog.timer",
+                  "--property=LastTriggerUSec,NextElapseUSecRealtime"], timeout=5)
+        props = dict(line.split("=", 1) for line in (r2.stdout or "").strip().splitlines() if "=" in line)
+        last = props.get("LastTriggerUSec", "n/a")
+        nxt = props.get("NextElapseUSecRealtime", "n/a")
+    except Exception:
+        last = nxt = "n/a"
+
+    print(f"TIMER state={state} last={last} next={nxt}")
+
+    # Last watchdog run result from journal
+    try:
+        r3 = run(["journalctl", "--user", "-u", "llm-watchdog.service",
+                  "--no-pager", "-n", "5", "-o", "short-iso"], timeout=5)
+        journal = (r3.stdout or "").strip()
+        if journal:
+            for line in journal.splitlines():
+                if "WATCHDOG_" in line:
+                    print(f"JOURNAL {line.strip()}")
+    except Exception:
+        pass
+
+    # Live model context check via HTTP (no SSH)
+    all_ok = True
+    for host in hosts:
+        try:
+            models = http_get_loaded_models(host, port)
+        except ConnectionError as e:
+            print(f"HOST {host} UNREACHABLE ({e})")
+            all_ok = False
+            continue
+
+        if not models:
+            print(f"HOST {host} no_loaded_models")
+            continue
+
+        for model in models:
+            model_id = model.get("id", "unknown")
+            base_id = model_id.split(":")[0]
+            loaded_ctx = model.get("loaded_context_length", 0)
+            target_ctx = registry_target_context(base_id, host=host) or args.context
+            status = "OK" if loaded_ctx >= target_ctx else "LOW"
+            if status == "LOW":
+                all_ok = False
+            print(f"MODEL host={host} model={model_id} loaded_ctx={loaded_ctx} target_ctx={target_ctx} status={status}")
+
+    overall = "HEALTHY" if (timer_ok and all_ok) else "DEGRADED"
+    print(f"STATUS {overall}")
+    return 0 if overall == "HEALTHY" else 1
 
 
 def verify_opencode_on_target(target_host, target_user, model_ref, timeout=DEFAULT_PROBE_TIMEOUT):
@@ -1160,9 +1441,12 @@ def configure_harness_pi(args):
     provider = cfg["_selectedProvider"]
     model_ref = f"{provider}/{model_id}"
 
+    ctx = resolve_effective_context(args, model_id, host=source_host)
+
     print(f"CONFIGURE_START harness=pi target={target_host} user={args.target_user} source={source_host}")
     print(f"CONFIGURE_SELECT selection={args.selection} model_id={model_id} model_ref={model_ref}")
     print(f"CONFIGURE_ENDPOINT base_url={base_url}")
+    print(f"CONFIGURE_CONTEXT effective={ctx} source={'cli' if '--context' in sys.argv else 'registry' if ctx != int(args.context) else 'default'}")
 
     if args.configure_dry_run:
         write_pi_config_on_target(target_host, args.target_user, cfg, dry_run=True, timeout=args.remote_timeout)
@@ -1173,24 +1457,24 @@ def configure_harness_pi(args):
 
     if args.skip_load:
         print("CONFIGURE_LOAD_SKIPPED skip_load=true")
-        if not verify_source_context(source_host, model_id, args.context, fail_below=True):
-            print(f"CONFIGURE_AUTO_LOAD model_id={model_id} context={int(args.context)}")
-            load = load_source_model(source_host, model_id, args.context, timeout=args.remote_timeout)
+        if not verify_source_context(source_host, model_id, ctx, fail_below=True):
+            print(f"CONFIGURE_AUTO_LOAD model_id={model_id} context={ctx}")
+            load = load_source_model(source_host, model_id, ctx, timeout=args.remote_timeout)
             if load.returncode != 0:
                 print(f"CONFIGURE_LOAD_FAIL model_id={model_id}")
                 print((load.stderr or load.stdout or "").strip())
                 return 1
-            print(f"CONFIGURE_LOAD_OK model_id={model_id} context={int(args.context)}")
-            if not verify_source_context(source_host, model_id, args.context, fail_below=True):
+            print(f"CONFIGURE_LOAD_OK model_id={model_id} context={ctx}")
+            if not verify_source_context(source_host, model_id, ctx, fail_below=True):
                 return 1
     else:
-        load = load_source_model(source_host, model_id, args.context, timeout=args.remote_timeout)
+        load = load_source_model(source_host, model_id, ctx, timeout=args.remote_timeout)
         if load.returncode != 0:
             print(f"CONFIGURE_LOAD_FAIL model_id={model_id}")
             print((load.stderr or load.stdout or "").strip())
             return 1
-        print(f"CONFIGURE_LOAD_OK model_id={model_id} context={int(args.context)}")
-        if not verify_source_context(source_host, model_id, args.context, fail_below=True):
+        print(f"CONFIGURE_LOAD_OK model_id={model_id} context={ctx}")
+        if not verify_source_context(source_host, model_id, ctx, fail_below=True):
             return 1
 
     written = write_pi_config_on_target(
@@ -1242,9 +1526,12 @@ def configure_harness(args):
     cfg = build_opencode_config(source_host, base_url, selected, fallback_rows=fallback_rows)
     model_ref = cfg["model"]
 
+    ctx = resolve_effective_context(args, model_id, host=source_host)
+
     print(f"CONFIGURE_START harness=opencode target={target_host} user={args.target_user} source={source_host}")
     print(f"CONFIGURE_SELECT selection={args.selection} model_id={model_id} model_ref={model_ref}")
     print(f"CONFIGURE_ENDPOINT base_url={base_url}")
+    print(f"CONFIGURE_CONTEXT effective={ctx} source={'cli' if '--context' in sys.argv else 'registry' if ctx != int(args.context) else 'default'}")
 
     if args.configure_dry_run:
         write_opencode_config_on_target(
@@ -1261,24 +1548,24 @@ def configure_harness(args):
 
     if args.skip_load:
         print("CONFIGURE_LOAD_SKIPPED skip_load=true")
-        if not verify_source_context(source_host, model_id, args.context, fail_below=True):
-            print(f"CONFIGURE_AUTO_LOAD model_id={model_id} context={int(args.context)}")
-            load = load_source_model(source_host, model_id, args.context, timeout=args.remote_timeout)
+        if not verify_source_context(source_host, model_id, ctx, fail_below=True):
+            print(f"CONFIGURE_AUTO_LOAD model_id={model_id} context={ctx}")
+            load = load_source_model(source_host, model_id, ctx, timeout=args.remote_timeout)
             if load.returncode != 0:
                 print(f"CONFIGURE_LOAD_FAIL model_id={model_id}")
                 print((load.stderr or load.stdout or "").strip())
                 return 1
-            print(f"CONFIGURE_LOAD_OK model_id={model_id} context={int(args.context)}")
-            if not verify_source_context(source_host, model_id, args.context, fail_below=True):
+            print(f"CONFIGURE_LOAD_OK model_id={model_id} context={ctx}")
+            if not verify_source_context(source_host, model_id, ctx, fail_below=True):
                 return 1
     else:
-        load = load_source_model(source_host, model_id, args.context, timeout=args.remote_timeout)
+        load = load_source_model(source_host, model_id, ctx, timeout=args.remote_timeout)
         if load.returncode != 0:
             print(f"CONFIGURE_LOAD_FAIL model_id={model_id}")
             print((load.stderr or load.stdout or "").strip())
             return 1
-        print(f"CONFIGURE_LOAD_OK model_id={model_id} context={int(args.context)}")
-        if not verify_source_context(source_host, model_id, args.context, fail_below=True):
+        print(f"CONFIGURE_LOAD_OK model_id={model_id} context={ctx}")
+        if not verify_source_context(source_host, model_id, ctx, fail_below=True):
             return 1
 
     if args.install_harness:
@@ -1393,7 +1680,7 @@ def retry_with_unload_all(record, context_len, probe_timeout=DEFAULT_PROBE_TIMEO
     timeout = ARGS.remote_timeout if ARGS else DEFAULT_REMOTE_TIMEOUT
     host_cmd(host, "lms unload -a || true", timeout=timeout)
     safe_id = shlex.quote(record.api_model_id)
-    host_cmd(host, f"lms load {safe_id} --context-length {int(context_len)} --ttl -1 -y", timeout=timeout)
+    host_cmd(host, f"lms load {safe_id} --context-length {int(context_len)} -y", timeout=timeout)
     return probe_model(record.model_ref, timeout=probe_timeout)
 
 
@@ -1563,7 +1850,7 @@ def ratchet_context_retry(record, min_context=DEFAULT_MIN_CONTEXT, max_context=D
 def load_remote_model(record, context_len):
     safe_id = shlex.quote(record.api_model_id)
     timeout = ARGS.remote_timeout if ARGS else DEFAULT_REMOTE_TIMEOUT
-    host_cmd(record.host, f"lms unload {safe_id} || true; lms load {safe_id} --context-length {int(context_len)} --ttl -1 -y", timeout=timeout)
+    host_cmd(record.host, f"lms unload {safe_id} || true; lms load {safe_id} --context-length {int(context_len)} -y", timeout=timeout)
 
 
 def optimize_llm_performance(record, current_context, max_context, probe_timeout=DEFAULT_PROBE_TIMEOUT):
@@ -1814,6 +2101,16 @@ def main(argv=None):
     global optimize_ok, optimize_fail
     ARGS = parse_args(argv)
     LOG = ToolForgeLogger("llm_tool", "run", str(DIL_BASE))
+    if ARGS.watchdog_status:
+        try:
+            return watchdog_status(ARGS)
+        finally:
+            LOG.close()
+    if ARGS.watchdog:
+        try:
+            return watchdog(ARGS)
+        finally:
+            LOG.close()
     if ARGS.configure_harness:
         try:
             return configure_harness(ARGS)

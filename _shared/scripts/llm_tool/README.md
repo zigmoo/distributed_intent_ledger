@@ -1,15 +1,8 @@
 # llm_tool
 
-Purpose: run an LM Studio model matrix from framemoowork against the Mac LM Studio host, with:
-- early route precheck
-- per-model pass/fail visibility
-- context ratchet retry up to the configured ceiling
-- failure-only reruns from a prior log
-- subset selection via CLI args or JSON sidecar
-- optional `optimize_llm_performance()` pass after a model first runs
-- summary counters
-- context discovery persistence into `_shared/_meta/model_registry.jsonl`
-- harness configuration for verified model routes, starting with OpenCode
+LM Studio model lifecycle manager. Probes models, discovers context lengths via ratcheting, measures TPS, persists attributes to the model registry, and configures agent harnesses (pi, opencode) with registry-derived capabilities.
+
+The model registry (`_shared/_meta/model_registry.jsonl`) is the single source of truth.
 
 ## Entry points
 - Bash wrapper: `llm_tool.bash`
@@ -17,62 +10,131 @@ Purpose: run an LM Studio model matrix from framemoowork against the Mac LM Stud
 - Extensionless bin command: `llm_tool`
 
 ## Usage
+
+### Full matrix run
 ```bash
-llm_tool;
+llm_tool
 ```
 
-### Common modes
-
-- Rerun only failures from a previous log:
+### Probe specific models
 ```bash
-llm_tool --failures-only --source-log /path/to/old.log;
-```
-- Rerun a selected subset:
-```bash
-llm_tool --model lmstudio/lfm2-5-1-2b --model lmstudio/qwen3.6-35b-a3b;
-```
-- Use a JSON sidecar:
-```bash
-llm_tool --models-file /path/to/selection.json;
+llm_tool --model moosacrem1promax/nemotron-3-nano-omni
+llm_tool --model moosacrem1promax/qwen3.6-35b-a3b --optimize
 ```
 
-### Configure OpenCode on a target machine
+### Rerun failures from a prior log
+```bash
+llm_tool --failures-only --source-log /path/to/old.log
+```
 
-Configure a target user's OpenCode harness from an LM Studio source host. The tool can select the most powerful responsive model from the registry, the fastest responsive model, or a specific model.
+### JSON sidecar
+```bash
+llm_tool --models-file /path/to/selection.json
+```
+
+### Configure pi harness
+
+```bash
+llm_tool \
+  --configure-harness pi \
+  --source-host moosacrem1promax \
+  --selection specific \
+  --specific-model "qwen/qwen3.6-35b-a3b" \
+  --target-host framemoowork \
+  --skip-load
+```
+
+This reads `input_modalities`, `reasoning`, and `context_window_tokens` from the registry and writes them into `~/.pi/agent/models.json` as `input`, `reasoning`, and `contextWindow`.
+
+### Configure opencode harness
 
 ```bash
 llm_tool \
   --configure-harness opencode \
-  --target-host pi5-16g.local \
-  --target-user moo \
   --source-host moosacrem1promax \
   --selection powerful \
-  --install-harness;
+  --target-host framemoowork
 ```
 
-Use a specific model and a known endpoint when DNS discovery is flaky:
+### Watchdog (check and fix loaded model context)
 
 ```bash
-llm_tool \
-  --configure-harness opencode \
-  --target-host pi5-16g.local \
-  --target-user moo \
-  --source-host moosacrem1promax \
-  --selection specific \
-  --specific-model qwen/qwen3.6-35b-a3b \
-  --base-url http://10.0.1.142:1234/v1;
+llm_tool --watchdog
+llm_tool --watchdog --watchdog-dry-run
+llm_tool --watchdog-status
 ```
 
-If the source LM Studio model is already loaded and reachable, skip source-host SSH control and only write/verify the target harness:
+## Model Registry Examples
 
-```bash
-llm_tool \
-  --configure-harness opencode \
-  --target-host pi5-16g.local \
-  --target-user moo \
-  --source-host moosacrem1promax \
-  --selection specific \
-  --specific-model qwen/qwen3.6-35b-a3b \
-  --base-url http://10.0.1.142:1234/v1 \
-  --skip-load;
+Each line in `_shared/_meta/model_registry.jsonl` is a JSON object. Key fields for two representative models:
+
+### Qwen 3.6 35B A3B (MoE, text + vision)
+
+```json
+{
+  "model_id": "qwen/qwen3.6-35b-a3b",
+  "backend_model_id": "qwen/qwen3.6-35b-a3b",
+  "display_name": "Qwen 3.6 35B A3B (MoE, Q4_K_M)",
+  "host": "your-own-free-range-lm-studio-server.local",
+  "server": "lmstudio",
+  "status": "active",
+  "downloaded": true,
+  "size_human": "20.55 GB",
+  "quantization": "Q4_K_M",
+  "context_window_tokens": 131072,
+  "min_working_context_length": 131072,
+  "last_verified_context_length": 131072,
+  "context_verification_status": "ok",
+  "input_modalities": ["text", "image"],
+  "reasoning": true,
+  "images": true,
+  "tps": 45.0,
+  "best_fit_task_types": ["code_generation_fast", "reasoning", "chat", "tool_heavy_agent_loop"]
+}
 ```
+
+### Nemotron-3-Nano-Omni 30B A3B (MoE, text + vision + audio)
+
+```json
+{
+  "model_id": "nvidia/nemotron-3-nano-omni",
+  "backend_model_id": "nemotron-3-nano-omni",
+  "display_name": "Nemotron-3-Nano-Omni 30B A3B Reasoning (MoE, Q4_K_M)",
+  "host": "your-own-free-range-lm-studio-server.local",
+  "server": "lmstudio",
+  "status": "active",
+  "downloaded": true,
+  "size_human": "24.31 GB",
+  "quantization": "Q4_K_M",
+  "context_window_tokens": 131072,
+  "min_working_context_length": 16384,
+  "last_verified_context_length": 131072,
+  "context_verification_status": "ok",
+  "input_modalities": ["text", "image", "audio"],
+  "reasoning": true,
+  "images": true,
+  "audio": true,
+  "tps": 45.0,
+  "best_fit_task_types": ["reasoning", "code_generation_fast", "multimodal", "vision_or_ocr_extraction"]
+}
+```
+
+### How configure-harness uses these
+
+When `llm_tool --configure-harness pi --specific-model "qwen/qwen3.6-35b-a3b"` runs, it reads the registry row above and writes to `~/.pi/agent/models.json`:
+
+```json
+{
+  "id": "qwen/qwen3.6-35b-a3b",
+  "name": "Qwen 3.6 35B A3B (MoE, Q4_K_M)",
+  "input": ["text", "image"],
+  "reasoning": true,
+  "contextWindow": 131072
+}
+```
+
+Pi then knows this model supports images and sends multimodal requests with base64 image content parts.
+
+## Full contract
+
+See `CONTRACT.md` in this drawer for the complete specification.

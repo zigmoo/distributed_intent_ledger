@@ -18,7 +18,7 @@ resolve_dil_base() {
     local cursor
     cursor="$(cd "$script_dir" 2>/dev/null && pwd || true)"
     while [[ -n "$cursor" && "$cursor" != "/" ]]; do
-      if [[ -d "$cursor/_shared/_meta" ]]; then
+      if [[ -f "$cursor/_shared/_meta/model_registry.jsonl" ]] || [[ -f "$cursor/READ_THIS_DIL_FIRST.md" ]]; then
         printf '%s\n' "$cursor"
         return 0
       fi
