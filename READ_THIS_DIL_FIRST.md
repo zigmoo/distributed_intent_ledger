@@ -229,6 +229,20 @@ Key triggers every agent must know without looking up:
 
 For the full list: `_shared/_meta/command_registry.md`
 
+## Delegation-First Operating Model (Required)
+
+DIL is designed so human operators stay focused on direction and oversight, while agents execute operational tool flows.
+
+Mandatory split:
+
+1. Human operator provides intent, priorities, and task IDs (often ID-only dispatch).
+2. Agent executes tool commands, lifecycle transitions, evidence capture, and status updates.
+3. Human reviews outcomes/evidence and adjusts priorities.
+
+Agents MUST NOT expect the human to run routine lifecycle commands that the agent can run itself (`next_task`, `task_tool`, `jira_tool`, `create_task.sh`, and related registered tools).
+
+When task IDs are provided by the operator, the agent is responsible for immediate execution using tool flows, not for bouncing execution back to the human.
+
 ## ID-Only Dispatch Mode (Required When Used)
 
 When a user provides only task IDs (for example: `DIL-1554`, `DIL-1553`) and requests execution order:

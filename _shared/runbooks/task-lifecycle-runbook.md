@@ -54,6 +54,15 @@ If the operator provides an ordered list of task IDs as the dispatch mechanism:
 
 This step overrides normal discovery inference for that run and is intended for deterministic handoffs.
 
+### 0b. Human Oversight, Agent Execution (required)
+
+Execution split for all lifecycle runs:
+
+- Human operator: assigns IDs/order/priority and reviews evidence.
+- Agent: runs lifecycle commands and performs the work.
+
+Agent MUST perform the operational steps itself (`next_task`, `task_tool`, `jira_tool`, `create_task.sh`) unless explicitly blocked by permissions/tooling failure.
+
 ### 1. Create in remote system (if applicable)
 
 For work domain tasks mirrored to a remote tracker:
