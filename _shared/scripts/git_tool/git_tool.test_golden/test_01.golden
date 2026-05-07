@@ -1,0 +1,10 @@
+DIL-9999: Add deterministic commit templates
+
+Why:
+enforce standard
+
+Evidence:
+golden test
+
+message_ref: _shared/messages/<SHA>_000000.DIL-9999.git-commit-message.test.md
+

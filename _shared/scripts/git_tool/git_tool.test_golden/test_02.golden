@@ -1,0 +1,13 @@
+[master (root-commit) <SHA>] DIL-9998: Add file for commit template test
+ 1 file changed, 1 insertion(+)
+ create mode 100644 file.txt
+DIL-9998: Add file for commit template test
+
+Why:
+test commit path
+
+Evidence:
+git log
+
+message_ref: _shared/messages/<SHA>_000001.DIL-9998.git-commit-message.test.md
+
