@@ -229,6 +229,17 @@ Key triggers every agent must know without looking up:
 
 For the full list: `_shared/_meta/command_registry.md`
 
+## ID-Only Dispatch Mode (Required When Used)
+
+When a user provides only task IDs (for example: `DIL-1554`, `DIL-1553`) and requests execution order:
+
+1. Execute the provided task IDs in the exact order given.
+2. Do not request additional framing unless blocked by a hard execution error.
+3. If a task lacks detail, use parent-task execution notes as authoritative context.
+4. On completion of each task, immediately proceed to the next ID.
+
+This mode is explicitly for low-inference execution and cross-agent handoff reliability.
+
 ## Knowledge Ingestion Decision Rule (Required)
 
 Before storing knowledge content, read:
