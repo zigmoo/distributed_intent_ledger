@@ -669,6 +669,7 @@ These defaults reduce drift between chat, shell history, and canonical tasks.
 6. Compose all prose via message files
 - All agent-composed prose — internal or external — must use the message object contract at `_shared/messages/CONTRACT.md`.
 - Compose in `_shared/messages/`, include frontmatter, deliver through nozzles.
+- Commit messages are included in this rule: before committing, create/update the corresponding message object and include a `message_ref` pointer in the commit message body/trailers to that `_shared/messages/<file>.md` artifact.
 - This ensures durability (survives crashes), portability (syncs via Obsidian), and access to deterministic formatting tools.
 - Message files are also cross-session and cross-agent thinking artifacts: one session composes a draft, gets compacted or dies, and the next session — or a different agent entirely — picks it up cold from the file. Frontmatter makes each composition self-describing. This makes composed thought durable and transferable across the agent mesh.
 - Routine one-liner `jira_tool comment` posts are exempt.

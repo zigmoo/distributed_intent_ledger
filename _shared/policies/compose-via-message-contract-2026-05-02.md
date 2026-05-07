@@ -31,6 +31,7 @@ This applies whenever an agent composes prose of any substance, regardless of au
 - Email drafts
 - Slack messages
 - Internal reports, briefings, or composed artifacts for the user
+- Commit messages (subject and body/trailers)
 
 ## Why
 
@@ -48,6 +49,7 @@ This applies whenever an agent composes prose of any substance, regardless of au
 3. Set `status: draft` until delivery is confirmed
 4. Compose the body as HTML (for Teams/email) or plain text (for Jira, using `md2jira` at send time)
 5. After delivery, update `status: sent` and add the `sent:` timestamp
+6. For git commits, include a `message_ref: _shared/messages/<file>.md` line in the commit message body/trailers so the commit links to the canonical message artifact
 
 ## What This Does NOT Cover
 

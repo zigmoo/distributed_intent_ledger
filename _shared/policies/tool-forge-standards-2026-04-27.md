@@ -199,32 +199,32 @@ Minimum normalizations:
 The test script filename is derived from the tool it tests using this formula:
 
 ```
-<tool_stem>_test_script.bash
+<tool_stem>.test_script.bash
 ```
 
-Where `<tool_stem>` is the tool's filename without any extension (`.sh`, `.py`, `.bash`).
+Where `<tool_stem>` is the tool's filename without any extension (`.sh`, `.py`, `.bash`). The dot-separated convention (`tool.test_script.bash`) distinguishes the test script as a metadata file of the tool, not a separate tool named `tool_test_script`.
 
 | Tool under test | Tool stem | Test script filename |
 |----------------|-----------|---------------------|
-| `task_tool/task_tool.bash` / `task_tool/task_tool.py` | `task_tool` | `task_tool_test_script.bash` |
-| `research_tool/research_tool.bash` / `research_tool/research_tool.py` | `research_tool` | `research_tool_test_script.bash` |
-| `url_tool.sh` | `url_tool` | `url_tool_test_script.bash` |
-| `hot_tool.sh` | `hot_tool` | `hot_tool_test_script.bash` |
+| `task_tool/task_tool.bash` / `task_tool/task_tool.py` | `task_tool` | `task_tool.test_script.bash` |
+| `research_tool/research_tool.bash` / `research_tool/research_tool.py` | `research_tool` | `research_tool.test_script.bash` |
+| `url_tool.sh` | `url_tool` | `url_tool.test_script.bash` |
+| `hot_tool.sh` | `hot_tool` | `hot_tool.test_script.bash` |
 
 **Location:** The test script lives in the **same directory** as the tool it tests. Not in a `tests/` subdirectory. Not in `lib/`. Right next to the tool.
 
 **Log directory (Standard #5 compliance):**
 
-The log subdirectory name is the full test script stem — including the `_test_script` suffix. This is the script's identity for logging purposes.
+The log subdirectory name is the full test script stem — including the `.test_script` suffix. This is the script's identity for logging purposes.
 
 | Test script | Log subdirectory | Log filename pattern |
 |------------|-----------------|---------------------|
-| `task_tool_test_script.bash` | `task_tool_test_script/` | `task_tool_test_script.run.YYYYMMDD_HHMMSS.log` |
-| `research_tool_test_script.bash` | `research_tool_test_script/` | `research_tool_test_script.run.YYYYMMDD_HHMMSS.log` |
+| `task_tool.test_script.bash` | `task_tool.test_script/` | `task_tool.test_script.run.YYYYMMDD_HHMMSS.log` |
+| `research_tool.test_script.bash` | `research_tool.test_script/` | `research_tool.test_script.run.YYYYMMDD_HHMMSS.log` |
 
 **WRONG:** `$LOG_DIR/task_tool_test/` — dropping `_script` truncates the identity.
 **WRONG:** `$LOG_DIR/task_tool/` — collides with the tool's own operational logs.
-**RIGHT:** `$LOG_DIR/task_tool_test_script/` — full composite name, no ambiguity.
+**RIGHT:** `$LOG_DIR/task_tool.test_script/` — full composite name, no ambiguity.
 
 **File layout (complete example):**
 ```
@@ -232,8 +232,8 @@ _shared/scripts/
   task_tool/
     task_tool.bash                         # tool bash wrapper
     task_tool.py                           # tool Python logic
-    task_tool_test_script.bash             # test runner (same directory as tool)
-    task_tool_test_golden/                 # golden baselines (committed to repo)
+    task_tool.test_script.bash             # test runner (same directory as tool)
+    task_tool.test_golden/                 # golden baselines (committed to repo)
       test_01.golden
       test_02.golden
       ...
@@ -241,8 +241,8 @@ _shared/scripts/
 _shared/logs/
   task_tool/                               # tool operational logs
     task_tool.search.20260427_013000.log
-  task_tool_test_script/                   # test run logs (full composite name)
-    task_tool_test_script.run.20260427_013100.log
+  task_tool.test_script/                   # test run logs (full composite name)
+    task_tool.test_script.run.20260427_013100.log
 ```
 
 **Porting workflow:**
@@ -385,8 +385,8 @@ _shared/scripts/
     tool_name.md            ← documentation (if applicable)
     j2_templates/           ← tool-owned display/report templates
       README.md             ← template purpose, conventions, dependency notes
-    tool_name_test_script.bash  ← test suite (Standard #10)
-    tool_name_test_golden/      ← golden baselines (Standard #10)
+    tool_name.test_script.bash  ← test suite (Standard #10)
+    tool_name.test_golden/      ← golden baselines (Standard #10)
   bin/
     tool_name               ← extensionless symlink → ../tool_name/tool_name.bash
 ```
@@ -496,6 +496,62 @@ Choosing marker-based resolution over hardcoded levels is a moral choice: it pri
 **Marker selection:** Use the most specific structural marker available. For DIL repositories, `_shared/_meta` is the canonical root marker. For other repositories, choose a directory or file that exists only at the root and is unlikely to be duplicated at other levels.
 
 **Applies to:** all base path resolution in Tool Forge tools — bash wrappers, Python implementations, shared libraries, and test scripts. No exceptions.
+
+## 18. Branch Naming Convention (Non-Negotiable)
+
+All branches in DIL repositories and Tool Forge-compatible repositories MUST be named with the associated ticket ID leading, followed by a short kebab-case description:
+
+```
+<TICKET-ID>/<short-description>
+```
+
+**Correct:**
+```
+WORK-12710/tool-forge-readme-and-accumulated-promotions
+WORK-12709/jira-tool-python-port
+DIL-1501/fix-marker-resolution-in-signal-tool
+```
+
+**Wrong:**
+```
+promote/session-20260506          (WRONG: no ticket, session ID is not correlatable)
+feature/new-thing                 (WRONG: no ticket)
+fix-bug                           (WRONG: no ticket, no context)
+```
+
+**Why:** Branches that reference a ticket ID are queryable — an agent or human can look up the branch in Jira/SMAX/DIL and understand the full context without reading the code. Session-only branch names rot immediately because no tool can correlate a session ID back to work intent. The ticket is the anchor.
+
+**Applies to:** all repositories where DIL tools, templates, or policies are committed — DIL active, DIL template, `/org/platform/scripts/`, and any Tool Forge-compatible repo.
+
+## 19. Commit Message Ticket Prefix (Non-Negotiable)
+
+All commit messages in DIL and Tool Forge-compatible repositories MUST begin with the associated ticket ID:
+
+```
+<TICKET-ID>: <imperative description>
+```
+
+Commit messages are composed prose and therefore MUST also comply with the message-object policy:
+- create/maintain the corresponding `_shared/messages/<file>.md` artifact
+- include `message_ref: _shared/messages/<file>.md` in the commit message body/trailers
+
+**Correct:**
+```
+DIL-1526: Remove stale create_task.py from lib
+WORK-12710: Add Tool Forge README and promote accumulated changes
+WORK-12709: Port jira_tool auth module from bash to Python
+```
+
+**Wrong:**
+```
+Promote accumulated DIL active changes to template    (WRONG: no ticket ID)
+Fix bug in task_tool                                   (WRONG: no ticket ID)
+WIP                                                    (WRONG: no ticket, no description)
+```
+
+**Why:** Every change exists because of a task. The ticket prefix makes `git log --grep` a first-class query tool — find all commits for a ticket instantly. It also enables automated traceability: CI, code review, and audit tooling can link commits to their authorizing work item without parsing commit bodies.
+
+**Applies to:** DIL active, DIL template, `/org/platform/scripts/`, and any Tool Forge-compatible repo.
 
 ## Naming Transition Note (2026-05-01)
 
