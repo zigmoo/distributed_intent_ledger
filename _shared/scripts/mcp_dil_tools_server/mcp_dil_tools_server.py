@@ -48,7 +48,6 @@ SESSION_LOG_FILE = LOG_ROOT / f"{SCRIPT_NAME}.session.{RUN_STAMP}.{PID}.log"
 DIL_SEARCH = SCRIPT_DIR / "dil_search.sh"
 TASK_TOOL = SCRIPT_DIR / "bin" / "task_tool"
 DIL_TOOL = SCRIPT_DIR / "dil_tool"
-[removed-browser-tool]_TOOL = SCRIPT_DIR / "[removed-browser-tool]_tool"
 URL_TOOL = SCRIPT_DIR / "url_tool.sh"
 GIT_TOOL = SCRIPT_DIR / "git_tool"
 BASH_TOOL = SCRIPT_DIR / "bash_tool"
@@ -165,36 +164,6 @@ TOOLS: list[dict[str, Any]] = [
         "name": "dil_status",
         "description": "Run dil_tool status for DIL health and index drift checks.",
         "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
-    },
-    {
-        "name": "[removed-browser-tool]_tabs",
-        "description": "List current Chromium CDP tabs using the DIL [removed-browser-tool]_tool.",
-        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
-    },
-    {
-        "name": "[removed-financial-tool]_portfolio",
-        "description": "Read [removed-financial-tool] holdings through [removed-browser-tool]_tool portfolio. This is a read-oriented direct-use DIL tool.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "mode": {"type": "string", "enum": ["shallow", "deep"], "default": "shallow"},
-                "max_deep_holdings": {"type": "integer", "minimum": 1, "maximum": 50},
-            },
-            "additionalProperties": False,
-        },
-    },
-    {
-        "name": "[removed-financial-tool]_crypto_panel",
-        "description": "Read visible [removed-financial-tool] crypto panel state through [removed-browser-tool]_tool crypto-panel.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "symbol": _text_schema("Crypto symbol, for example BTC."),
-                "side": {"type": "string", "enum": ["buy", "sell"], "default": "buy"},
-            },
-            "required": ["symbol"],
-            "additionalProperties": False,
-        },
     },
     {
         "name": "url_ticket",
@@ -534,29 +503,6 @@ def call_tool(name: str, arguments: dict[str, Any] | None) -> dict[str, Any]:
     if name == "dil_status":
         _require_file(DIL_TOOL)
         return _tool_result(_run([str(DIL_TOOL), "status"], tool_name=name))
-
-    if name == "[removed-browser-tool]_tabs":
-        _require_file([removed-browser-tool]_TOOL)
-        return _tool_result(_run([str([removed-browser-tool]_TOOL), "tabs"], tool_name=name))
-
-    if name == "[removed-financial-tool]_portfolio":
-        _require_file([removed-browser-tool]_TOOL)
-        cmd = [str([removed-browser-tool]_TOOL), "portfolio", "--mode", str(args.get("mode", "shallow"))]
-        if args.get("max_deep_holdings"):
-            cmd += ["--max-deep-holdings", str(args["max_deep_holdings"])]
-        return _tool_result(_run(cmd, timeout=180, tool_name=name))
-
-    if name == "[removed-financial-tool]_crypto_panel":
-        _require_file([removed-browser-tool]_TOOL)
-        cmd = [
-            str([removed-browser-tool]_TOOL),
-            "crypto-panel",
-            "--symbol",
-            str(args["symbol"]).upper(),
-            "--side",
-            str(args.get("side", "buy")),
-        ]
-        return _tool_result(_run(cmd, timeout=120, tool_name=name))
 
     if name == "url_ticket":
         _require_file(URL_TOOL)
